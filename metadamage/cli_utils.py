@@ -1,8 +1,11 @@
-from click_help_colors import HelpColorsCommand, HelpColorsGroup
+# Standard Library
+from typing import Iterable
+
+# Third Party
 import click
 from click import Context
+from click_help_colors import HelpColorsCommand, HelpColorsGroup
 import typer
-from typing import Iterable
 
 
 class CustomHelpColorsCommand(HelpColorsCommand):
@@ -48,7 +51,9 @@ def get_cli_app():
 
 
 def version_callback(value: bool):
+    # First Party
     from metadamage.__version__ import __version__
+
     if value:
         typer.echo(f"Metadamage CLI, version: {__version__}")
         raise typer.Exit()

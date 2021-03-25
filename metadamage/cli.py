@@ -1,8 +1,13 @@
 # Standard Library
 from pathlib import Path
-from typing import Optional, List
+from typing import List, Optional
+
+# Third Party
 import typer
-from metadamage import utils, cli_utils
+
+# First Party
+from metadamage import cli_utils, utils
+
 
 out_dir_default = Path("./data/out/")
 
@@ -75,6 +80,7 @@ def cli_fit(
 
     """
 
+    # First Party
     from metadamage.main import main
 
     d_cfg = {
@@ -126,6 +132,7 @@ def cli_dashboard(
 
     """
 
+    # First Party
     from metadamage import dashboard
 
     counts_dir = dir / "counts/"
