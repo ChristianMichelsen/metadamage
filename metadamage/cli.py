@@ -1,71 +1,20 @@
 # Standard Library
 from pathlib import Path
-from typing import Iterable, List, Literal, Optional, Union
-
-# Third Party
-import click
-from click import Context
-from click_help_colors import HelpColorsCommand, HelpColorsGroup
+from typing import Optional, List
 import typer
-
-# First Party
-from metadamage import utils
-from metadamage.__version__ import __version__
+from metadamage import utils, cli_utils
 
 out_dir_default = Path("./data/out/")
-first_time = True
 
+#%%
 
-def version_callback(value: bool):
-    if value:
-        typer.echo(f"Metadamage CLI, version: {__version__}")
-        raise typer.Exit()
-
-
-class CustomHelpColorsCommand(HelpColorsCommand):
-    """Colorful command line main help. Colors one of:
-    "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "reset",
-    "bright_black", "bright_red", "bright_green", "bright_yellow",
-    "bright_blue", "bright_magenta", "bright_cyan", "bright_white"
-    """
-
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.help_headers_color = "yellow"
-        self.help_options_color = "blue"
-
-
-class CustomHelpColorsGroup(HelpColorsGroup):
-    # colorfull command line for subcommands
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.help_headers_color = "yellow"
-        self.help_options_color = "blue"
-
-
-class ColorfulApp(typer.Typer):
-    def __init__(self, *args, cls=CustomHelpColorsGroup, **kwargs) -> None:
-        super().__init__(*args, cls=cls, **kwargs)
-
-    def command(
-        self, *args, cls=CustomHelpColorsCommand, **kwargs
-    ) -> typer.Typer.command:
-        return super().command(*args, cls=cls, **kwargs)
-
-
-class OrderedCommands(click.Group):
-    def list_commands(self, ctx: Context) -> Iterable[str]:
-        return self.commands.keys()
-
-
-cli_app = ColorfulApp(cls=OrderedCommands)
-# cli_app = ColorfulApp(chain=True)
+cli_app = cli_utils.get_cli_app()
 
 
 @cli_app.callback()
 def callback(
     version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback
+        None, "--version", callback=cli_utils.version_callback
     ),
 ):
     """
@@ -159,6 +108,7 @@ def cli_dashboard(
     dir: Path = typer.Argument(out_dir_default),
     debug: bool = typer.Option(False, "--debug"),
     dashboard_port: int = 8050,
+    dashboard_host: str = "0.0.0.0",
 ):
     """Dashboard: Visualizing Ancient Damage.
 
@@ -186,8 +136,14 @@ def cli_dashboard(
     verbose = True if debug else False
     if not debug:
         dashboard.utils.open_browser_in_background()
+
     dashboard_app = dashboard.app.get_app(dir, verbose=verbose)
-    dashboard_app.run_server(debug=debug, host="0.0.0.0", port=dashboard_port)
+
+    dashboard_app.run_server(
+        debug=debug,
+        host=dashboard_host,
+        port=dashboard_port,
+    )
 
 
 def cli_main():
