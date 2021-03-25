@@ -223,6 +223,7 @@ def compute_counts_with_dask(cfg, use_processes=True):
         n_workers=n_workers,
         processes=use_processes,
         silence_logs=logging.CRITICAL,
+        dashboard_address=f":{cfg.dask_port}"
         # threads_per_worker=1,
     ) as cluster, Client(cluster) as client:
 

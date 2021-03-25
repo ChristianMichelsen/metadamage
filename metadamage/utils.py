@@ -56,6 +56,7 @@ class Config:
     #
     forced: bool
     version: str
+    dask_port: int
     #
     filename: Optional[Path] = None
     shortname: Optional[str] = None

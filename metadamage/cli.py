@@ -1,5 +1,4 @@
 # Standard Library
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable, List, Literal, Optional, Union
 
@@ -7,17 +6,11 @@ from typing import Iterable, List, Literal, Optional, Union
 import click
 from click import Context
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
-from rich.console import Console
 import typer
 
 # First Party
-from metadamage import dashboard, utils
+from metadamage import utils
 from metadamage.__version__ import __version__
-from metadamage.main import main
-
-
-# from dashboard import app
-
 
 out_dir_default = Path("./data/out/")
 first_time = True
@@ -96,19 +89,16 @@ def callback(
 
 @cli_app.command("fit")
 def cli_fit(
-    # Path: input filename(s) and output directory
+    # Paths: input filename(s) and output directory
     filenames: List[Path] = typer.Argument(...),
     out_dir: Path = typer.Option(out_dir_default),
     # Fit options
     max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
     max_cores: int = 1,
-    # max_position: int = typer.Option(15),
     # Filters
     min_alignments: int = 10,
     min_y_sum: int = 10,
-    #
-    # sort_by: utils.SortBy = typer.Option(utils.SortBy.alignments, case_sensitive=False),
-    # sort_by: Literal["alignments", "damage", "sigma"] = "alignments",
+    # Subsitution Bases
     substitution_bases_forward: utils.SubstitutionBases = typer.Option(
         utils.SubstitutionBases.CT
     ),
@@ -117,7 +107,8 @@ def cli_fit(
     ),
     # boolean flags
     forced: bool = typer.Option(False, "--forced"),
-    # version
+    # Other
+    dask_port: int = 8787,
 ):
     """Fitting Ancient Damage.
 
@@ -135,6 +126,8 @@ def cli_fit(
 
     """
 
+    from metadamage.main import main
+
     d_cfg = {
         "out_dir": out_dir,
         #
@@ -151,6 +144,8 @@ def cli_fit(
         #
         "forced": forced,
         #
+        "dask_port": dask_port,
+        #
         "version": "0.0.0",
     }
 
@@ -163,6 +158,7 @@ def cli_fit(
 def cli_dashboard(
     dir: Path = typer.Argument(out_dir_default),
     debug: bool = typer.Option(False, "--debug"),
+    dashboard_port: int = 8050,
 ):
     """Dashboard: Visualizing Ancient Damage.
 
@@ -180,6 +176,8 @@ def cli_dashboard(
 
     """
 
+    from metadamage import dashboard
+
     counts_dir = dir / "counts/"
     if not (counts_dir.exists() and counts_dir.is_dir()):
         typer.echo("Please choose a valid directory")
@@ -189,7 +187,7 @@ def cli_dashboard(
     if not debug:
         dashboard.utils.open_browser_in_background()
     dashboard_app = dashboard.app.get_app(dir, verbose=verbose)
-    dashboard_app.run_server(debug=debug, host="0.0.0.0")
+    dashboard_app.run_server(debug=debug, host="0.0.0.0", port=dashboard_port)
 
 
 def cli_main():
