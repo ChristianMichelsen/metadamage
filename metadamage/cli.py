@@ -78,6 +78,11 @@ def cli_fit(
     \b
         $ metadamage fit --verbose --max-fits 10 --max-cores 2 ./data/input/data_ancient.txt ./data/input/data_control.txt
 
+    For help, run:
+
+    \b
+        $ metadamage fit --help
+
     """
 
     # First Party
@@ -129,6 +134,13 @@ def cli_dashboard(
 
     \b
         $ metadamage dashboard ./other/dir
+
+
+    For help, run:
+
+    \b
+        $ metadamage dashboard --help
+
 
     """
 
