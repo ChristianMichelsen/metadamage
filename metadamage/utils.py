@@ -7,7 +7,6 @@ from scipy.stats.distributions import chi2 as sp_chi2
 
 # Standard Library
 from dataclasses import asdict, dataclass, field
-from enum import Enum
 from importlib.metadata import version
 import importlib.resources as importlib_resources
 import logging
@@ -182,24 +181,6 @@ class Config:
             my_table.add_row("Shortname", str(self.shortname))
 
         yield my_table
-
-
-class SubstitutionBases(str, Enum):
-    AC = "AC"
-    AG = "AG"
-    AT = "AT"
-
-    CA = "CA"
-    CG = "CG"
-    CT = "CT"
-
-    GA = "GA"
-    GC = "GC"
-    GT = "GT"
-
-    TA = "TA"
-    TC = "TC"
-    TG = "TG"
 
 
 #%%

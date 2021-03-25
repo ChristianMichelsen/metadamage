@@ -6,7 +6,7 @@ from typing import List, Optional
 import typer
 
 # First Party
-from metadamage import cli_utils, utils
+from metadamage import cli_utils
 
 
 out_dir_default = Path("./data/out/")
@@ -53,11 +53,11 @@ def cli_fit(
     min_alignments: int = 10,
     min_y_sum: int = 10,
     # Subsitution Bases
-    substitution_bases_forward: utils.SubstitutionBases = typer.Option(
-        utils.SubstitutionBases.CT
+    substitution_bases_forward: cli_utils.SubstitutionBases = typer.Option(
+        cli_utils.SubstitutionBases.CT
     ),
-    substitution_bases_reverse: utils.SubstitutionBases = typer.Option(
-        utils.SubstitutionBases.GA
+    substitution_bases_reverse: cli_utils.SubstitutionBases = typer.Option(
+        cli_utils.SubstitutionBases.GA
     ),
     # boolean flags
     forced: bool = typer.Option(False, "--forced"),
@@ -86,6 +86,7 @@ def cli_fit(
     """
 
     # First Party
+    from metadamage import utils
     from metadamage.main import main
 
     d_cfg = {

@@ -9,13 +9,14 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from importlib import reload
 import logging
+import os
 from pathlib import Path
 
 # Third Party
 import numpyro
 
 # First Party
-from metadamage import counts, fits, plot, utils
+from metadamage import cli_utils, counts, fits, plot, utils
 from metadamage.progressbar import console, progress
 
 
@@ -90,15 +91,12 @@ if utils.is_ipython():
         max_cores=-1,
         min_alignments=10,
         min_y_sum=10,
-        substitution_bases_forward=utils.SubstitutionBases.CT.value,
-        substitution_bases_reverse=utils.SubstitutionBases.GA.value,
+        substitution_bases_forward=cli_utils.SubstitutionBases.CT.value,
+        substitution_bases_reverse=cli_utils.SubstitutionBases.GA.value,
         forced=False,
         version="0.0.0",
+        dask_port=8787,
     )
-
-    # Standard Library
-    import os
-    from pathlib import Path
 
     path = Path().cwd().parent
     os.chdir(path)
