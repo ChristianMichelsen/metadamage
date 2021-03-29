@@ -64,7 +64,7 @@ def cli_fit(
     # Other
     dask_port: int = 8787,
 ):
-    """Fitting Ancient Damage.
+    """Fit ancient damage.
 
     FILENAME is the name of the file(s) to fit (with the ancient-model)
 
@@ -122,7 +122,7 @@ def cli_dashboard(
     dashboard_port: int = 8050,
     dashboard_host: str = "0.0.0.0",
 ):
-    """Dashboard: Visualizing Ancient Damage.
+    """Visualize ancient damage.
 
     DIR is the output directory for the fits. By default using ./data/out/
 
@@ -141,7 +141,6 @@ def cli_dashboard(
 
     \b
         $ metadamage dashboard --help
-
 
     """
 
@@ -164,6 +163,50 @@ def cli_dashboard(
         host=dashboard_host,
         port=dashboard_port,
     )
+
+
+@cli_app.command("convert")
+def cli_convert(
+    dir_parquet: Path = typer.Option(out_dir_default / "fit_predictions"),
+    dir_csv: Path = typer.Option(out_dir_default / "csv" / "fit_predictions"),
+    parallel: bool = typer.Option(False, "--parallel"),
+):
+    """Parquet to CSV conversion.
+
+    Convert all parquet files in an directory to csv files.
+
+    run as e.g.:
+
+    \b
+        $ metadamage convert
+
+    or for other directories than default:
+
+    \b
+        $ metadamage convert --dir-parquet ./data/out/fit_results --dir-csv ./data/out/csv/fit_results
+
+    For help, run:
+
+    \b
+        $ metadamage convert --help
+
+    """
+    from metadamage.parquet_convert import convert_fit_predictions
+
+    print_message = (
+        f"Converting parquet files in {dir_parquet}. \n"
+        f"Output directory is {dir_csv}. \n"
+    )
+    if parallel:
+        print_message += "Running in parallel mode"
+    else:
+        print_message += "Running in seriel mode"
+
+    typer.echo(print_message)
+    convert_fit_predictions(dir_parquet, dir_csv, parallel=parallel)
+
+
+#%%
 
 
 def cli_main():
