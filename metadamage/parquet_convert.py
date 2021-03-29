@@ -1,7 +1,10 @@
+# Standard Library
+from concurrent import futures
 from pathlib import Path
+
+# Third Party
 import pyarrow.parquet as pq
 from tqdm.auto import tqdm
-from concurrent import futures
 
 
 def save_parquet_file_to_csv(file, dir_csv):

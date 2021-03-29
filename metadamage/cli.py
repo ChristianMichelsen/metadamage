@@ -191,6 +191,7 @@ def cli_convert(
         $ metadamage convert --help
 
     """
+    # First Party
     from metadamage.parquet_convert import convert_fit_predictions
 
     print_message = (
