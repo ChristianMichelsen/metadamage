@@ -25,7 +25,7 @@ from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import counts, io, utils
+from metadamage import counts, io, utils, fits_frequentist
 from metadamage.progressbar import console, progress
 
 
@@ -181,7 +181,7 @@ def get_mean_of_variable(mcmc, variable, axis=0):
 
 
 def get_SDOM_of_variable(mcmc, variable, axis=0):
-    return SDOM(mcmc.get_samples()[variable], axis=axis)
+    return SDOM(mcmc.get_samples()[variable], axis=axis).item()
 
 
 def compute_waic_weight(d_results_PMD, d_results_null):
@@ -292,6 +292,8 @@ def compute_fit_results(
 
     add_noise_estimates(group, fit_result)
 
+    add_frequentist_fit_results(data, fit_result)
+
     return fit_result
 
 
@@ -374,6 +376,16 @@ def add_noise_estimates(group, fit_result):
         fit_result["normalized_noise"] = np.nanstd(noise_z.values)
         fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
         fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
+
+
+def add_frequentist_fit_results(data, fit_result):
+    # reload(fits_frequentist)
+    frequentist = fits_frequentist.Frequentist(data)
+    # frequentist.PMD.m
+    # print(frequentist)
+    # frequentist.make_plot()
+    for var in ["D_max", "A", "q", "c", "phi", "LR", "LR_P", "LR_n_sigma", "valid"]:
+        fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
 
 
 #%%
@@ -474,14 +486,14 @@ def get_fit_single_group_with_timeout(timeout=60):
     return timeout_decorator.timeout(timeout)(fit_single_group_without_timeout)
 
 
-def compute_fits_seriel(df, mcmc_kwargs, cfg):
+def compute_fits_seriel(df_counts, mcmc_kwargs, cfg):
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
     mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
-    groupby = df.groupby("tax_id", sort=False, observed=True)
+    groupby = df_counts.groupby("tax_id", sort=False, observed=True)
     d_fits = {}
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
