@@ -37,21 +37,30 @@ logger = logging.getLogger(__name__)
 timeout_first_fit = 5 * 60  # 5 minutes, very first fit
 timeout_subsequent_fits = 60  # 1 minute
 
+
+# beta dist (alpha, beta)
+q_prior = (1, 4)  # mean = 0.2, shape = 4
+A_prior = (1, 4)  # mean = 0.2, shape = 4
+c_prior = (1.0, 9.0)  # mean = 0.1, shape = 10
+
+# exponential dist (loc, scale)
+phi_prior = (2, 1000)
+
 #%%
 
 
-def model_PMD(z, N, y=None, phi_prior=1 / 1000):
+def model_PMD(z, N, y=None):
     z = jnp.abs(z)
 
-    q = numpyro.sample("q", dist.Beta(2, 3))  # mean = 0.4, shape = 5
-    A = numpyro.sample("A", dist.Beta(2, 3))  # mean = 0.4, shape = 5
-    c = numpyro.sample("c", dist.Beta(1, 9))  # mean = 0.1, shape = 10
+    q = numpyro.sample("q", dist.Beta(q_prior[0], q_prior[1]))
+    A = numpyro.sample("A", dist.Beta(A_prior[0], A_prior[1]))
+    c = numpyro.sample("c", dist.Beta(c_prior[0], c_prior[1]))
     # Dz = numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c)
     Dz = jnp.clip(numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c), 0, 1)
     D_max = numpyro.deterministic("D_max", A + c)  # pylint: disable=unused-variable
 
-    delta = numpyro.sample("delta", dist.Exponential(phi_prior))
-    phi = numpyro.deterministic("phi", delta + 2)
+    delta = numpyro.sample("delta", dist.Exponential(1 / phi_prior[1]))
+    phi = numpyro.deterministic("phi", delta + phi_prior[0])
 
     alpha = numpyro.deterministic("alpha", Dz * phi)
     beta = numpyro.deterministic("beta", (1 - Dz) * phi)
@@ -59,11 +68,11 @@ def model_PMD(z, N, y=None, phi_prior=1 / 1000):
     numpyro.sample("obs", dist.BetaBinomial(alpha, beta, N), obs=y)
 
 
-def model_null(z, N, y=None, phi_prior=1 / 1000):
-    q = numpyro.sample("q", dist.Beta(2, 3))  # mean = 0.4, shape = 5
+def model_null(z, N, y=None):
+    q = numpyro.sample("q", dist.Beta(c_prior[0], c_prior[1]))  # mean = 0.2, shape = 4
     D_max = numpyro.deterministic("D_max", q)
-    delta = numpyro.sample("delta", dist.Exponential(phi_prior))
-    phi = numpyro.deterministic("phi", delta + 2)
+    delta = numpyro.sample("delta", dist.Exponential(1 / phi_prior[1]))
+    phi = numpyro.deterministic("phi", delta + phi_prior[0])
     numpyro.sample("obs", dist.BetaBinomial(q * phi, (1 - q) * phi, N), obs=y)
 
 
@@ -380,10 +389,14 @@ def add_noise_estimates(group, fit_result):
 
 def add_frequentist_fit_results(data, fit_result):
     # reload(fits_frequentist)
-    frequentist = fits_frequentist.Frequentist(data)
-    # frequentist.PMD.m
-    # print(frequentist)
-    # frequentist.make_plot()
+    frequentist = fits_frequentist.Frequentist(data, method="posterior")
+    # frequentist = fits_frequentist.Frequentist(data, method='likelihood')
+
+    # if False:
+    #     frequentist.PMD.m
+    #     print(frequentist)
+    #     frequentist.plot()
+
     for var in ["D_max", "A", "q", "c", "phi", "LR", "LR_P", "LR_n_sigma", "valid"]:
         fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
 

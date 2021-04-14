@@ -103,10 +103,11 @@ if utils.is_ipython():
     filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
     cfg.add_filenames(filenames)
 
-    filename = filenames[0]
-    filename = filenames[1]
-    filename = filenames[3]
-    filename = filenames[4]
+    filename = filenames[0]  # BPN19-AR
+    filename = filenames[1]  # EC-Ext-14-
+    filename = filenames[2]  # EC-Ext-A27
+    filename = filenames[3]  # KapK
+    filename = filenames[4]  # Lok-75
     # filename = "data/input/n_sigma_test.txt"
 
     if False:
@@ -124,10 +125,22 @@ if utils.is_ipython():
         tax_id = 1236
         tax_id = 135622
         tax_id = 2742
-        tax_id = 75
+        tax_id = 28211
+        tax_id = 8006
+        tax_id = 4751
+        tax_id = 469
+        tax_id = 28211
+        tax_id = 356
+        tax_id = 286
+        tax_id = 526227
+        tax_id = 71240
+        tax_id = 68336
+        tax_id = 6072
+        # tax_id = 85015 # BPN19-AR interesting
+        tax_id = 237  # BPN19-AR interesting
         tax_id = -1
         group = utils.get_specific_tax_id(df_counts, tax_id=tax_id)
-        data = group_to_numpyro_data(group, cfg)
+        data = fits.group_to_numpyro_data(group, cfg)
 
     from metadamage import dashboard
 
@@ -143,53 +156,104 @@ if utils.is_ipython():
 
     x = x
 
+    # fit_results.set_marker_size(marker_transformation="sqrt", marker_size_max=30)
     df = fit_results.df_fit_results
-    # df['frequentist_D_max'] = df['frequentist_A'] + df["frequentist_c"]
 
-    fig = px.scatter(
-        df,
+    import plotly.express as px
+
+    def tmp_plot(x, y, x_title, y_title, range_x=(0, 1), range_y=(0, 1)):
+        fig = px.scatter(
+            df,
+            x=x,
+            y=y,
+            size="size",
+            color="shortname",
+            hover_name="shortname",
+            # size_max=marker_size_max,
+            # opacity=1,
+            color_discrete_map=fit_results.d_cmap,
+            custom_data=fit_results.custom_data_columns,
+            range_x=range_x,
+            range_y=range_y,
+            render_mode="webgl",
+            symbol="shortname",
+            symbol_map=fit_results.d_symbols,
+        )
+
+        fig.update_traces(
+            hovertemplate=fit_results.hovertemplate,
+            marker_line_width=0,
+            marker_sizeref=2.0
+            * fit_results.max_of_size
+            / (fit_results.marker_size_max ** 2),
+        )
+
+        fig.update_layout(
+            xaxis_title=x_title,
+            yaxis_title=y_title,
+            legend_title="Files",
+        )
+
+        fig.for_each_trace(
+            lambda trace: dashboard.figures.set_opacity_for_trace(
+                trace,
+                method="sqrt",
+                scale=20 / df.shortname.nunique(),
+                opacity_min=0.001,
+                opacity_max=0.8,
+            )
+        )
+
+        fig.write_html(f"./data/out/tmp_plots/plotly__{x}__{y}.html")
+
+        return fig
+
+    tmp_plot(
+        x="n_sigma",
+        y="D_max",
+        x_title="n_sigma Bayesian",
+        y_title="D_max Bayesian",
+        range_x=(-4, 18),
+        range_y=(0, 0.6),
+    )
+
+    tmp_plot(
+        x="frequentist_LR",
+        y="frequentist_D_max",
+        x_title="LR frequentist",
+        y_title="D_max frequentist",
+        range_x=(-5, 200),
+        range_y=(0, 0.6),
+    )
+
+    tmp_plot(
         x="D_max",
         y="frequentist_D_max",
-        size="size",
-        color="shortname",
-        hover_name="shortname",
-        # size_max=marker_size_max,
-        # opacity=1,
-        color_discrete_map=fit_results.d_cmap,
-        custom_data=fit_results.custom_data_columns,
-        range_x=[0, 1],
-        range_y=[0, 1],
-        render_mode="webgl",
-        symbol="shortname",
-        symbol_map=fit_results.d_symbols,
+        x_title="D_max Bayesian",
+        y_title="D_max Frequentist",
     )
 
-    fig.update_traces(
-        hovertemplate=fit_results.hovertemplate,
-        marker_line_width=0,
-        marker_sizeref=2.0
-        * fit_results.max_of_size
-        / (fit_results.marker_size_max ** 2),
+    tmp_plot(
+        x="q_mean",
+        y="frequentist_q",
+        x_title="q Bayesian",
+        y_title="q Frequentist",
     )
 
-    fig.update_layout(
-        xaxis_title=r"$\Large D_\mathrm{max}$",
-        yaxis_title=r"$\Large D_\mathrm{max} frequentist$",
-        legend_title="Files",
+    tmp_plot(
+        x="concentration_mean",
+        y="frequentist_phi",
+        x_title="phi Bayesian",
+        y_title="phi Frequentist",
+        range_x=(2, 15_000),
+        range_y=(2, 15_000),
     )
 
-    fig.for_each_trace(
-        lambda trace: set_opacity_for_trace(
-            trace,
-            method="sqrt",
-            scale=20 / df.shortname.nunique(),
-            opacity_min=0.001,
-            opacity_max=0.8,
-        )
+    tmp_plot(
+        x="n_sigma",
+        y="frequentist_LR",
+        x_title="n_sigma Bayesian",
+        y_title="LR frequentist",
+        range_x=(-4, 18),
+        range_y=(-5, 200),
     )
-
-    # fig = px.scatter(
-    #     df,
-    #     x="D_max",
-    #     y="frequentist_D_max",
-    # )
