@@ -108,6 +108,7 @@ if utils.is_ipython():
     filename = filenames[2]  # EC-Ext-A27
     filename = filenames[3]  # KapK
     filename = filenames[4]  # Lok-75
+    filename = filenames[5]  # SJArg-1
     # filename = "data/input/n_sigma_test.txt"
 
     if False:
@@ -136,6 +137,10 @@ if utils.is_ipython():
         tax_id = 71240
         tax_id = 68336
         tax_id = 6072
+        tax_id = 7711
+        tax_id = 3193
+        tax_id = 58024
+        tax_id = 7898
         # tax_id = 85015 # BPN19-AR interesting
         tax_id = 237  # BPN19-AR interesting
         tax_id = -1

@@ -25,8 +25,8 @@ from scipy.stats import expon as sp_exponential
 
 
 # beta
-q_prior = (1, 4)  # mean = 0.2, shape = 4
-A_prior = (1, 4)  # mean = 0.2, shape = 4
+q_prior = (1, 4)  # mean = 0.2, shape = 5
+A_prior = (1, 4)  # mean = 0.2, shape = 5
 c_prior = (1.0, 9.0)  # mean = 0.1, shape = 10
 
 # exponential
@@ -35,7 +35,7 @@ phi_prior = (2, 1000)
 #%%
 
 
-def plot_beta(alpha, beta):
+def plot_beta_distribution(alpha, beta):
     fig, ax = plt.subplots()
 
     if isinstance(alpha, (int, float)) and isinstance(beta, (int, float)):
@@ -53,7 +53,61 @@ def plot_beta(alpha, beta):
     return fig, ax
 
 
-# plot_beta([0.8, 1, 1], [3.2, 4, 9])
+def plot_beta_distribution_mu_phi(mu, phi):
+    fig, ax = plt.subplots()
+
+    if isinstance(mu, (int, float)) and isinstance(phi, (int, float)):
+        mu = [mu]
+        phi = [phi]
+
+    for μ, φ in zip(mu, phi):
+        x = np.linspace(0, 1, 1000)
+        a, b = mu_phi_to_alpha_beta(μ, φ)
+        y = sp_beta.pdf(x, a=a, b=b)
+        label = f"μ={μ}, φ={φ}, α={a}, β={b}"
+        ax.plot(x, y, "-", label=label)
+    ax.legend()
+    return fig, ax
+
+
+# plot_beta_distribution_mu_phi([0.2, 0.1], [5, 10])
+
+# fig, ax = plt.subplots()
+# x = np.linspace(0, 1, 1000)
+# ax.plot(
+#     x,
+#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.2, phi=5)),
+#     "-",
+#     label=f"μ={0.2}, φ={5}",
+#     lw=2,
+#     color="C0",
+# )
+# ax.plot(
+#     x,
+#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.1, phi=10)),
+#     "-",
+#     label=f"μ={0.1}, φ={10}",
+#     lw=2,
+#     color="C3",
+# )
+# ax.plot(
+#     x,
+#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.2, phi=10)),
+#     "-",
+#     label=f"μ={0.2}, φ={10}",
+#     alpha=0.5,
+#     color="C1",
+# )
+# ax.plot(
+#     x,
+#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.1, phi=5)),
+#     "-",
+#     label=f"μ={0.1}, φ={5}",
+#     alpha=0.5,
+#     color="C2",
+# )
+# ax.legend()
+# ax.set(xlabel="x", ylabel="PDF", ylim=(0, 10))
 
 #%%
 
@@ -142,9 +196,6 @@ def log_prior(q, A, c, phi):
     lp += log_beta(c, a=c_prior[0], b=c_prior[1])
     lp += log_exponential(phi, loc=phi_prior[0], scale=phi_prior[1])
 
-    # if lp == np.inf:
-    #     lp = 1e20
-
     return -lp
 
 
@@ -153,6 +204,13 @@ def f_frequentist_PMD_posterior(q, A, c, phi, z, k, n):
     log_likelihood = f_frequentist_PMD(q, A, c, phi, z, k, n)
     log_p = log_prior(q, A, c, phi)
     return log_likelihood + log_p
+
+
+@njit
+def f_frequentist_PMD_posterior_q(q, A, c, phi, z, k, n):
+    log_likelihood = f_frequentist_PMD(q, A, c, phi, z, k, n)
+    log_prior_q = -log_beta(q, *q_prior)
+    return log_likelihood + log_prior_q
 
 
 def sample_from_param_grid(param_grid, random_state=None):
@@ -201,11 +259,17 @@ class FrequentistPMD:
         elif self.method == "posterior":
             return self.f_log_posterior(q, A, c, phi)
 
+        elif self.method == "posterior_q":
+            return self.f_log_posterior_q(q, A, c, phi)
+
     def f_log_likelihood(self, q, A, c, phi):
         return f_frequentist_PMD(q, A, c, phi, self.z, self.k, self.n)
 
     def f_log_posterior(self, q, A, c, phi):
         return f_frequentist_PMD_posterior(q, A, c, phi, self.z, self.k, self.n)
+
+    def f_log_posterior_q(self, q, A, c, phi):
+        return f_frequentist_PMD_posterior_q(q, A, c, phi, self.z, self.k, self.n)
 
     def _setup_minuit(self, m=None):
 
@@ -215,19 +279,29 @@ class FrequentistPMD:
         elif self.method == "posterior":
             f = self.f_log_posterior
 
+        elif self.method == "posterior_q":
+            f = self.f_log_posterior_q
+
         if m is None:
             self.m = Minuit(f, q=0.1, A=0.1, c=0.01, phi=1000)
         else:
             self.m = m
 
         if self.method == "likelihood":
-            eps = 0
+            self.m.limits["q"] = (0, 1)
+            self.m.limits["A"] = (0, 1)
+            self.m.limits["c"] = (0, 1)
         elif self.method == "posterior":
             eps = 1e-10
+            self.m.limits["q"] = (0 + eps, 1 - eps)
+            self.m.limits["A"] = (0 + eps, 1 - eps)
+            self.m.limits["c"] = (0 + eps, 1 - eps)
+        elif self.method == "posterior_q":
+            eps = 1e-10
+            self.m.limits["q"] = (0 + eps, 1 - eps)
+            self.m.limits["A"] = (0, 1)
+            self.m.limits["c"] = (0, 1)
 
-        self.m.limits["q"] = (0 + eps, 1 - eps)
-        self.m.limits["A"] = (0 + eps, 1 - eps)
-        self.m.limits["c"] = (0 + eps, 1 - eps)
         self.m.limits["phi"] = (2, None)
         self.m.errordef = Minuit.LIKELIHOOD
 

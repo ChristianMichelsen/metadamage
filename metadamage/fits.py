@@ -39,8 +39,8 @@ timeout_subsequent_fits = 60  # 1 minute
 
 
 # beta dist (alpha, beta)
-q_prior = (1, 4)  # mean = 0.2, shape = 4
-A_prior = (1, 4)  # mean = 0.2, shape = 4
+q_prior = (1, 4)  # mean = 0.2, shape = 5
+A_prior = (1, 4)  # mean = 0.2, shape = 5
 c_prior = (1.0, 9.0)  # mean = 0.1, shape = 10
 
 # exponential dist (loc, scale)
@@ -389,14 +389,28 @@ def add_noise_estimates(group, fit_result):
 
 def add_frequentist_fit_results(data, fit_result):
     # reload(fits_frequentist)
-    frequentist = fits_frequentist.Frequentist(data, method="posterior")
-    # frequentist = fits_frequentist.Frequentist(data, method='likelihood')
+    # frequentist_likelihood = fits_frequentist.Frequentist(data, method='likelihood')
+    # frequentist_posterior_q = fits_frequentist.Frequentist(data, method="posterior_q")
+    # frequentist_posterior = fits_frequentist.Frequentist(data, method="posterior")
 
     # if False:
     #     frequentist.PMD.m
     #     print(frequentist)
     #     frequentist.plot()
 
+    #     frequentist_likelihood.PMD.m
+    #     frequentist_posterior_q.PMD.m
+    #     frequentist_posterior.PMD.m
+
+    #     print(frequentist_likelihood)
+    #     print(frequentist_posterior_q)
+    #     print(frequentist_posterior)
+
+    #     frequentist_likelihood.plot()
+    #     frequentist_posterior_q.plot()
+    #     frequentist_posterior.plot()
+
+    frequentist = fits_frequentist.Frequentist(data, method="posterior_q")
     for var in ["D_max", "A", "q", "c", "phi", "LR", "LR_P", "LR_n_sigma", "valid"]:
         fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
 
