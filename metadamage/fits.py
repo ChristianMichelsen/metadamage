@@ -410,7 +410,7 @@ def add_frequentist_fit_results(data, fit_result):
     #     frequentist_posterior_q.plot()
     #     frequentist_posterior.plot()
 
-    frequentist = fits_frequentist.Frequentist(data, method="posterior_q")
+    frequentist = fits_frequentist.Frequentist(data, method="likelihood")
     for var in ["D_max", "A", "q", "c", "phi", "LR", "LR_P", "LR_n_sigma", "valid"]:
         fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
 
