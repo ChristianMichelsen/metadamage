@@ -57,7 +57,7 @@ def model_PMD(z, N, y=None):
     c = numpyro.sample("c", dist.Beta(c_prior[0], c_prior[1]))
     # Dz = numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c)
     Dz = jnp.clip(numpyro.deterministic("Dz", A * (1 - q) ** (z - 1) + c), 0, 1)
-    D_max = numpyro.deterministic("D_max", A + c)  # pylint: disable=unused-variable
+    # D_max = numpyro.deterministic("D_max", A)  # pylint: disable=unused-variable
 
     delta = numpyro.sample("delta", dist.Exponential(1 / phi_prior[1]))
     phi = numpyro.deterministic("phi", delta + phi_prior[0])
@@ -70,7 +70,7 @@ def model_PMD(z, N, y=None):
 
 def model_null(z, N, y=None):
     q = numpyro.sample("q", dist.Beta(c_prior[0], c_prior[1]))  # mean = 0.2, shape = 4
-    D_max = numpyro.deterministic("D_max", q)
+    # D_max = numpyro.deterministic("D_max", q)
     delta = numpyro.sample("delta", dist.Exponential(1 / phi_prior[1]))
     phi = numpyro.deterministic("phi", delta + phi_prior[0])
     numpyro.sample("obs", dist.BetaBinomial(q * phi, (1 - q) * phi, N), obs=y)
@@ -97,12 +97,12 @@ def is_model_PMD(model):
 
 @jax.jit
 def _get_posterior_PMD(rng_key, samples, *args, **kwargs):
-    return Predictive(model_PMD, samples)(rng_key, *args, **kwargs)["obs"]
+    return Predictive(model_PMD, samples)(rng_key, *args, **kwargs)
 
 
 @jax.jit
 def _get_posterior_null(rng_key, samples, *args, **kwargs):
-    return Predictive(model_null, samples)(rng_key, *args, **kwargs)["obs"]
+    return Predictive(model_null, samples)(rng_key, *args, **kwargs)
 
 
 def get_posterior_predictive(mcmc, data):
@@ -115,18 +115,34 @@ def get_posterior_predictive(mcmc, data):
         return _get_posterior_null(rng_key, posterior_samples, **data_no_y)
 
 
+def get_posterior_predictive_obs(mcmc, data):
+    return get_posterior_predictive(mcmc, data)["obs"]
+
+
 #%%
 
 
-def get_y_average_and_hpdi(mcmc, data, func=np.median, return_hpdi=True):
+def compute_posterior(
+    mcmc, data, func_avg=np.mean, func_dispersion=lambda x: np.std(x, axis=0)
+):
     """func = central tendency function, e.g. np.mean or np.median"""
     posterior_predictive = get_posterior_predictive(mcmc, data)
-    predictions_fraction = posterior_predictive / data["N"]
-    y_average = func(predictions_fraction, axis=0)
-    if not return_hpdi:
-        return y_average
-    y_hpdi = numpyro.diagnostics.hpdi(predictions_fraction, prob=0.68)
-    return y_average, y_hpdi
+    predictions_fraction = posterior_predictive["obs"] / data["N"]
+    y_average = func_avg(predictions_fraction, axis=0)
+    # y_dispersion = numpyro.diagnostics.hpdi(predictions_fraction, prob=0.68)
+    y_dispersion = func_dispersion(predictions_fraction)
+    return y_average, y_dispersion
+
+
+def compute_D_max(mcmc, data):
+    posterior = get_posterior_predictive(mcmc, data)
+    c = mcmc.get_samples()["c"]
+    f = posterior["obs"] / data["N"]
+    f = f[:, 0]
+    D_max_samples = f - c
+    D_max_mu = np.mean(D_max_samples).item()
+    D_max_std = np.std(D_max_samples).item()
+    return {"mu": D_max_mu, "std": D_max_std}
 
 
 #%%
@@ -239,8 +255,8 @@ def compute_assymmetry_combined_vs_forwardreverse(
 def compute_fit_results(
     mcmc_PMD,
     mcmc_null,
-    mcmc_PMD_forward_reverse,
-    mcmc_null_forward_reverse,
+    # mcmc_PMD_forward_reverse=None,
+    # mcmc_null_forward_reverse=None,
     data,
     group,
 ):
@@ -254,165 +270,162 @@ def compute_fit_results(
     fit_result["tax_name"] = group["tax_name"].iloc[0]
     fit_result["tax_rank"] = group["tax_rank"].iloc[0]
 
-    # y_frac = y/N, on the first position
-    y_frac_median, y_frac_hpdi = get_y_average_and_hpdi(mcmc_PMD, data, func=np.median)
-    fit_result["D_max"] = y_frac_median[0].item()
+    add_frequentist_fit_results(data, fit_result)
+
+    D_max = compute_D_max(mcmc_PMD, data)
+    fit_result["Bayesian_D_max"] = D_max["mu"]
+    fit_result["Bayesian_D_max_std"] = D_max["std"]
 
     n_sigma = compute_n_sigma(d_results_PMD, d_results_null)
-    fit_result["n_sigma"] = n_sigma.item()
-
-    # waic_weights = compute_waic_weight(d_results_PMD, d_results_null)
-    # fit_result["waic_weight"] = waic_weights[0]
-    # fit_result["waic_weight_null"] = waic_weights[1]
-
-    # y_frac = y/N, on the first position, HPDIs
-    fit_result["D_max_lower_hpdi"] = y_frac_hpdi[0, 0].item()
-    fit_result["D_max_upper_hpdi"] = y_frac_hpdi[1, 0].item()
-
-    # marginalized values:
-
-    # probability of a single succes
-    fit_result["q_mean"] = get_mean_of_variable(mcmc_PMD, "q")
-    # concentration or shape of beta/bino
-    fit_result["concentration_mean"] = get_mean_of_variable(mcmc_PMD, "phi")
-    # marginalized D_max
-    fit_result["D_max_marginalized_mean"] = get_mean_of_variable(mcmc_PMD, "D_max")
+    fit_result["Bayesian_n_sigma"] = n_sigma.item()
+    fit_result["Bayesian_A"] = get_mean_of_variable(mcmc_PMD, "A")
+    fit_result["Bayesian_q"] = get_mean_of_variable(mcmc_PMD, "q")
+    fit_result["Bayesian_c"] = get_mean_of_variable(mcmc_PMD, "c")
+    fit_result["Bayesian_phi"] = get_mean_of_variable(mcmc_PMD, "phi")
 
     fit_result["N_alignments"] = group.N_alignments.iloc[0]
-
     fit_result["N_z1_forward"] = data["N"][0]
     fit_result["N_z1_reverse"] = data["N"][15]
-
     fit_result["N_sum_forward"] = data["N"][:15].sum()
     fit_result["N_sum_reverse"] = data["N"][15:].sum()
     fit_result["N_sum_total"] = data["N"].sum()
-
     fit_result["y_sum_forward"] = data["y"][:15].sum()
     fit_result["y_sum_reverse"] = data["y"][15:].sum()
     fit_result["y_sum_total"] = data["y"].sum()
 
-    add_assymetry_results_to_fit_results(
-        mcmc_PMD_forward_reverse,
-        mcmc_null_forward_reverse,
-        data,
-        fit_result,
-        d_results_PMD,
-    )
+    # add_assymetry_results_to_fit_results(
+    #     mcmc_PMD_forward_reverse,
+    #     mcmc_null_forward_reverse,
+    #     data,
+    #     fit_result,
+    #     d_results_PMD,
+    # )
 
-    add_noise_estimates(group, fit_result)
-
-    add_frequentist_fit_results(data, fit_result)
+    # add_noise_estimates(group, fit_result)
 
     return fit_result
 
 
-def add_assymetry_results_to_fit_results(
-    mcmc_PMD_forward_reverse,
-    mcmc_null_forward_reverse,
-    data,
-    fit_result,
-    d_results_PMD,
-):
-    """computes the assymetry between a fit to forward data and reverse data
-    the assymmetry is here defined as the n_sigma (WAIC) between the two fits
-    """
+# def add_assymetry_results_to_fit_results(
+#     mcmc_PMD_forward_reverse,
+#     mcmc_null_forward_reverse,
+#     data,
+#     fit_result,
+#     d_results_PMD,
+# ):
+#     """computes the assymetry between a fit to forward data and reverse data
+#     the assymmetry is here defined as the n_sigma (WAIC) between the two fits
+#     """
 
-    # FORWARD
+#     # FORWARD
 
-    data_forward = {key: val[data["z"] > 0] for key, val in data.items()}
-    fit_mcmc(mcmc_PMD_forward_reverse, data_forward)
-    fit_mcmc(mcmc_null_forward_reverse, data_forward)
-    d_results_PMD_forward = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_forward)
-    d_results_null_forward = get_lppd_and_waic(mcmc_null_forward_reverse, data_forward)
+#     data_forward = {key: val[data["z"] > 0] for key, val in data.items()}
+#     fit_mcmc(mcmc_PMD_forward_reverse, data_forward)
+#     fit_mcmc(mcmc_null_forward_reverse, data_forward)
+#     d_results_PMD_forward = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_forward)
+#     d_results_null_forward = get_lppd_and_waic(mcmc_null_forward_reverse, data_forward)
 
-    fit_result["n_sigma_forward"] = compute_n_sigma(
-        d_results_PMD_forward,
-        d_results_null_forward,
-    )
+#     fit_result["n_sigma_forward"] = compute_n_sigma(
+#         d_results_PMD_forward,
+#         d_results_null_forward,
+#     )
 
-    fit_result["D_max_forward"] = get_y_average_and_hpdi(
-        mcmc_PMD_forward_reverse,
-        data_forward,
-        func=np.median,
-        return_hpdi=False,
-    )[0]
+#     fit_result["D_max_forward"] = compute_posterior(
+#         mcmc_PMD_forward_reverse,
+#         data_forward,
+#         func=np.median,
+#         return_hpdi=False,
+#     )[0]
 
-    fit_result["q_mean_forward"] = get_mean_of_variable(mcmc_PMD_forward_reverse, "q")
+#     fit_result["q_mean_forward"] = get_mean_of_variable(mcmc_PMD_forward_reverse, "q")
 
-    # REVERSE
+#     # REVERSE
 
-    data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
-    fit_mcmc(mcmc_PMD_forward_reverse, data_reverse)
-    fit_mcmc(mcmc_null_forward_reverse, data_reverse)
-    d_results_PMD_reverse = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_reverse)
-    d_results_null_reverse = get_lppd_and_waic(mcmc_null_forward_reverse, data_reverse)
+#     data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
+#     fit_mcmc(mcmc_PMD_forward_reverse, data_reverse)
+#     fit_mcmc(mcmc_null_forward_reverse, data_reverse)
+#     d_results_PMD_reverse = get_lppd_and_waic(mcmc_PMD_forward_reverse, data_reverse)
+#     d_results_null_reverse = get_lppd_and_waic(mcmc_null_forward_reverse, data_reverse)
 
-    fit_result["n_sigma_reverse"] = compute_n_sigma(
-        d_results_PMD_reverse,
-        d_results_null_reverse,
-    )
-    fit_result["D_max_reverse"] = get_y_average_and_hpdi(
-        mcmc_PMD_forward_reverse,
-        data_forward,
-        func=np.median,
-        return_hpdi=False,
-    )[0]
+#     fit_result["n_sigma_reverse"] = compute_n_sigma(
+#         d_results_PMD_reverse,
+#         d_results_null_reverse,
+#     )
+#     fit_result["D_max_reverse"] = compute_posterior(
+#         mcmc_PMD_forward_reverse,
+#         data_forward,
+#         func=np.median,
+#         return_hpdi=False,
+#     )[0]
 
-    fit_result["q_mean_reverse"] = get_mean_of_variable(mcmc_PMD_forward_reverse, "q")
+#     fit_result["q_mean_reverse"] = get_mean_of_variable(mcmc_PMD_forward_reverse, "q")
 
-    fit_result["asymmetry"] = compute_assymmetry_combined_vs_forwardreverse(
-        d_results_PMD,
-        d_results_PMD_forward,
-        d_results_PMD_reverse,
-    )
+#     fit_result["asymmetry"] = compute_assymmetry_combined_vs_forwardreverse(
+#         d_results_PMD,
+#         d_results_PMD_forward,
+#         d_results_PMD_reverse,
+#     )
 
 
-def add_noise_estimates(group, fit_result):
+# def add_noise_estimates(group, fit_result):
 
-    base_columns = [col for col in group.columns if len(col) == 2 and col[0] != col[1]]
+#     base_columns = [col for col in group.columns if len(col) == 2 and col[0] != col[1]]
 
-    f_ij = group[base_columns].copy()
+#     f_ij = group[base_columns].copy()
 
-    f_ij.loc[f_ij.index[:15], "CT"] = np.nan
-    f_ij.loc[f_ij.index[15:], "GA"] = np.nan
+#     f_ij.loc[f_ij.index[:15], "CT"] = np.nan
+#     f_ij.loc[f_ij.index[15:], "GA"] = np.nan
 
-    f_mean = f_ij.mean(axis=0)
-    noise_z = f_ij / f_mean
+#     f_mean = f_ij.mean(axis=0)
+#     noise_z = f_ij / f_mean
 
-    # with np.errstate(divide="ignore", invalid="ignore"):
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", r"Degrees of freedom <= 0 for slice")
-        fit_result["normalized_noise"] = np.nanstd(noise_z.values)
-        fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
-        fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
+#     # with np.errstate(divide="ignore", invalid="ignore"):
+#     with warnings.catch_warnings():
+#         warnings.filterwarnings("ignore", r"Degrees of freedom <= 0 for slice")
+#         fit_result["normalized_noise"] = np.nanstd(noise_z.values)
+#         fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
+#         fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
 
 
 def add_frequentist_fit_results(data, fit_result):
     # reload(fits_frequentist)
     # frequentist_likelihood = fits_frequentist.Frequentist(data, method='likelihood')
-    # frequentist_posterior_q = fits_frequentist.Frequentist(data, method="posterior_q")
     # frequentist_posterior = fits_frequentist.Frequentist(data, method="posterior")
 
-    # if False:
-    #     frequentist.PMD.m
-    #     print(frequentist)
-    #     frequentist.plot()
+    vars_to_keep = ["A", "q", "c", "phi", "rho_Ac", "LR", "LR_P", "LR_n_sigma", "valid"]
 
-    #     frequentist_likelihood.PMD.m
-    #     frequentist_posterior_q.PMD.m
-    #     frequentist_posterior.PMD.m
-
-    #     print(frequentist_likelihood)
-    #     print(frequentist_posterior_q)
-    #     print(frequentist_posterior)
-
-    #     frequentist_likelihood.plot()
-    #     frequentist_posterior_q.plot()
-    #     frequentist_posterior.plot()
-
-    frequentist = fits_frequentist.Frequentist(data, method="likelihood")
-    for var in ["D_max", "A", "q", "c", "phi", "LR", "LR_P", "LR_n_sigma", "valid"]:
+    frequentist = fits_frequentist.Frequentist(data, method="posterior")
+    fit_result["frequentist_D_max"] = frequentist.D_max["mu"]
+    fit_result["frequentist_D_max_std"] = frequentist.D_max["std"]
+    for var in vars_to_keep:
         fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
+    # frequentist.PMD.m
+    # print(frequentist)
+    # frequentist.plot()
+
+    data_forward = {key: val[data["z"] > 0] for key, val in data.items()}
+    frequentist_forward = fits_frequentist.Frequentist(data_forward, method="posterior")
+    fit_result["frequentist_forward_D_max"] = frequentist_forward.D_max["mu"]
+    fit_result["frequentist_forward_D_max_std"] = frequentist_forward.D_max["std"]
+    for var in vars_to_keep:
+        fit_result[f"frequentist_forward_{var}"] = getattr(frequentist_forward, var)
+    # print(frequentist_forward)
+    # frequentist_forward.plot()
+
+    data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
+    frequentist_reverse = fits_frequentist.Frequentist(data_reverse, method="posterior")
+    fit_result["frequentist_reverse_D_max"] = frequentist_reverse.D_max["mu"]
+    fit_result["frequentist_reverse_D_max_std"] = frequentist_reverse.D_max["std"]
+    for var in vars_to_keep:
+        fit_result[f"frequentist_reverse_{var}"] = getattr(frequentist_reverse, var)
+    # print(frequentist_reverse)
+    # frequentist_reverse.plot()
+
+    numerator = frequentist_forward.D_max["mu"] - frequentist_reverse.D_max["mu"]
+    delimiter = np.sqrt(
+        frequentist_forward.D_max["std"] ** 2 + frequentist_reverse.D_max["mu"] ** 2
+    )
+    fit_result["assymmetry"] = numerator / delimiter
 
 
 #%%
@@ -469,8 +482,8 @@ def fit_single_group_without_timeout(
     cfg,
     mcmc_PMD,
     mcmc_null,
-    mcmc_PMD_forward_reverse,
-    mcmc_null_forward_reverse,
+    # mcmc_PMD_forward_reverse=None,
+    # mcmc_null_forward_reverse=None,
 ):
 
     data = group_to_numpyro_data(group, cfg)
@@ -478,30 +491,38 @@ def fit_single_group_without_timeout(
     fit_mcmc(mcmc_null, data)
     # mcmc_PMD.print_summary(prob=0.68)
 
-    y_median_PMD, y_hpdi_PMD = get_y_average_and_hpdi(
-        mcmc_PMD,
-        data,
-        func=np.median,
-    )
+    # y_median_PMD, y_hpdi_PMD = compute_posterior(
+    #     mcmc_PMD,
+    #     data,
+    #     func=np.median,
+    # )
+
+    y_PMD_mean, y_PMD_std = compute_posterior(mcmc_PMD, data)
 
     fit_result = compute_fit_results(
         mcmc_PMD,
         mcmc_null,
-        mcmc_PMD_forward_reverse,
-        mcmc_null_forward_reverse,
+        # mcmc_PMD_forward_reverse,
+        # mcmc_null_forward_reverse,
         data,
         group,
     )
 
+    # d_fit = {
+    #     "median": y_median_PMD,
+    #     "hpdi": y_hpdi_PMD,
+    #     "fit_result": fit_result,
+    # }
+
     d_fit = {
-        "median": y_median_PMD,
-        "hpdi": y_hpdi_PMD,
+        "mean": y_PMD_mean,
+        "std": y_PMD_std,
         "fit_result": fit_result,
     }
 
     # if False:
-    #     posterior_predictive_PMD = get_posterior_predictive(mcmc_PMD, data)
-    #     posterior_predictive_null = get_posterior_predictive(mcmc_null, data)
+    #     posterior_predictive_PMD = get_posterior_predictive_obs(mcmc_PMD, data)
+    #     posterior_predictive_null = get_posterior_predictive_obs(mcmc_null, data)
     #     use_last_state_as_warmup_state(mcmc_PMD)
     #     use_last_state_as_warmup_state(mcmc_null)
 
@@ -517,8 +538,8 @@ def compute_fits_seriel(df_counts, mcmc_kwargs, cfg):
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
-    mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
-    mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
+    # mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
+    # mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
     groupby = df_counts.groupby("tax_id", sort=False, observed=True)
     d_fits = {}
@@ -550,8 +571,8 @@ def compute_fits_seriel(df_counts, mcmc_kwargs, cfg):
                     cfg,
                     mcmc_PMD,
                     mcmc_null,
-                    mcmc_PMD_forward_reverse,
-                    mcmc_null_forward_reverse,
+                    # mcmc_PMD_forward_reverse,
+                    # mcmc_null_forward_reverse,
                 )
 
                 d_fits[tax_id] = d_fit
@@ -569,8 +590,8 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
 
     mcmc_PMD = init_mcmc(model_PMD, **mcmc_kwargs)
     mcmc_null = init_mcmc(model_null, **mcmc_kwargs)
-    mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
-    mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
+    # mcmc_PMD_forward_reverse = init_mcmc(model_PMD, **mcmc_kwargs)
+    # mcmc_null_forward_reverse = init_mcmc(model_null, **mcmc_kwargs)
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
     fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(
@@ -593,8 +614,8 @@ def worker(queue_in, queue_out, mcmc_kwargs, cfg):
                 cfg,
                 mcmc_PMD,
                 mcmc_null,
-                mcmc_PMD_forward_reverse,
-                mcmc_null_forward_reverse,
+                # mcmc_PMD_forward_reverse,
+                # mcmc_null_forward_reverse,
             )
 
             queue_out.put((tax_id, d_fit))
@@ -677,16 +698,20 @@ def make_df_fit_predictions_from_d_fits(d_fits, cfg):
     d_fit_predictions = []
     for key, d_val in d_fits.items():
 
-        median = d_val["median"]
-        hpdi = d_val["hpdi"]
-        tax_id = key
+        # median = d_val["median"]
+        # hpdi = d_val["hpdi"]
+        # mean = d_val["mean"]
+        # std = d_val["std"]
+        # tax_id = key
 
         data = {
-            "tax_id": tax_id,
+            "tax_id": key,
             "position": position,
-            "median": median,
-            "hdpi_lower": hpdi[0, :],
-            "hdpi_upper": hpdi[1, :],
+            "mean": d_val["mean"],
+            "std": d_val["std"],
+            # "median": median,
+            # "hdpi_lower": hpdi[0, :],
+            # "hdpi_upper": hpdi[1, :],
         }
 
         df_tmp = pd.DataFrame(data=data)

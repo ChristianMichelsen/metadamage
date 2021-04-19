@@ -35,9 +35,10 @@ def load_parquet_file_memoized(pathname, date_string):
 
 
 class FitResults:
-    def __init__(self, folder, verbose=False, very_verbose=False):
+    def __init__(self, folder, verbose=False, very_verbose=False, use_memoization=True):
         self.folder = Path(folder)
         self.verbose = verbose
+        self.use_memoization = use_memoization
 
         times = {}
 
@@ -75,9 +76,13 @@ class FitResults:
         return io.Parquet(self.folder / "counts").load(shortname, columns=columns)
 
     def _load_parquet_file(self, key):
-        date_string = datetime.now().strftime("%Y-%d-%m")
-        df = load_parquet_file_memoized(self.folder / key, date_string)
-        return df
+        if self.use_memoization:
+            date_string = datetime.now().strftime("%Y-%d-%m")
+            df = load_parquet_file_memoized(self.folder / key, date_string)
+            return df
+        else:
+            df = io.Parquet(self.folder / key).load()
+            return df
 
     def _load_df_fit_results(self):
         df = self._load_parquet_file("fit_results")
@@ -125,12 +130,12 @@ class FitResults:
                     range_forward = ranges[column_forward]
                     range_reverse = ranges[column_reverse]
 
-                    if column == "n_sigma":
+                    if column == "frequentist_LR":
                         paddding = 1
-                    elif column == "D_max":
+                    elif column == "frequentist_D_max":
                         paddding = 0.1
-                    elif column == "noise":
-                        paddding = 1
+                    # elif column == "noise":
+                    # paddding = 1
 
                     if range_forward[0] < range_[0] - paddding:
                         range_forward[0] = range_[0] - paddding
@@ -262,67 +267,89 @@ class FitResults:
 
     def _set_hover_info(self):
 
-        self.custom_data_columns = [
-            "shortname",
-            "tax_name",
-            "tax_rank",
-            "tax_id",
-            "n_sigma",
-            "D_max",
-            "q_mean",
-            "concentration_mean",
-            "asymmetry",
-            "normalized_noise",
-            "N_alignments",
-            "N_sum_total",
-            "y_sum_total",
-        ]
+        columns = list(self.df_fit_results.columns)
 
-        self.hovertemplate = (
-            "<b>%{customdata[0]}</b><br><br>"
-            "<b>Tax</b>: <br>"
-            "    Name: %{customdata[1]} <br>"
-            "    Rank: %{customdata[2]} <br>"
-            "    ID:   %{customdata[3]} <br><br>"
-            "<b>Fit Results</b>: <br>"
-            "    n sigma:  %{customdata[4]:9.2f} <br>"
-            "    D max:    %{customdata[5]:9.2f} <br>"
-            "    q:        %{customdata[6]:9.2f} <br>"
-            "    phi:      %{customdata[7]:9.3s} <br>"
-            "    asymmetry:%{customdata[8]:9.2f} <br>"
-            "    noise:    %{customdata[9]:9.2f} <br><br>"
-            "<b>Counts</b>: <br>"
-            "    N alignments:%{customdata[10]:6.3s} <br>"
-            "    N sum total: %{customdata[11]:6.3s} <br>"
-            "    y sum total: %{customdata[12]:6.3s} <br>"
-            "<extra></extra>"
-        )
+        contains_Bayesian = any(["Bayesian" in column for column in columns])
+        contains_frequentist = any(["frequentist" in column for column in columns])
+
+        if contains_Bayesian and contains_frequentist:
+
+            self.custom_data_columns = [
+                "shortname",
+                "tax_name",
+                "tax_rank",
+                "tax_id",
+                # Frequentist fits
+                "frequentist_LR",
+                "frequentist_D_max",
+                "frequentist_D_max_std",
+                "frequentist_q",
+                "frequentist_phi",
+                # Bayesian Fits
+                "Bayesian_n_sigma",
+                "Bayesian_D_max",
+                "Bayesian_D_max_std",
+                "Bayesian_q",
+                "Bayesian_phi",
+                # Counts
+                "N_alignments",
+                "N_sum_total",
+                "y_sum_total",
+            ]
+
+            self.hovertemplate = (
+                "<b>%{customdata[0]}</b><br><br>"
+                "<b>Tax</b>: <br>"
+                "    Name: %{customdata[1]} <br>"
+                "    Rank: %{customdata[2]} <br>"
+                "    ID:   %{customdata[3]} <br><br>"
+                "<b>Frequentist Fit Results</b>: <br>"
+                "    LR:       %{customdata[4]:9.2f} <br><br>"
+                "    D max:    %{customdata[5]:9.2f} +/- %{customdata[6]:9.2f} <br>"
+                "    q:        %{customdata[7]:9.2f} <br>"
+                "    phi:      %{customdata[8]:9.3s} <br>"
+                "<b>Bayesian Fit Results</b>: <br>"
+                "    n sigma:  %{customdata[9]:9.2f} <br><br>"
+                "    D max:    %{customdata[10]:9.2f} <br>"
+                "    q:        %{customdata[11]:9.2f} <br>"
+                "    phi:      %{customdata[12]:9.3s} <br>"
+                # "    asymmetry:%{customdata[8]:9.2f} <br>"
+                # "    noise:    %{customdata[9]:9.2f} <br><br>"
+                "<b>Counts</b>: <br>"
+                "    N alignments:%{customdata[13]:6.3s} <br>"
+                "    N sum total: %{customdata[14]:6.3s} <br>"
+                "    y sum total: %{customdata[15]:6.3s} <br>"
+                "<extra></extra>"
+            )
+
+        else:
+            raise AssertionError(f"Not yet implemented.")
 
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
     def _set_columns_scatter(self):
         self.columns_scatter = [
-            "n_sigma",
-            "D_max",
+            "frequentist_LR",
+            "frequentist_D_max",
             "N_alignments_log10",
             "N_sum_total_log10",
-            "q_mean",
-            "concentration_mean",
-            "asymmetry",
-            "normalized_noise",
+            "frequentist_q",
+            "frequentist_phi",
+            # "asymmetry",
+            # "normalized_noise",
         ]
 
     def _set_labels(self):
 
         labels_list = [
-            r"$\large n_\sigma$",
+            r"$\large \lambda_\mathrm{LR}$",
             r"$\large D_\mathrm{max}$",
             r"$\large \log_{10} N_\mathrm{alignments}$",
             r"$\large \log_{10} N_\mathrm{sum}$",
             r"$\large \bar{q}$",
             r"$\large \bar{\phi}$",
-            r"$\large \alpha$",
-            r"$\large \mathrm{noise}$",
+            # r"$\large \alpha$",
+            # r"$\large \mathrm{noise}$",
         ]
 
         iterator = zip(self.columns_scatter, labels_list)
@@ -342,12 +369,12 @@ class FitResults:
 
     def _set_columns_scatter_forward_reverse(self):
         self.columns_scatter_forward_reverse = {
-            "n_sigma": r"$\large n_\sigma$",
-            "D_max": r"$\large D_\mathrm{max}$",
+            "frequentist_LR": r"$\large \lambda_\mathrm{LR}$",
+            "frequentist_D_max": r"$\large D_\mathrm{max}$",
             "N_z1": r"$\large N_{z=1}$",
             "N_sum": r"$\large N_\mathrm{sum}$",
             "y_sum": r"$\large y_\mathrm{sum}$",
-            "normalized_noise": r"$\large \mathrm{noise}$",
+            # "normalized_noise": r"$\large \mathrm{noise}$",
         }
 
     def iterate_over_scatter_columns_forward_reverse(self, N_cols):

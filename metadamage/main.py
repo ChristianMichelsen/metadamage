@@ -141,8 +141,10 @@ if utils.is_ipython():
         tax_id = 3193
         tax_id = 58024
         tax_id = 7898
-        # tax_id = 85015 # BPN19-AR interesting
-        tax_id = 237  # BPN19-AR interesting
+        tax_id = 2742  # Lok-75
+        tax_id = 22973  # KapK
+        tax_id = 9606  # SJ
+        tax_id = 6656  # SJ
         tax_id = -1
         group = utils.get_specific_tax_id(df_counts, tax_id=tax_id)
         data = fits.group_to_numpyro_data(group, cfg)
@@ -153,20 +155,19 @@ if utils.is_ipython():
 
     fit_results = dashboard.fit_results.FitResults(
         folder=Path("./data/out/"),
-        verbose=True,
-        very_verbose=False,
+        # verbose=True,
+        # very_verbose=False,
+        use_memoization=False,
     )
 
-    fig = dashboard.figures.plot_fit_results(fit_results)
-
-    x = x
-
-    # fit_results.set_marker_size(marker_transformation="sqrt", marker_size_max=30)
+    # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
     df = fit_results.df_fit_results
 
     import plotly.express as px
 
-    def tmp_plot(x, y, x_title, y_title, range_x=(0, 1), range_y=(0, 1)):
+    fig = dashboard.figures.plot_fit_results(fit_results)
+
+    def tmp_plot(x, y, x_title, y_title, range_x=(0, 1), range_y=(0, 1), savefig=True):
         fig = px.scatter(
             df,
             x=x,
@@ -204,22 +205,28 @@ if utils.is_ipython():
                 trace,
                 method="sqrt",
                 scale=20 / df.shortname.nunique(),
-                opacity_min=0.001,
-                opacity_max=0.8,
+                opacity_min=0.3,
+                opacity_max=0.95,
             )
         )
 
-        fig.write_html(f"./data/out/tmp_plots/plotly__{x}__{y}.html")
+        if savefig:
+            fig_name = f"./data/out/tmp_plots/plotly__{x}__{y}.html"
+            utils.init_parent_folder(fig_name)
+            fig.write_html(fig_name)
 
         return fig
 
+    savefig = False
+
     tmp_plot(
-        x="n_sigma",
-        y="D_max",
+        x="Bayesian_n_sigma",
+        y="Bayesian_D_max",
         x_title="n_sigma Bayesian",
         y_title="D_max Bayesian",
         range_x=(-4, 18),
         range_y=(0, 0.6),
+        savefig=savefig,
     )
 
     tmp_plot(
@@ -229,36 +236,72 @@ if utils.is_ipython():
         y_title="D_max frequentist",
         range_x=(-5, 200),
         range_y=(0, 0.6),
+        savefig=savefig,
     )
 
     tmp_plot(
-        x="D_max",
+        x="Bayesian_D_max",
         y="frequentist_D_max",
         x_title="D_max Bayesian",
         y_title="D_max Frequentist",
+        savefig=savefig,
     )
 
     tmp_plot(
-        x="q_mean",
+        x="Bayesian_q",
         y="frequentist_q",
         x_title="q Bayesian",
         y_title="q Frequentist",
+        savefig=savefig,
     )
 
     tmp_plot(
-        x="concentration_mean",
+        x="Bayesian_phi",
         y="frequentist_phi",
         x_title="phi Bayesian",
         y_title="phi Frequentist",
         range_x=(2, 15_000),
         range_y=(2, 15_000),
+        savefig=savefig,
     )
 
     tmp_plot(
-        x="n_sigma",
+        x="Bayesian_n_sigma",
         y="frequentist_LR",
         x_title="n_sigma Bayesian",
         y_title="LR frequentist",
         range_x=(-4, 18),
         range_y=(-5, 200),
+        savefig=savefig,
+    )
+
+    tmp_plot(
+        x="Bayesian_n_sigma",
+        y="frequentist_LR",
+        x_title="n_sigma Bayesian",
+        y_title="LR frequentist",
+        range_x=(-4, 18),
+        range_y=(-5, 200),
+        savefig=savefig,
+    )
+
+
+    tmp_plot(
+        x="frequentist_forward_D_max",
+        y="frequentist_reverse_D_max",
+        x_title="Forward D_max",
+        y_title="Reverse D_max",
+        range_x=(0, 0.6),
+        range_y=(0, 0.6),
+        savefig=savefig,
+    )
+
+    tmp_plot(
+        x="frequentist_forward_LR",
+        y="frequentist_reverse_LR",
+        x_title="Forward D_max",
+        y_title="Reverse D_max",
+        range_x=(-5, 200),
+        range_y=(-5, 200),
+        savefig=savefig,
     )

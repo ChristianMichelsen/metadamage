@@ -5,7 +5,7 @@ from iminuit import describe
 import matplotlib.pyplot as plt
 from scipy.special import erfinv, erf
 
-from scipy.stats import betabinom
+from scipy.stats import betabinom as sp_betabinom
 from iminuit import Minuit
 
 #%%
@@ -151,7 +151,7 @@ def f_frequentist_PMD(q, A, c, phi, z, k, n):
     a = Dz * phi
     b = (1 - Dz) * phi
     return -log_betabinom_PMD(k=k, n=n, a=a, b=b).sum()
-    # return -betabinom.logpmf(k=k, n=n, a=a, b=b).sum()
+    # return -sp_betabinom.logpmf(k=k, n=n, a=a, b=b).sum()
 
 
 @njit
@@ -206,11 +206,11 @@ def f_frequentist_PMD_posterior(q, A, c, phi, z, k, n):
     return log_likelihood + log_p
 
 
-@njit
-def f_frequentist_PMD_posterior_q(q, A, c, phi, z, k, n):
-    log_likelihood = f_frequentist_PMD(q, A, c, phi, z, k, n)
-    log_prior_q = -log_beta(q, *q_prior)
-    return log_likelihood + log_prior_q
+# @njit
+# def f_frequentist_PMD_posterior_q(q, A, c, phi, z, k, n):
+#     log_likelihood = f_frequentist_PMD(q, A, c, phi, z, k, n)
+#     log_prior_q = -log_beta(q, *q_prior)
+#     return log_likelihood + log_prior_q
 
 
 def sample_from_param_grid(param_grid, random_state=None):
@@ -259,17 +259,11 @@ class FrequentistPMD:
         elif self.method == "posterior":
             return self.f_log_posterior(q, A, c, phi)
 
-        elif self.method == "posterior_q":
-            return self.f_log_posterior_q(q, A, c, phi)
-
     def f_log_likelihood(self, q, A, c, phi):
         return f_frequentist_PMD(q, A, c, phi, self.z, self.k, self.n)
 
     def f_log_posterior(self, q, A, c, phi):
         return f_frequentist_PMD_posterior(q, A, c, phi, self.z, self.k, self.n)
-
-    def f_log_posterior_q(self, q, A, c, phi):
-        return f_frequentist_PMD_posterior_q(q, A, c, phi, self.z, self.k, self.n)
 
     def _setup_minuit(self, m=None):
 
@@ -278,9 +272,6 @@ class FrequentistPMD:
 
         elif self.method == "posterior":
             f = self.f_log_posterior
-
-        elif self.method == "posterior_q":
-            f = self.f_log_posterior_q
 
         if m is None:
             self.m = Minuit(f, q=0.1, A=0.1, c=0.01, phi=1000)
@@ -291,16 +282,12 @@ class FrequentistPMD:
             self.m.limits["q"] = (0, 1)
             self.m.limits["A"] = (0, 1)
             self.m.limits["c"] = (0, 1)
+
         elif self.method == "posterior":
             eps = 1e-10
             self.m.limits["q"] = (0 + eps, 1 - eps)
             self.m.limits["A"] = (0 + eps, 1 - eps)
             self.m.limits["c"] = (0 + eps, 1 - eps)
-        elif self.method == "posterior_q":
-            eps = 1e-10
-            self.m.limits["q"] = (0 + eps, 1 - eps)
-            self.m.limits["A"] = (0, 1)
-            self.m.limits["c"] = (0, 1)
 
         self.m.limits["phi"] = (2, None)
         self.m.errordef = Minuit.LIKELIHOOD
@@ -348,6 +335,42 @@ class FrequentistPMD:
     def minos(self):
         self.m.minos()
         return self
+
+    @property
+    def A(self):
+        return self.m.values["A"]
+
+    @property
+    def q(self):
+        return self.m.values["q"]
+
+    @property
+    def c(self):
+        return self.m.values["c"]
+
+    @property
+    def phi(self):
+        return self.m.values["phi"]
+
+    @property
+    def D_max(self):
+
+        A = self.A
+        # q = self.q
+        c = self.c
+        phi = self.phi
+
+        Dz_z1 = A + c
+        a = Dz_z1 * phi
+        b = (1 - Dz_z1) * phi
+
+        dist = sp_betabinom(n=self.n[0], a=a, b=b)
+
+        # mu = dist.mean() / frequentist.n[0] - c
+        mu = A
+        std = np.sqrt(dist.var()) / self.n[0]
+
+        return {"mu": mu, "std": std}
 
 
 # f = FrequentistPMD(data, method="posterior").fit()
@@ -427,6 +450,10 @@ class FrequentistNull:
     def log_likelihood(self):
         return f_frequentist_null(*self.m.values, self.k, self.n)
 
+    @property
+    def c(self):
+        return self.m.values["c"]
+
 
 #%%
 
@@ -495,38 +522,38 @@ class Frequentist:
         return f"Frequentist(data, method={self.method})"
 
     def __str__(self):
-        s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f}, D_max = {self.D_max:.3f}, valid = {self.valid} \n"
+        s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f} \n"
+        s += f"D_max = {self.D_max['mu']:.3f} +/- {self.D_max['std']:.3f}, valid = {self.valid}\n"
         s += f"LR = {self.LR:.3f}, LR as prob = {self.LR_P:.4%}, LR as n_sigma = {self.LR_n_sigma:.3f}"
         return s
 
     @property
-    def D_max_with_sigma(self):
-        mu = self.PMD.m.values["A"] + self.PMD.m.values["c"]
-        sigma2 = self.PMD.m.errors["A"] ** 2 + self.PMD.m.errors["c"] ** 2
-        sigma2 += 2 * self.PMD.m.covariance["A", "c"]
-        sigma = np.sqrt(sigma2)
-        return mu, sigma
-
-    @property
     def D_max(self):
-        D_max = self.PMD.m.values["A"] + self.PMD.m.values["c"]
-        return D_max
+        return self.PMD.D_max
 
     @property
     def A(self):
-        return self.PMD.m.values["A"]
+        return self.PMD.A
 
     @property
     def q(self):
-        return self.PMD.m.values["q"]
+        return self.PMD.q
 
     @property
     def c(self):
-        return self.PMD.m.values["c"]
+        return self.PMD.c
 
     @property
     def phi(self):
-        return self.PMD.m.values["phi"]
+        return self.PMD.phi
+
+    @property
+    def correlation(self):
+        return self.PMD.m.covariance.correlation()
+
+    @property
+    def rho_Ac(self):
+        return self.correlation['A', 'c']
 
     def plot(self, N_points=1000):
 
@@ -535,36 +562,52 @@ class Frequentist:
         c = self.c
         phi = self.phi
 
-        zz = np.linspace(1, 15, N_points)
+        zz = self.z[:15]
+        N = self.n[:15]
+
         Dz = A * (1 - q) ** (np.abs(zz) - 1) + c
 
         a = Dz * phi
         b = (1 - Dz) * phi
 
+        dist = sp_betabinom(n=N, a=a, b=b)
+        std = np.sqrt(dist.var()) / N
+
         # Confidence interval with equal areas around the median (?mean?)
-        intervals1 = sp_beta.interval(alpha=n_sigma_to_prob(n_sigma=1), a=a, b=b)
-        intervals2 = sp_beta.interval(alpha=n_sigma_to_prob(n_sigma=2), a=a, b=b)
+        # intervals1 = dist.interval(alpha=n_sigma_to_prob(n_sigma=1), a=a, b=b)
+        # intervals2 = dist.interval(alpha=n_sigma_to_prob(n_sigma=2), a=a, b=b)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
-        ax.plot(self.z[:15], self.k[:15] / self.n[:15], "ok", label="Data Forward")
+        ax.plot(self.z[:15], self.k[:15] / self.n[:15], "sk", label="Data Forward")
         ax.plot(-self.z[15:], self.k[15:] / self.n[15:], "xk", label="Data Reverse")
 
-        ax.plot(zz, Dz, color="C0", lw=2, label="mean")
+        ax.errorbar(
+            zz,
+            Dz,
+            std,
+            fmt="o",
+            color="C2",
+            elinewidth=2,
+            capsize=5,
+            capthick=2,
+            lw=2,
+            label="Fit",
+        )
 
-        for i, intervals in enumerate([intervals1, intervals2]):
+        # for i, intervals in enumerate([intervals1, intervals2]):
 
-            ax.fill_between(
-                zz,
-                intervals[0],
-                intervals[1],
-                color="C2",
-                alpha=0.1,
-                label=f"CI, {i+1}σ, equal",
-            )
+        #     ax.fill_between(
+        #         zz,
+        #         intervals[0],
+        #         intervals[1],
+        #         color="C2",
+        #         alpha=0.1,
+        #         label=f"CI, {i+1}σ, equal",
+        #     )
 
-            ax.plot(zz, intervals1[0], color="C2", ls="--")
-            ax.plot(zz, intervals1[1], color="C2", ls="--")
+        #     ax.plot(zz, intervals1[0], color="C2", ls="--")
+        #     ax.plot(zz, intervals1[1], color="C2", ls="--")
 
         # if False:
 
