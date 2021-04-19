@@ -53,6 +53,7 @@ class Config:
     substitution_bases_forward: str
     substitution_bases_reverse: str
     #
+    bayesian: bool
     forced: bool
     version: str
     dask_port: int
@@ -173,6 +174,7 @@ class Config:
             "Substitution bases reverse", str(self.substitution_bases_reverse)
         )
 
+        my_table.add_row("Bayesian", str(self.bayesian))
         my_table.add_row("Forced", str(self.forced))
         my_table.add_row("Version", self.version)
 

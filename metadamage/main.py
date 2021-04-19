@@ -63,7 +63,7 @@ def main(filenames, cfg):
             if not utils.is_df_counts_accepted(df_counts, cfg):
                 continue
 
-            df_fit_results, df_fit_predictions = fits.get_fits(df_counts, cfg)
+            df_fit_results = fits.get_fits(df_counts, cfg)
 
             progress.refresh()
             progress.advance(task_id_overall)
@@ -92,6 +92,7 @@ if utils.is_ipython():
         min_y_sum=10,
         substitution_bases_forward=cli_utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=cli_utils.SubstitutionBases.GA.value,
+        bayesian=True,
         forced=False,
         version="0.0.0",
         dask_port=8787,
@@ -149,6 +150,9 @@ if utils.is_ipython():
         group = utils.get_specific_tax_id(df_counts, tax_id=tax_id)
         data = fits.group_to_numpyro_data(group, cfg)
 
+    x = x
+
+    # First Party
     from metadamage import dashboard
 
     dashboard.utils.set_custom_theme()
@@ -163,6 +167,7 @@ if utils.is_ipython():
     # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
     df = fit_results.df_fit_results
 
+    # Third Party
     import plotly.express as px
 
     fig = dashboard.figures.plot_fit_results(fit_results)
@@ -284,7 +289,6 @@ if utils.is_ipython():
         range_y=(-5, 200),
         savefig=savefig,
     )
-
 
     tmp_plot(
         x="frequentist_forward_D_max",

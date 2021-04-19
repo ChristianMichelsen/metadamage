@@ -60,6 +60,7 @@ def cli_fit(
         cli_utils.SubstitutionBases.GA
     ),
     # boolean flags
+    bayesian: bool = typer.Option(False, "--bayesian"),
     forced: bool = typer.Option(False, "--forced"),
     # Other
     dask_port: int = 8787,
@@ -103,6 +104,7 @@ def cli_fit(
         "substitution_bases_forward": substitution_bases_forward.value,
         "substitution_bases_reverse": substitution_bases_reverse.value,
         #
+        "bayesian": bayesian,
         "forced": forced,
         #
         "dask_port": dask_port,

@@ -1,236 +1,54 @@
-import numpy as np
-from scipy.stats import chi2 as sp_chi2
-from scipy.stats import norm as sp_norm
-from iminuit import describe
+# Scientific Library
 import matplotlib.pyplot as plt
-from scipy.special import erfinv, erf
-
-from scipy.stats import betabinom as sp_betabinom
+import numpy as np
+from scipy.stats import (
+    beta as sp_beta,
+    betabinom as sp_betabinom,
+    expon as sp_exponential,
+)
 from iminuit import Minuit
-
-#%%
-
-# # beta
-# q_prior = dict(a=0.8, b=3.2)  # mean = 0.2, shape = 4
-# A_prior = dict(a=0.8, b=3.2)  # mean = 0.2, shape = 4
-# c_prior = dict(a=1.0, b=9.0)  # mean = 0.1, shape = 10
-
-# # exponential
-# phi_prior = dict(loc=2, scale=1000)
-
-
-from scipy.stats import uniform as sp_uniform
-from scipy.stats import beta as sp_beta
-from scipy.stats import expon as sp_exponential
-
-
-# beta
-q_prior = (1, 4)  # mean = 0.2, shape = 5
-A_prior = (1, 4)  # mean = 0.2, shape = 5
-c_prior = (1.0, 9.0)  # mean = 0.1, shape = 10
-
-# exponential
-phi_prior = (2, 1000)
-
-#%%
-
-
-def plot_beta_distribution(alpha, beta):
-    fig, ax = plt.subplots()
-
-    if isinstance(alpha, (int, float)) and isinstance(beta, (int, float)):
-        alpha = [alpha]
-        beta = [beta]
-
-    for a, b in zip(alpha, beta):
-        x = np.linspace(0, 1, 1000)
-        y = sp_beta.pdf(x, a=a, b=b)
-
-        mu, phi = alpha_beta_to_mu_phi(a, b)
-        label = f"α={a}, β={b}, μ={mu}, φ={phi}"
-        ax.plot(x, y, "-", label=label)
-    ax.legend()
-    return fig, ax
-
-
-def plot_beta_distribution_mu_phi(mu, phi):
-    fig, ax = plt.subplots()
-
-    if isinstance(mu, (int, float)) and isinstance(phi, (int, float)):
-        mu = [mu]
-        phi = [phi]
-
-    for μ, φ in zip(mu, phi):
-        x = np.linspace(0, 1, 1000)
-        a, b = mu_phi_to_alpha_beta(μ, φ)
-        y = sp_beta.pdf(x, a=a, b=b)
-        label = f"μ={μ}, φ={φ}, α={a}, β={b}"
-        ax.plot(x, y, "-", label=label)
-    ax.legend()
-    return fig, ax
-
-
-# plot_beta_distribution_mu_phi([0.2, 0.1], [5, 10])
-
-# fig, ax = plt.subplots()
-# x = np.linspace(0, 1, 1000)
-# ax.plot(
-#     x,
-#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.2, phi=5)),
-#     "-",
-#     label=f"μ={0.2}, φ={5}",
-#     lw=2,
-#     color="C0",
-# )
-# ax.plot(
-#     x,
-#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.1, phi=10)),
-#     "-",
-#     label=f"μ={0.1}, φ={10}",
-#     lw=2,
-#     color="C3",
-# )
-# ax.plot(
-#     x,
-#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.2, phi=10)),
-#     "-",
-#     label=f"μ={0.2}, φ={10}",
-#     alpha=0.5,
-#     color="C1",
-# )
-# ax.plot(
-#     x,
-#     sp_beta.pdf(x, *mu_phi_to_alpha_beta(mu=0.1, phi=5)),
-#     "-",
-#     label=f"μ={0.1}, φ={5}",
-#     alpha=0.5,
-#     color="C2",
-# )
-# ax.legend()
-# ax.set(xlabel="x", ylabel="PDF", ylim=(0, 10))
-
-#%%
-
 from numba import njit
-import math
+
+from metadamage import fits_utils
+
+#%%
+
+priors = fits_utils.get_priors()
+q_prior = priors["q"]  # mean = 0.2, concentration = 5
+A_prior = priors["A"]  # mean = 0.2, concentration = 5
+c_prior = priors["c"]  # mean = 0.1, concentration = 10
+phi_prior = priors["phi"]
+
+
+#%%
+
+
+#%%
 
 
 @njit
-def gammaln_scalar(x):
-    return math.lgamma(x)
-
-
-@njit
-def gammaln_vec(xs):
-    out = np.empty(len(xs), dtype="float")
-    for i, x in enumerate(xs):
-        out[i] = math.lgamma(x)
-    return out
-
-
-@njit
-def log_betabinom_PMD(k, n, a, b):
-    return (
-        gammaln_vec(n + 1)
-        + gammaln_vec(k + a)
-        + gammaln_vec(n - k + b)
-        + gammaln_vec(a + b)
-        - (
-            gammaln_vec(k + 1)
-            + gammaln_vec(n - k + 1)
-            + gammaln_vec(a)
-            + gammaln_vec(b)
-            + gammaln_vec(n + a + b)
-        )
-    )
-
-
-@njit
-def f_frequentist_PMD(q, A, c, phi, z, k, n):
+def log_likelihood_PMD(q, A, c, phi, z, k, N):
     Dz = A * (1 - q) ** (np.abs(z) - 1) + c
-    a = Dz * phi
-    b = (1 - Dz) * phi
-    return -log_betabinom_PMD(k=k, n=n, a=a, b=b).sum()
-    # return -sp_betabinom.logpmf(k=k, n=n, a=a, b=b).sum()
+    alpha = Dz * phi
+    beta = (1 - Dz) * phi
+    return -fits_utils.log_betabinom_PMD(k=k, N=N, alpha=alpha, beta=beta).sum()
+    # return -sp_betabinom.logpmf(k=k, n=n, a=alpha, b=beta).sum()
 
 
 @njit
-def xlog1py(x, y):
-    if x == 0:
-        return 0
-
-    return x * np.log1p(y)
-
-
-@njit
-def xlogy(x, y):
-    if x == 0:
-        return 0
-
-    return x * np.log(y)
-
-
-@njit
-def betaln(x, y):
-    return gammaln_scalar(x) + gammaln_scalar(y) - gammaln_scalar(x + y)
-
-
-@njit
-def log_beta(x, a, b):
-    lPx = xlog1py(b - 1.0, -x) + xlogy(a - 1.0, x)
-    lPx -= betaln(a, b)
-    return lPx
-
-
-@njit
-def log_exponential(x, loc, scale):
-    if x < loc:
-        return -np.inf
-    return -(x - loc) / scale - np.log(scale)
-
-
-@njit
-def log_prior(q, A, c, phi):
-    lp = log_beta(q, *q_prior)
-    lp += log_beta(A, a=A_prior[0], b=A_prior[1])
-    lp += log_beta(c, a=c_prior[0], b=c_prior[1])
-    lp += log_exponential(phi, loc=phi_prior[0], scale=phi_prior[1])
-
+def log_prior_PMD(q, A, c, phi):
+    lp = fits_utils.log_beta(q, *q_prior)
+    lp += fits_utils.log_beta(A, *A_prior)
+    lp += fits_utils.log_beta(c, *c_prior)
+    lp += fits_utils.log_exponential(phi, *phi_prior)
     return -lp
 
 
 @njit
-def f_frequentist_PMD_posterior(q, A, c, phi, z, k, n):
-    log_likelihood = f_frequentist_PMD(q, A, c, phi, z, k, n)
-    log_p = log_prior(q, A, c, phi)
+def log_posterior_PMD(q, A, c, phi, z, k, N):
+    log_likelihood = log_likelihood_PMD(q, A, c, phi, z, k, N)
+    log_p = log_prior_PMD(q, A, c, phi)
     return log_likelihood + log_p
-
-
-# @njit
-# def f_frequentist_PMD_posterior_q(q, A, c, phi, z, k, n):
-#     log_likelihood = f_frequentist_PMD(q, A, c, phi, z, k, n)
-#     log_prior_q = -log_beta(q, *q_prior)
-#     return log_likelihood + log_prior_q
-
-
-def sample_from_param_grid(param_grid, random_state=None):
-    np.random.seed(42)
-    parameters = {}
-    for key, dist in param_grid.items():
-        parameters[key] = dist.rvs(random_state=random_state)
-    return parameters
-
-
-def alpha_beta_to_mu_phi(alpha, beta):
-    mu = alpha / (alpha + beta)
-    phi = alpha + beta
-    return mu, phi
-
-
-def mu_phi_to_alpha_beta(mu, phi):
-    alpha = mu * phi
-    beta = phi * (1 - mu)
-    return alpha, beta
 
 
 #%%
@@ -240,7 +58,7 @@ class FrequentistPMD:
     def __init__(self, data, method="posterior"):
         self.z = data["z"]
         self.k = data["y"]
-        self.n = data["N"]
+        self.N = data["N"]
         self.method = method
         self._setup_minuit()
 
@@ -252,26 +70,24 @@ class FrequentistPMD:
         }
 
     def __call__(self, q, A, c, phi):
-
         if self.method == "likelihood":
-            return self.f_log_likelihood(q, A, c, phi)
-
+            return self.log_likelihood_PMD(q, A, c, phi)
         elif self.method == "posterior":
-            return self.f_log_posterior(q, A, c, phi)
+            return self.log_posterior_PMD(q, A, c, phi)
 
-    def f_log_likelihood(self, q, A, c, phi):
-        return f_frequentist_PMD(q, A, c, phi, self.z, self.k, self.n)
+    def log_likelihood_PMD(self, q, A, c, phi):
+        return log_likelihood_PMD(q, A, c, phi, self.z, self.k, self.N)
 
-    def f_log_posterior(self, q, A, c, phi):
-        return f_frequentist_PMD_posterior(q, A, c, phi, self.z, self.k, self.n)
+    def log_posterior_PMD(self, q, A, c, phi):
+        return log_posterior_PMD(q, A, c, phi, self.z, self.k, self.N)
 
     def _setup_minuit(self, m=None):
 
         if self.method == "likelihood":
-            f = self.f_log_likelihood
+            f = self.log_likelihood_PMD
 
         elif self.method == "posterior":
-            f = self.f_log_posterior
+            f = self.log_posterior_PMD
 
         if m is None:
             self.m = Minuit(f, q=0.1, A=0.1, c=0.01, phi=1000)
@@ -309,7 +125,7 @@ class FrequentistPMD:
 
             self.i = 0
             while True:
-                p0 = sample_from_param_grid(self.param_grid)
+                p0 = fits_utils.sample_from_param_grid(self.param_grid)
                 for key, val in p0.items():
                     self.m.values[key] = val
                 self.m.migrad()
@@ -327,7 +143,7 @@ class FrequentistPMD:
 
     @property
     def log_likelihood(self):
-        return self.f_log_likelihood(*self.m.values)
+        return self.log_likelihood_PMD(*self.m.values)
 
     def migrad(self):
         return self.fit()
@@ -361,72 +177,37 @@ class FrequentistPMD:
         phi = self.phi
 
         Dz_z1 = A + c
-        a = Dz_z1 * phi
-        b = (1 - Dz_z1) * phi
+        alpha = Dz_z1 * phi
+        beta = (1 - Dz_z1) * phi
 
-        dist = sp_betabinom(n=self.n[0], a=a, b=b)
+        dist = sp_betabinom(n=self.N[0], a=alpha, b=beta)
 
-        # mu = dist.mean() / frequentist.n[0] - c
+        # mu = dist.mean() / frequentist.N[0] - c
         mu = A
-        std = np.sqrt(dist.var()) / self.n[0]
+        std = np.sqrt(dist.var()) / self.N[0]
 
         return {"mu": mu, "std": std}
 
-
-# f = FrequentistPMD(data, method="posterior").fit()
-# f.m
-# %timeit FrequentistPMD(data, method="posterior").fit()
-
-
-# f = FrequentistPMD(data, method="likelihood").fit()
-# f.m
-# %timeit FrequentistPMD(data, method="likelihood").fit()
-
-# m = Minuit(f, q=0.1, A=0.1, c=0.01, phi=1000)
-# m.limits["q"] = (0, 1)
-# m.limits["A"] = (0, 1)
-# m.limits["c"] = (0, 1)
-# m.limits["phi"] = (2, None)
-# m.errordef = Minuit.LIKELIHOOD
-# m.migrad()
-# m.migrad()
 
 #%%
 
 
 @njit
-def log_betabinom_null(k, n, a, b):
-    return (
-        gammaln_vec(n + 1)
-        + gammaln_vec(k + a)
-        + gammaln_vec(n - k + b)
-        + gammaln_scalar(a + b)
-        - (
-            gammaln_vec(k + 1)
-            + gammaln_vec(n - k + 1)
-            + gammaln_scalar(a)
-            + gammaln_scalar(b)
-            + gammaln_vec(n + a + b)
-        )
-    )
-
-
-@njit
-def f_frequentist_null(q, phi, k, n):
-    a = q * phi
-    b = (1 - q) * phi
-    return -log_betabinom_null(k=k, n=n, a=a, b=b).sum()
+def f_frequentist_null(q, phi, k, N):
+    alpha = q * phi
+    beta = (1 - q) * phi
+    return -fits_utils.log_betabinom_null(k=k, N=N, alpha=alpha, beta=beta).sum()
 
 
 class FrequentistNull:
     def __init__(self, data):
         self.z = data["z"]
         self.k = data["y"]
-        self.n = data["N"]
+        self.N = data["N"]
         self._setup_minuit()
 
     def __call__(self, q, phi):
-        return f_frequentist_null(q, phi, self.k, self.n)
+        return f_frequentist_null(q, phi, self.k, self.N)
 
     def _setup_minuit(self):
         self.m = Minuit(self.__call__, q=0.1, phi=100)
@@ -448,7 +229,7 @@ class FrequentistNull:
 
     @property
     def log_likelihood(self):
-        return f_frequentist_null(*self.m.values, self.k, self.n)
+        return f_frequentist_null(*self.m.values, self.k, self.N)
 
     @property
     def c(self):
@@ -458,56 +239,11 @@ class FrequentistNull:
 #%%
 
 
-def prob_to_n_sigma(p):
-    return np.sqrt(2) * erfinv(p)
-
-
-def n_sigma_to_prob(n_sigma):
-    return erf(n_sigma / np.sqrt(2))
-
-
-def compute_likelihood_ratio(frequentist_PMD, frequentist_null):
-    LR = -2 * (frequentist_PMD.log_likelihood - frequentist_null.log_likelihood)
-
-    df = len(describe(frequentist_PMD)) - len(describe(frequentist_null))
-    LR_P = sp_chi2.sf(x=LR, df=df)
-    LR_n_sigma = prob_to_n_sigma(1 - LR_P)
-
-    return LR, LR_P, LR_n_sigma
-
-
-# from scipy.stats import beta as sp_beta
-# from scipy.optimize import fmin
-
-# def HDR_beta(a, b, alpha=0.68):
-#     # freeze distribution with given arguments
-#     # initial guess for HDIlowTailPr
-
-#     dist = sp_beta(a=a, b=b)
-
-#     def intervalWidth(lowTailPr):
-#         return dist.ppf(alpha + lowTailPr) - dist.ppf(lowTailPr)
-
-#     # find lowTailPr that minimizes intervalWidth
-#     HDIlowTailPr = fmin(intervalWidth, 1.0 - alpha, ftol=1e-8, disp=False)[0]
-#     # return interval as array([low, high])
-#     return dist.ppf([HDIlowTailPr, alpha + HDIlowTailPr])
-
-
-# def HDR_beta_vec(a, b, alpha=0.68):
-#     if isinstance(a, (float, int)) and isinstance(b, (float, int)):
-#         return HDR_beta(a, b, alpha=alpha)
-#     else:
-#         it = zip(a[::10], b[::10])
-#         out = np.array([HDR_beta(ai, bi, alpha=alpha) for ai, bi in it])
-#         return out
-
-
 class Frequentist:
     def __init__(self, data, method="posterior"):
         self.PMD = FrequentistPMD(data, method=method).fit()
         self.null = FrequentistNull(data).fit()
-        p = compute_likelihood_ratio(self.PMD, self.null)
+        p = fits_utils.compute_likelihood_ratio(self.PMD, self.null)
         self.LR, self.LR_P, self.LR_n_sigma = p
 
         self.valid = self.PMD.valid
@@ -515,11 +251,13 @@ class Frequentist:
         self.data = data
         self.z = data["z"]
         self.k = data["y"]
-        self.n = data["N"]
+        self.N = data["N"]
         self.method = method
 
     def __repr__(self):
-        return f"Frequentist(data, method={self.method})"
+        s = f"Frequentist(data, method={self.method}). \n\n"
+        s += self.__str__()
+        return s
 
     def __str__(self):
         s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f} \n"
@@ -553,7 +291,7 @@ class Frequentist:
 
     @property
     def rho_Ac(self):
-        return self.correlation['A', 'c']
+        return self.correlation["A", "c"]
 
     def plot(self, N_points=1000):
 
@@ -563,24 +301,24 @@ class Frequentist:
         phi = self.phi
 
         zz = self.z[:15]
-        N = self.n[:15]
+        N = self.N[:15]
 
         Dz = A * (1 - q) ** (np.abs(zz) - 1) + c
 
-        a = Dz * phi
-        b = (1 - Dz) * phi
+        alpha = Dz * phi
+        beta = (1 - Dz) * phi
 
-        dist = sp_betabinom(n=N, a=a, b=b)
+        dist = sp_betabinom(n=N, a=alpha, b=beta)
         std = np.sqrt(dist.var()) / N
 
         # Confidence interval with equal areas around the median (?mean?)
-        # intervals1 = dist.interval(alpha=n_sigma_to_prob(n_sigma=1), a=a, b=b)
-        # intervals2 = dist.interval(alpha=n_sigma_to_prob(n_sigma=2), a=a, b=b)
+        # intervals1 = dist.interval(alpha=n_sigma_to_prob(n_sigma=1), a=alpha, b=beta)
+        # intervals2 = dist.interval(alpha=n_sigma_to_prob(n_sigma=2), a=alpha, b=beta)
 
         fig, ax = plt.subplots(figsize=(10, 6))
 
-        ax.plot(self.z[:15], self.k[:15] / self.n[:15], "sk", label="Data Forward")
-        ax.plot(-self.z[15:], self.k[15:] / self.n[15:], "xk", label="Data Reverse")
+        ax.plot(self.z[:15], self.k[:15] / self.N[:15], "sk", label="Data Forward")
+        ax.plot(-self.z[15:], self.k[15:] / self.N[15:], "xk", label="Data Reverse")
 
         ax.errorbar(
             zz,
@@ -631,3 +369,47 @@ class Frequentist:
         ax.set(xlabel="Position", ylabel="Damage", ylim=(0, None))
 
         return fig, ax
+
+
+#%%
+
+
+def make_fits(fit_result, data):
+    # reload(fits_frequentist)
+    # frequentist_likelihood = fits_frequentist.Frequentist(data, method='likelihood')
+    # frequentist_posterior = fits_frequentist.Frequentist(data, method="posterior")
+
+    vars_to_keep = ["A", "q", "c", "phi", "rho_Ac", "LR", "LR_P", "LR_n_sigma", "valid"]
+
+    frequentist = Frequentist(data, method="posterior")
+    fit_result["frequentist_D_max"] = frequentist.D_max["mu"]
+    fit_result["frequentist_D_max_std"] = frequentist.D_max["std"]
+    for var in vars_to_keep:
+        fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
+    # frequentist.PMD.m
+    # print(frequentist)
+    # frequentist.plot()
+
+    data_forward = {key: val[data["z"] > 0] for key, val in data.items()}
+    frequentist_forward = Frequentist(data_forward, method="posterior")
+    fit_result["frequentist_forward_D_max"] = frequentist_forward.D_max["mu"]
+    fit_result["frequentist_forward_D_max_std"] = frequentist_forward.D_max["std"]
+    for var in vars_to_keep:
+        fit_result[f"frequentist_forward_{var}"] = getattr(frequentist_forward, var)
+    # print(frequentist_forward)
+    # frequentist_forward.plot()
+
+    data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
+    frequentist_reverse = Frequentist(data_reverse, method="posterior")
+    fit_result["frequentist_reverse_D_max"] = frequentist_reverse.D_max["mu"]
+    fit_result["frequentist_reverse_D_max_std"] = frequentist_reverse.D_max["std"]
+    for var in vars_to_keep:
+        fit_result[f"frequentist_reverse_{var}"] = getattr(frequentist_reverse, var)
+    # print(frequentist_reverse)
+    # frequentist_reverse.plot()
+
+    numerator = frequentist_forward.D_max["mu"] - frequentist_reverse.D_max["mu"]
+    delimiter = np.sqrt(
+        frequentist_forward.D_max["std"] ** 2 + frequentist_reverse.D_max["mu"] ** 2
+    )
+    fit_result["frequentist_asymmetry"] = numerator / delimiter
