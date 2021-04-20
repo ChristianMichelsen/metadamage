@@ -75,11 +75,15 @@ def add_tax_information(fit_result, group):
 
 def add_count_information(fit_result, group, data):
     fit_result["N_alignments"] = group.N_alignments.iloc[0]
+
     fit_result["N_z1_forward"] = data["N"][0]
     fit_result["N_z1_reverse"] = data["N"][15]
+
     fit_result["N_sum_forward"] = data["N"][:15].sum()
     fit_result["N_sum_reverse"] = data["N"][15:].sum()
     fit_result["N_sum_total"] = data["N"].sum()
+    fit_result["N_min"] = data["N"].min()
+
     fit_result["k_sum_forward"] = data["k"][:15].sum()
     fit_result["k_sum_reverse"] = data["k"][15:].sum()
     fit_result["k_sum_total"] = data["k"].sum()
@@ -100,10 +104,14 @@ def fit_single_group_without_timeout(
     data = group_to_numpyro_data(group, cfg)
 
     add_tax_information(fit_result, group)
-    
-    fits_frequentist.make_fits(fit_result, data)
+
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        f, f_forward, f_reverse = fits_frequentist.make_fits(fit_result, data)
+
     add_count_information(fit_result, group, data)
 
+    # mcmc_PMD, mcmc_null = fits_Bayesian.init_mcmcs(cfg)
     if mcmc_PMD is not None and mcmc_null is not None:
         fits_Bayesian.make_fits(fit_result, data, mcmc_PMD, mcmc_null)
 

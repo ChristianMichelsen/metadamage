@@ -130,9 +130,9 @@ class FitResults:
                     range_forward = ranges[column_forward]
                     range_reverse = ranges[column_reverse]
 
-                    if column == "frequentist_LR":
+                    if column == "LR":
                         paddding = 1
-                    elif column == "frequentist_D_max":
+                    elif column == "D_max":
                         paddding = 0.1
                     # elif column == "noise":
                     # paddding = 1
@@ -279,11 +279,14 @@ class FitResults:
                 "tax_rank",
                 "tax_id",
                 # Frequentist fits
-                "frequentist_LR",
-                "frequentist_D_max",
-                "frequentist_D_max_std",
-                "frequentist_q",
-                "frequentist_phi",
+                "LR",
+                "D_max",
+                "D_max_std",
+                "q",
+                "q_std",
+                "phi",
+                "phi_std",
+                "asymmetry",
                 # Bayesian Fits
                 "Bayesian_n_sigma",
                 "Bayesian_D_max",
@@ -302,40 +305,76 @@ class FitResults:
                 "    Name: %{customdata[1]} <br>"
                 "    Rank: %{customdata[2]} <br>"
                 "    ID:   %{customdata[3]} <br><br>"
-                "<b>Frequentist Fit Results</b>: <br>"
-                "    LR:       %{customdata[4]:9.2f} <br><br>"
-                "    D max:    %{customdata[5]:9.2f} +/- %{customdata[6]:9.2f} <br>"
-                "    q:        %{customdata[7]:9.2f} <br>"
-                "    phi:      %{customdata[8]:9.3s} <br>"
+                "<b>Fit Results</b>: <br>"
+                "    LR:       %{customdata[4]:9.2f} <br>"
+                "    D max:    %{customdata[5]:9.2f} +/- %{customdata[6]:.2f} <br>"
+                "    q:        %{customdata[7]:9.2f} +/- %{customdata[8]:.2f} <br>"
+                "    phi:      %{customdata[9]:9.3s} +/- %{customdata[10]:.3s} <br>"
+                "    asymmetry:%{customdata[11]:9.3f} <br><br>"
                 "<b>Bayesian Fit Results</b>: <br>"
-                "    n sigma:  %{customdata[9]:9.2f} <br><br>"
-                "    D max:    %{customdata[10]:9.2f} <br>"
-                "    q:        %{customdata[11]:9.2f} <br>"
-                "    phi:      %{customdata[12]:9.3s} <br>"
-                # "    asymmetry:%{customdata[8]:9.2f} <br>"
-                # "    noise:    %{customdata[9]:9.2f} <br><br>"
+                "    n sigma:  %{customdata[12]:9.2f} <br><br>"
+                "    D max:    %{customdata[13]:9.2f} <br>"
+                "    q:        %{customdata[14]:9.2f} <br>"
+                "    phi:      %{customdata[15]:9.3s} <br>"
                 "<b>Counts</b>: <br>"
-                "    N alignments:%{customdata[13]:6.3s} <br>"
-                "    N sum total: %{customdata[14]:6.3s} <br>"
-                "    y sum total: %{customdata[15]:6.3s} <br>"
+                "    N alignments:%{customdata[16]:6.3s} <br>"
+                "    N sum total: %{customdata[17]:6.3s} <br>"
+                "    y sum total: %{customdata[18]:6.3s} <br>"
                 "<extra></extra>"
             )
 
         else:
-            raise AssertionError(f"Not yet implemented.")
+
+            self.custom_data_columns = [
+                "shortname",
+                "tax_name",
+                "tax_rank",
+                "tax_id",
+                # Frequentist fits
+                "LR",
+                "D_max",
+                "D_max_std",
+                "q",
+                "q_std",
+                "phi",
+                "phi_std",
+                "asymmetry",
+                # Counts
+                "N_alignments",
+                "N_sum_total",
+                "k_sum_total",
+            ]
+
+            self.hovertemplate = (
+                "<b>%{customdata[0]}</b><br><br>"
+                "<b>Tax</b>: <br>"
+                "    Name: %{customdata[1]} <br>"
+                "    Rank: %{customdata[2]} <br>"
+                "    ID:   %{customdata[3]} <br><br>"
+                "<b>Fit Results</b>: <br>"
+                "    LR:       %{customdata[4]:9.2f} <br>"
+                "    D max:    %{customdata[5]:9.2f} +/- %{customdata[6]:.2f} <br>"
+                "    q:        %{customdata[7]:9.2f} +/- %{customdata[8]:.2f} <br>"
+                "    phi:      %{customdata[9]:9.3s} +/- %{customdata[10]:.3s} <br>"
+                "    asymmetry:%{customdata[11]:9.3f} <br><br>"
+                "<b>Counts</b>: <br>"
+                "    N alignments:%{customdata[12]:6.3s} <br>"
+                "    N sum total: %{customdata[13]:6.3s} <br>"
+                "    y sum total: %{customdata[14]:6.3s} <br>"
+                "<extra></extra>"
+            )
 
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
     def _set_columns_scatter(self):
         self.columns_scatter = [
-            "frequentist_LR",
-            "frequentist_D_max",
+            "LR",
+            "D_max",
+            "q",
+            "phi",
+            "asymmetry",
             "N_alignments_log10",
             "N_sum_total_log10",
-            "frequentist_q",
-            "frequentist_phi",
-            # "asymmetry",
-            # "normalized_noise",
         ]
 
     def _set_labels(self):
@@ -343,11 +382,11 @@ class FitResults:
         labels_list = [
             r"$\large \lambda_\mathrm{LR}$",
             r"$\large D_\mathrm{max}$",
-            r"$\large \log_{10} N_\mathrm{alignments}$",
-            r"$\large \log_{10} N_\mathrm{sum}$",
             r"$\large \bar{q}$",
             r"$\large \bar{\phi}$",
-            # r"$\large \alpha$",
+            r"$\large \mathrm{asymmetry}$",
+            r"$\large \log_{10} N_\mathrm{alignments}$",
+            r"$\large \log_{10} N_\mathrm{sum}$",
             # r"$\large \mathrm{noise}$",
         ]
 
@@ -368,8 +407,8 @@ class FitResults:
 
     def _set_columns_scatter_forward_reverse(self):
         self.columns_scatter_forward_reverse = {
-            "frequentist_LR": r"$\large \lambda_\mathrm{LR}$",
-            "frequentist_D_max": r"$\large D_\mathrm{max}$",
+            "LR": r"$\large \lambda_\mathrm{LR}$",
+            "D_max": r"$\large D_\mathrm{max}$",
             "N_z1": r"$\large N_{z=1}$",
             "N_sum": r"$\large N_\mathrm{sum}$",
             "k_sum": r"$\large y_\mathrm{sum}$",

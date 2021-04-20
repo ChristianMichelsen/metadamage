@@ -115,14 +115,8 @@ class FrequentistPMD:
         if not self.m.valid:
             self.m.migrad()
 
-        # if fit was accepted, stop
-        if self.m.valid:
-            self.valid = self.m.valid
-            return self
-
         # if not working, continue with new guesses
         if not self.m.valid:
-
             self.i = 0
             while True:
                 p0 = fits_utils.sample_from_param_grid(self.param_grid)
@@ -131,14 +125,13 @@ class FrequentistPMD:
                 self.m.migrad()
                 if self.m.valid or self.i >= 100:
                     break
-
                 self.m.migrad()
                 if self.m.valid or self.i >= 100:
                     break
-
                 self.i += 1
 
         self.valid = self.m.valid
+        self._set_D_max()
         return self
 
     @property
@@ -157,19 +150,34 @@ class FrequentistPMD:
         return self.m.values["A"]
 
     @property
+    def A_std(self):
+        return self.m.errors["A"]
+
+    @property
     def q(self):
         return self.m.values["q"]
+
+    @property
+    def q_std(self):
+        return self.m.errors["q"]
 
     @property
     def c(self):
         return self.m.values["c"]
 
     @property
+    def c_std(self):
+        return self.m.errors["c"]
+
+    @property
     def phi(self):
         return self.m.values["phi"]
 
     @property
-    def D_max(self):
+    def phi_std(self):
+        return self.m.errors["phi"]
+
+    def _set_D_max(self):
 
         A = self.A
         # q = self.q
@@ -186,7 +194,8 @@ class FrequentistPMD:
         mu = A
         std = np.sqrt(dist.var()) / self.N[0]
 
-        return {"mu": mu, "std": std}
+        self.D_max = mu
+        self.D_max_std = std
 
 
 #%%
@@ -261,7 +270,9 @@ class Frequentist:
 
     def __str__(self):
         s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f} \n"
-        s += f"D_max = {self.D_max['mu']:.3f} +/- {self.D_max['std']:.3f}, valid = {self.valid}\n"
+        s += (
+            f"D_max = {self.D_max:.3f} +/- {self.D_max_std:.3f}, valid = {self.valid}\n"
+        )
         s += f"LR = {self.LR:.3f}, LR as prob = {self.LR_P:.4%}, LR as n_sigma = {self.LR_n_sigma:.3f}"
         return s
 
@@ -270,20 +281,40 @@ class Frequentist:
         return self.PMD.D_max
 
     @property
+    def D_max_std(self):
+        return self.PMD.D_max_std
+
+    @property
     def A(self):
         return self.PMD.A
+
+    @property
+    def A_std(self):
+        return self.PMD.A_std
 
     @property
     def q(self):
         return self.PMD.q
 
     @property
+    def q_std(self):
+        return self.PMD.q_std
+
+    @property
     def c(self):
         return self.PMD.c
 
     @property
+    def c_std(self):
+        return self.PMD.c_std
+
+    @property
     def phi(self):
         return self.PMD.phi
+
+    @property
+    def phi_std(self):
+        return self.PMD.phi_std
 
     @property
     def correlation(self):
@@ -379,39 +410,52 @@ def make_fits(fit_result, data):
     # frequentist_likelihood = fits_frequentist.Frequentist(data, method='likelihood')
     # frequentist_posterior = fits_frequentist.Frequentist(data, method="posterior")
 
-    vars_to_keep = ["A", "q", "c", "phi", "rho_Ac", "LR", "LR_P", "LR_n_sigma", "valid"]
-
     frequentist = Frequentist(data, method="posterior")
-    fit_result["frequentist_D_max"] = frequentist.D_max["mu"]
-    fit_result["frequentist_D_max_std"] = frequentist.D_max["std"]
-    for var in vars_to_keep:
-        fit_result[f"frequentist_{var}"] = getattr(frequentist, var)
     # frequentist.PMD.m
     # print(frequentist)
     # frequentist.plot()
 
     data_forward = {key: val[data["z"] > 0] for key, val in data.items()}
+    data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
+
     frequentist_forward = Frequentist(data_forward, method="posterior")
-    fit_result["frequentist_forward_D_max"] = frequentist_forward.D_max["mu"]
-    fit_result["frequentist_forward_D_max_std"] = frequentist_forward.D_max["std"]
-    for var in vars_to_keep:
-        fit_result[f"frequentist_forward_{var}"] = getattr(frequentist_forward, var)
     # print(frequentist_forward)
     # frequentist_forward.plot()
-
-    data_reverse = {key: val[data["z"] < 0] for key, val in data.items()}
     frequentist_reverse = Frequentist(data_reverse, method="posterior")
-    fit_result["frequentist_reverse_D_max"] = frequentist_reverse.D_max["mu"]
-    fit_result["frequentist_reverse_D_max_std"] = frequentist_reverse.D_max["std"]
-    for var in vars_to_keep:
-        fit_result[f"frequentist_reverse_{var}"] = getattr(frequentist_reverse, var)
     # print(frequentist_reverse)
     # frequentist_reverse.plot()
 
-    numerator = frequentist_forward.D_max["mu"] - frequentist_reverse.D_max["mu"]
+    vars_to_keep = [
+        "LR",
+        "D_max",
+        "D_max_std",
+        "q",
+        "q_std",
+        "phi",
+        "phi_std",
+        "A",
+        "A_std",
+        "c",
+        "c_std",
+        "rho_Ac",
+        "LR_P",
+        "LR_n_sigma",
+        "valid",
+    ]
+
+    for var in vars_to_keep:
+        fit_result[f"{var}"] = getattr(frequentist, var)
+
+    numerator = frequentist_forward.D_max - frequentist_reverse.D_max
     delimiter = np.sqrt(
-        frequentist_forward.D_max["std"] ** 2 + frequentist_reverse.D_max["mu"] ** 2
+        frequentist_forward.D_max_std ** 2 + frequentist_reverse.D_max_std ** 2
     )
-    fit_result["frequentist_asymmetry"] = numerator / delimiter
+    fit_result["asymmetry"] = np.abs(numerator) / delimiter
+
+    for var in vars_to_keep:
+        fit_result[f"forward_{var}"] = getattr(frequentist_forward, var)
+
+    for var in vars_to_keep:
+        fit_result[f"reverse_{var}"] = getattr(frequentist_reverse, var)
 
     return frequentist, frequentist_forward, frequentist_reverse

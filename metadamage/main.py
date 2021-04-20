@@ -122,8 +122,6 @@ if utils.is_ipython():
         #     "./data/out/fit_results/KapK-12-1-24-Ext-1-Lib-1-Index2.parquet"
         # ).load_metadata()
 
-        cfg.add_filename(filename)
-        df_counts = counts.load_counts(cfg)
         tax_id = 1224
         tax_id = 1236
         tax_id = 135622
@@ -147,17 +145,21 @@ if utils.is_ipython():
         tax_id = 22973  # KapK
         tax_id = 9606  # SJ
         tax_id = 6656  # SJ
-        tax_id = 74652  # KapK
         tax_id = -1
+
+        cfg.add_filename(filename)
+        df_counts = counts.load_counts(cfg)
         group = utils.get_specific_tax_id(df_counts, tax_id=tax_id)
         data = fits.group_to_numpyro_data(group, cfg)
 
-    x = x
+    # x = x
 
     # First Party
     from metadamage import dashboard
 
     dashboard.utils.set_custom_theme()
+
+    # reload(dashboard)
 
     fit_results = dashboard.fit_results.FitResults(
         folder=Path("./data/out/"),
@@ -174,7 +176,7 @@ if utils.is_ipython():
     # Third Party
     import plotly.express as px
 
-    fig = dashboard.figures.plot_fit_results(fit_results)
+    # fig = dashboard.figures.plot_fit_results(fit_results)
 
     def tmp_plot(x, y, x_title, y_title, range_x=(0, 1), range_y=(0, 1), savefig=True):
         fig = px.scatter(
@@ -228,9 +230,11 @@ if utils.is_ipython():
 
     savefig = False
 
+    x = x
+
     tmp_plot(
-        x="frequentist_LR",
-        y="frequentist_D_max",
+        x="LR",
+        y="D_max",
         x_title="LR frequentist",
         y_title="D_max frequentist",
         range_x=(-5, 200),
