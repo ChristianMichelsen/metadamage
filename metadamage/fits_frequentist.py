@@ -60,14 +60,24 @@ class FrequentistPMD:
         self.k = data["k"]
         self.N = data["N"]
         self.method = method
+        self._setup_p0()
         self._setup_minuit()
+        self.is_fitted = False
 
-        self.param_grid = {
-            "q": sp_beta(*q_prior),  # mean = 0.2, shape = 4
-            "A": sp_beta(*A_prior),  # mean = 0.2, shape = 4
-            "c": sp_beta(*c_prior),  # mean = 0.1, shape = 10
-            "phi": sp_exponential(*phi_prior),
-        }
+    def __repr__(self):
+        s = f"FrequentistPMD(data, method={self.method}). \n\n"
+        if self.is_fitted:
+            s += self.__str__()
+        return s
+
+    def __str__(self):
+        if self.is_fitted:
+            s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f} \n"
+            s += f"D_max = {self.D_max:.3f} +/- {self.D_max_std:.3f}, rho_Ac = {self.rho_Ac:.3f} \n"
+            s += f"valid = {self.valid}"
+            return s
+        else:
+            return f"FrequentistPMD(data, method={self.method}). \n\n"
 
     def __call__(self, q, A, c, phi):
         if self.method == "likelihood":
@@ -81,6 +91,18 @@ class FrequentistPMD:
     def log_posterior_PMD(self, q, A, c, phi):
         return log_posterior_PMD(q, A, c, phi, self.z, self.k, self.N)
 
+    def _setup_p0(self):
+        # if self.force_null_fit:
+        # self.p0 = dict(q=0.0, A=0.0, c=0.01, phi=1000)
+        # else:
+        self.p0 = dict(q=0.1, A=0.1, c=0.01, phi=1000)
+        self.param_grid = {
+            "q": sp_beta(*q_prior),  # mean = 0.2, shape = 4
+            "A": sp_beta(*A_prior),  # mean = 0.2, shape = 4
+            "c": sp_beta(*c_prior),  # mean = 0.1, shape = 10
+            "phi": sp_exponential(*phi_prior),
+        }
+
     def _setup_minuit(self, m=None):
 
         if self.method == "likelihood":
@@ -90,19 +112,19 @@ class FrequentistPMD:
             f = self.log_posterior_PMD
 
         if m is None:
-            self.m = Minuit(f, q=0.1, A=0.1, c=0.01, phi=1000)
+            self.m = Minuit(f, **self.p0)
         else:
             self.m = m
 
         if self.method == "likelihood":
-            self.m.limits["q"] = (0, 1)
             self.m.limits["A"] = (0, 1)
+            self.m.limits["q"] = (0, 1)
             self.m.limits["c"] = (0, 1)
 
         elif self.method == "posterior":
             eps = 1e-10
-            self.m.limits["q"] = (0 + eps, 1 - eps)
             self.m.limits["A"] = (0 + eps, 1 - eps)
+            self.m.limits["q"] = (0 + eps, 1 - eps)
             self.m.limits["c"] = (0 + eps, 1 - eps)
 
         self.m.limits["phi"] = (2, None)
@@ -110,6 +132,7 @@ class FrequentistPMD:
 
     def fit(self):
         self.m.migrad()
+        self.is_fitted = True
 
         # first time try to reinitialize with previous fit result
         if not self.m.valid:
@@ -136,7 +159,7 @@ class FrequentistPMD:
 
     @property
     def log_likelihood(self):
-        return self.log_likelihood_PMD(*self.m.values)
+        return self.log_likelihood_PMD(*self.values)
 
     def migrad(self):
         return self.fit()
@@ -144,6 +167,10 @@ class FrequentistPMD:
     def minos(self):
         self.m.minos()
         return self
+
+    @property
+    def values(self):
+        return self.m.values
 
     @property
     def A(self):
@@ -197,14 +224,22 @@ class FrequentistPMD:
         self.D_max = mu
         self.D_max_std = std
 
+    @property
+    def correlation(self):
+        return self.m.covariance.correlation()
+
+    @property
+    def rho_Ac(self):
+        return self.correlation["A", "c"]
+
 
 #%%
 
 
 @njit
-def f_frequentist_null(q, phi, k, N):
-    alpha = q * phi
-    beta = (1 - q) * phi
+def f_frequentist_null(c, phi, k, N):
+    alpha = c * phi
+    beta = (1 - c) * phi
     return -fits_utils.log_betabinom_null(k=k, N=N, alpha=alpha, beta=beta).sum()
 
 
@@ -215,12 +250,12 @@ class FrequentistNull:
         self.N = data["N"]
         self._setup_minuit()
 
-    def __call__(self, q, phi):
-        return f_frequentist_null(q, phi, self.k, self.N)
+    def __call__(self, c, phi):
+        return f_frequentist_null(c, phi, self.k, self.N)
 
     def _setup_minuit(self):
-        self.m = Minuit(self.__call__, q=0.1, phi=100)
-        self.m.limits["q"] = (0, 1)
+        self.m = Minuit(self.__call__, c=0.1, phi=100)
+        self.m.limits["c"] = (0, 1)
         self.m.limits["phi"] = (2, None)
         self.m.errordef = Minuit.LIKELIHOOD
 
@@ -243,6 +278,14 @@ class FrequentistNull:
     @property
     def c(self):
         return self.m.values["c"]
+
+    @property
+    def phi(self):
+        return self.m.values["phi"]
+
+    @property
+    def values(self):
+        return self.m.values
 
 
 #%%
@@ -270,10 +313,9 @@ class Frequentist:
 
     def __str__(self):
         s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f} \n"
-        s += (
-            f"D_max = {self.D_max:.3f} +/- {self.D_max_std:.3f}, valid = {self.valid}\n"
-        )
-        s += f"LR = {self.LR:.3f}, LR as prob = {self.LR_P:.4%}, LR as n_sigma = {self.LR_n_sigma:.3f}"
+        s += f"D_max = {self.D_max:.3f} +/- {self.D_max_std:.3f}, rho_Ac = {self.rho_Ac:.3f} \n"
+        s += f"LR = {self.LR:.3f}, LR as prob = {self.LR_P:.4%}, LR as n_sigma = {self.LR_n_sigma:.3f} \n"
+        s += f"valid = {self.valid}"
         return s
 
     @property
@@ -317,12 +359,8 @@ class Frequentist:
         return self.PMD.phi_std
 
     @property
-    def correlation(self):
-        return self.PMD.m.covariance.correlation()
-
-    @property
     def rho_Ac(self):
-        return self.correlation["A", "c"]
+        return self.PMD.rho_Ac
 
     def plot(self, N_points=1000):
 
@@ -409,6 +447,8 @@ def make_fits(fit_result, data):
     # reload(fits_frequentist)
     # frequentist_likelihood = fits_frequentist.Frequentist(data, method='likelihood')
     # frequentist_posterior = fits_frequentist.Frequentist(data, method="posterior")
+
+    np.random.seed(42)
 
     frequentist = Frequentist(data, method="posterior")
     # frequentist.PMD.m

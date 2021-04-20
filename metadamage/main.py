@@ -131,7 +131,7 @@ if utils.is_ipython():
         tax_id = 4751
         tax_id = 469
         tax_id = 28211
-        tax_id = 356
+        tax_id = 356  # BNP
         tax_id = 286
         tax_id = 526227
         tax_id = 71240
@@ -145,6 +145,9 @@ if utils.is_ipython():
         tax_id = 22973  # KapK
         tax_id = 9606  # SJ
         tax_id = 6656  # SJ
+        tax_id = 68895  # BPN
+        tax_id = 673929  # KapK
+        tax_id = 9979  # KapK
         tax_id = -1
 
         cfg.add_filename(filename)
@@ -171,14 +174,27 @@ if utils.is_ipython():
     # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
     df = fit_results.df_fit_results
 
-    # 74652
-
     # Third Party
     import plotly.express as px
 
     # fig = dashboard.figures.plot_fit_results(fit_results)
 
-    def tmp_plot(x, y, x_title, y_title, range_x=(0, 1), range_y=(0, 1), savefig=True):
+    def compute_range(df, x, range_x):
+        if range_x is None:
+            return df[x].min(), df[x].max()
+        elif isinstance(range_x, (list, tuple)):
+            if range_x[0] is None:
+                return df[x].min(), range_x[1]
+            elif range_x[1] is None:
+                return range_x[0], df[x].max()
+            else:
+                return range_x
+
+    def plotly(x, y, x_title, y_title, range_x=None, range_y=None, savefig=True):
+
+        range_x = compute_range(df, x, range_x)
+        range_y = compute_range(df, y, range_y)
+
         fig = px.scatter(
             df,
             x=x,
@@ -208,7 +224,8 @@ if utils.is_ipython():
         fig.update_layout(
             xaxis_title=x_title,
             yaxis_title=y_title,
-            legend_title="Files",
+            showlegend=False,
+            # legend_title="Files",
         )
 
         fig.for_each_trace(
@@ -222,98 +239,156 @@ if utils.is_ipython():
         )
 
         if savefig:
-            fig_name = f"./data/out/tmp_plots/plotly__{x}__{y}.html"
+            fig_name = f"./data/out/plotlys/plotly__{x}__{y}.html"
             utils.init_parent_folder(fig_name)
             fig.write_html(fig_name)
 
         return fig
 
     savefig = False
+    savefig = True
 
-    x = x
+    # x = x
 
-    tmp_plot(
+    df["LR"] = np.clip(df["LR"], a_min=-10, a_max=None)
+
+    plotly(
         x="LR",
         y="D_max",
         x_title="LR frequentist",
         y_title="D_max frequentist",
-        range_x=(-5, 200),
-        range_y=(0, 0.6),
         savefig=savefig,
     )
 
-    tmp_plot(
+    plotly(
         x="Bayesian_n_sigma",
         y="Bayesian_D_max",
         x_title="n_sigma Bayesian",
         y_title="D_max Bayesian",
-        range_x=(-4, 18),
-        range_y=(0, 0.6),
         savefig=savefig,
     )
 
-    tmp_plot(
-        x="Bayesian_D_max",
-        y="frequentist_D_max",
-        x_title="D_max Bayesian",
-        y_title="D_max Frequentist",
+    plotly(
+        x="D_max",
+        y="Bayesian_D_max",
+        x_title="D_max",
+        y_title="D_max Bayesian",
+        range_x=(0, 0.8),
+        range_y=(0, 0.8),
         savefig=savefig,
     )
 
-    tmp_plot(
-        x="Bayesian_q",
-        y="frequentist_q",
-        x_title="q Bayesian",
-        y_title="q Frequentist",
+    plotly(
+        x="q",
+        y="Bayesian_q",
+        x_title="q",
+        y_title="q Bayesian",
+        range_x=(0, 1.0),
+        range_y=(0, 1.0),
         savefig=savefig,
     )
 
-    tmp_plot(
-        x="Bayesian_phi",
-        y="frequentist_phi",
-        x_title="phi Bayesian",
-        y_title="phi Frequentist",
-        range_x=(2, 15_000),
-        range_y=(2, 15_000),
+    plotly(
+        x="phi",
+        y="Bayesian_phi",
+        x_title="phi",
+        y_title="phi Bayesian",
+        range_x=(2, 7_000),
+        range_y=(2, 7_000),
         savefig=savefig,
     )
 
-    tmp_plot(
-        x="Bayesian_n_sigma",
-        y="frequentist_LR",
-        x_title="n_sigma Bayesian",
-        y_title="LR frequentist",
-        range_x=(-4, 18),
-        range_y=(-5, 200),
+    plotly(
+        x="LR",
+        y="Bayesian_n_sigma",
+        x_title="LR",
+        y_title="n_sigma Bayesian",
         savefig=savefig,
     )
 
-    tmp_plot(
-        x="Bayesian_n_sigma",
-        y="frequentist_LR",
-        x_title="n_sigma Bayesian",
-        y_title="LR frequentist",
-        range_x=(-4, 18),
-        range_y=(-5, 200),
-        savefig=savefig,
-    )
-
-    tmp_plot(
-        x="frequentist_forward_D_max",
-        y="frequentist_reverse_D_max",
+    plotly(
+        x="forward_D_max",
+        y="reverse_D_max",
         x_title="Forward D_max",
         y_title="Reverse D_max",
-        range_x=(0, 0.6),
-        range_y=(0, 0.6),
+        range_x=(0, 0.8),
+        range_y=(0, 0.8),
         savefig=savefig,
     )
 
-    tmp_plot(
-        x="frequentist_forward_LR",
-        y="frequentist_reverse_LR",
+    plotly(
+        x="forward_LR",
+        y="reverse_LR",
         x_title="Forward D_max",
         y_title="Reverse D_max",
-        range_x=(-5, 200),
-        range_y=(-5, 200),
+        range_x=(-10, 120),
+        range_y=(-10, 120),
+        savefig=savefig,
+    )
+
+    plotly(
+        x="phi",
+        y="D_max_std",
+        x_title="phi",
+        y_title="D_max_std",
+        savefig=savefig,
+    )
+
+    df["phi_log10"] = np.log10(df["phi"])
+    plotly(
+        x="phi_log10",
+        y="D_max_std",
+        x_title="log10 phi",
+        y_title="D_max_std",
+        savefig=savefig,
+    )
+
+    df["D_max_significance"] = df["D_max"] / df["D_max_std"]
+    plotly(
+        x="phi_log10",
+        y="D_max_significance",
+        x_title="log10 phi",
+        y_title="D_max_significance",
+        savefig=savefig,
+    )
+
+    plotly(
+        x="phi",
+        y="D_max_significance",
+        x_title="phi",
+        y_title="D_max_significance",
+        savefig=savefig,
+    )
+
+    plotly(
+        x="D_max",
+        y="D_max_significance",
+        x_title="D_max",
+        y_title="D_max_significance",
+        savefig=savefig,
+    )
+
+    plotly(
+        x="LR",
+        y="rho_Ac",
+        x_title="LR",
+        y_title="rho_Ac",
+        savefig=savefig,
+    )
+
+    df["rho_Ac_abs"] = np.abs(df["rho_Ac"])
+    plotly(
+        x="LR",
+        y="rho_Ac_abs",
+        x_title="LR",
+        y_title="rho_Ac_abs",
+        savefig=savefig,
+    )
+
+    plotly(
+        x="LR",
+        y="asymmetry",
+        x_title="LR",
+        y_title="asymmetry",
         savefig=savefig,
     )
