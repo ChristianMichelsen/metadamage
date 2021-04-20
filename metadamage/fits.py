@@ -49,15 +49,15 @@ def group_to_numpyro_data(group, cfg):
 
     z = np.array(group.iloc[:15]["position"], dtype=int)
 
-    y_forward = np.array(group.iloc[:15][forward], dtype=int)
+    k_forward = np.array(group.iloc[:15][forward], dtype=int)
     N_forward = np.array(group.iloc[:15][forward_ref], dtype=int)
 
-    y_reverse = np.array(group.iloc[-15:][reverse], dtype=int)
+    k_reverse = np.array(group.iloc[-15:][reverse], dtype=int)
     N_reverse = np.array(group.iloc[-15:][reverse_ref], dtype=int)
 
     data = {
         "z": np.concatenate([z, -z]),
-        "y": np.concatenate([y_forward, y_reverse]),
+        "k": np.concatenate([k_forward, k_reverse]),
         "N": np.concatenate([N_forward, N_reverse]),
     }
 
@@ -80,9 +80,9 @@ def add_count_information(fit_result, group, data):
     fit_result["N_sum_forward"] = data["N"][:15].sum()
     fit_result["N_sum_reverse"] = data["N"][15:].sum()
     fit_result["N_sum_total"] = data["N"].sum()
-    fit_result["y_sum_forward"] = data["y"][:15].sum()
-    fit_result["y_sum_reverse"] = data["y"][15:].sum()
-    fit_result["y_sum_total"] = data["y"].sum()
+    fit_result["k_sum_forward"] = data["k"][:15].sum()
+    fit_result["k_sum_reverse"] = data["k"][15:].sum()
+    fit_result["k_sum_total"] = data["k"].sum()
 
 
 #%%
@@ -100,6 +100,7 @@ def fit_single_group_without_timeout(
     data = group_to_numpyro_data(group, cfg)
 
     add_tax_information(fit_result, group)
+    
     fits_frequentist.make_fits(fit_result, data)
     add_count_information(fit_result, group, data)
 
@@ -311,7 +312,7 @@ def get_chunks(lst, n):
 def compute_fits_parallel_with_progressbar_chunks(df, cfg, chunk_max=1000):
     logger.info(
         f"Fit: Initializing fit in parallel with progressbar "
-        "in chunks of size {chunk_max}."
+        f"in chunks of size {chunk_max}."
     )
 
     d_fits_all_chunks = {}
@@ -375,7 +376,7 @@ def get_fits(df_counts, cfg):
 
         include = [
             "min_alignments",
-            "min_y_sum",
+            "min_k_sum",
             "substitution_bases_forward",
             "substitution_bases_reverse",
             "N_fits",
@@ -416,13 +417,13 @@ def get_fits(df_counts, cfg):
 
 # import arviz as az
 
-# data_no_y = filter_out_y(data)
+# data_no_k = filter_out_k(data)
 
 # def get_InferenceData(mcmc, model):
 
 #     posterior_samples = mcmc.get_samples()
-#     posterior_predictive = Predictive(model, posterior_samples)(Key(1), **data_no_y)
-#     prior = Predictive(model, num_samples=500)(Key(2), **data_no_y)
+#     posterior_predictive = Predictive(model, posterior_samples)(Key(1), **data_no_k)
+#     prior = Predictive(model, num_samples=500)(Key(2), **data_no_k)
 
 #     numpyro_data = az.from_numpyro(
 #         mcmc,

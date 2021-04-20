@@ -89,7 +89,8 @@ if utils.is_ipython():
         max_fits=10,
         max_cores=-1,
         min_alignments=10,
-        min_y_sum=10,
+        min_k_sum=10,
+        min_N_at_each_pos=1,
         substitution_bases_forward=cli_utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=cli_utils.SubstitutionBases.GA.value,
         bayesian=True,
@@ -146,6 +147,7 @@ if utils.is_ipython():
         tax_id = 22973  # KapK
         tax_id = 9606  # SJ
         tax_id = 6656  # SJ
+        tax_id = 74652  # KapK
         tax_id = -1
         group = utils.get_specific_tax_id(df_counts, tax_id=tax_id)
         data = fits.group_to_numpyro_data(group, cfg)
@@ -166,6 +168,8 @@ if utils.is_ipython():
 
     # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
     df = fit_results.df_fit_results
+
+    # 74652
 
     # Third Party
     import plotly.express as px
@@ -225,21 +229,21 @@ if utils.is_ipython():
     savefig = False
 
     tmp_plot(
-        x="Bayesian_n_sigma",
-        y="Bayesian_D_max",
-        x_title="n_sigma Bayesian",
-        y_title="D_max Bayesian",
-        range_x=(-4, 18),
-        range_y=(0, 0.6),
-        savefig=savefig,
-    )
-
-    tmp_plot(
         x="frequentist_LR",
         y="frequentist_D_max",
         x_title="LR frequentist",
         y_title="D_max frequentist",
         range_x=(-5, 200),
+        range_y=(0, 0.6),
+        savefig=savefig,
+    )
+
+    tmp_plot(
+        x="Bayesian_n_sigma",
+        y="Bayesian_D_max",
+        x_title="n_sigma Bayesian",
+        y_title="D_max Bayesian",
+        range_x=(-4, 18),
         range_y=(0, 0.6),
         savefig=savefig,
     )

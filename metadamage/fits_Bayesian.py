@@ -30,7 +30,7 @@ phi_prior = priors["phi"]
 #%%
 
 
-def model_PMD(z, N, y=None):
+def model_PMD(z, N, k=None):
     z = jnp.abs(z)
 
     q = numpyro.sample("q", dist.Beta(q_prior[0], q_prior[1]))
@@ -46,10 +46,10 @@ def model_PMD(z, N, y=None):
     alpha = numpyro.deterministic("alpha", Dz * phi)
     beta = numpyro.deterministic("beta", (1 - Dz) * phi)
 
-    numpyro.sample("obs", dist.BetaBinomial(alpha, beta, N), obs=y)
+    numpyro.sample("obs", dist.BetaBinomial(alpha, beta, N), obs=k)
 
 
-def model_null(z, N, y=None):
+def model_null(z, N, k=None):
     c = numpyro.sample("c", dist.Beta(c_prior[0], c_prior[1]))
     # D_max = numpyro.deterministic("D_max", q)
     Dz = numpyro.deterministic("Dz", c)
@@ -59,14 +59,14 @@ def model_null(z, N, y=None):
     alpha = numpyro.deterministic("alpha", Dz * phi)
     beta = numpyro.deterministic("beta", (1 - Dz) * phi)
 
-    numpyro.sample("obs", dist.BetaBinomial(alpha, beta, N), obs=y)
+    numpyro.sample("obs", dist.BetaBinomial(alpha, beta, N), obs=k)
 
 
 #%%
 
 
-def filter_out_y(data):
-    return {key: value for key, value in data.items() if key != "y"}
+def filter_out_k(data):
+    return {key: value for key, value in data.items() if key != "k"}
 
 
 def is_model_PMD(model):
@@ -94,11 +94,11 @@ def _get_posterior_null(rng_key, samples, *args, **kwargs):
 def get_posterior_predictive(mcmc, data):
     posterior_samples = mcmc.get_samples()
     rng_key = Key(0)
-    data_no_y = filter_out_y(data)
+    data_no_k = filter_out_k(data)
     if is_model_PMD(mcmc.sampler.model):
-        return _get_posterior_PMD(rng_key, posterior_samples, **data_no_y)
+        return _get_posterior_PMD(rng_key, posterior_samples, **data_no_k)
     else:
-        return _get_posterior_null(rng_key, posterior_samples, **data_no_y)
+        return _get_posterior_null(rng_key, posterior_samples, **data_no_k)
 
 
 def get_posterior_predictive_obs(mcmc, data):

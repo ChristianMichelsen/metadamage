@@ -57,7 +57,7 @@ def log_posterior_PMD(q, A, c, phi, z, k, N):
 class FrequentistPMD:
     def __init__(self, data, method="posterior"):
         self.z = data["z"]
-        self.k = data["y"]
+        self.k = data["k"]
         self.N = data["N"]
         self.method = method
         self._setup_minuit()
@@ -202,7 +202,7 @@ def f_frequentist_null(q, phi, k, N):
 class FrequentistNull:
     def __init__(self, data):
         self.z = data["z"]
-        self.k = data["y"]
+        self.k = data["k"]
         self.N = data["N"]
         self._setup_minuit()
 
@@ -250,7 +250,7 @@ class Frequentist:
 
         self.data = data
         self.z = data["z"]
-        self.k = data["y"]
+        self.k = data["k"]
         self.N = data["N"]
         self.method = method
 
@@ -413,3 +413,5 @@ def make_fits(fit_result, data):
         frequentist_forward.D_max["std"] ** 2 + frequentist_reverse.D_max["mu"] ** 2
     )
     fit_result["frequentist_asymmetry"] = numerator / delimiter
+
+    return frequentist, frequentist_forward, frequentist_reverse

@@ -754,7 +754,7 @@ def get_app(out_dir_default, verbose=True):
 
 #     df_fit_results = fit_results.filter({"tax_ids": tax_ids})
 
-#     df = df_fit_results_all.query("y_sum_total > 1_000_000")
+#     df = df_fit_results_all.query("k_sum_total > 1_000_000")
 #     N_shortnames = df.shortname.nunique()
 #     symbol_sequence = [str(i) for i in range(N_shortnames)]
 

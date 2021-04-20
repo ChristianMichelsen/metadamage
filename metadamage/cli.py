@@ -51,7 +51,8 @@ def cli_fit(
     max_cores: int = 1,
     # Filters
     min_alignments: int = 10,
-    min_y_sum: int = 10,
+    min_k_sum: int = 10,
+    min_N_at_each_pos: int = 1,
     # Subsitution Bases
     substitution_bases_forward: cli_utils.SubstitutionBases = typer.Option(
         cli_utils.SubstitutionBases.CT
@@ -98,7 +99,8 @@ def cli_fit(
         # "max_position": max_position,
         #
         "min_alignments": min_alignments,
-        "min_y_sum": min_y_sum,
+        "min_k_sum": min_k_sum,
+        "min_N_at_each_pos": min_N_at_each_pos,
         #
         # note: convert Enum to actual value
         "substitution_bases_forward": substitution_bases_forward.value,

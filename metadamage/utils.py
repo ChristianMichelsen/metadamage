@@ -48,7 +48,8 @@ class Config:
     # max_position: Optional[int]
     #
     min_alignments: int
-    min_y_sum: int
+    min_k_sum: int
+    min_N_at_each_pos: int
     #
     substitution_bases_forward: str
     substitution_bases_reverse: str
@@ -165,7 +166,8 @@ class Config:
             my_table.add_row("Number of cores to use", str(self.N_cores))
 
         my_table.add_row("Minimum number of alignments", str(self.min_alignments))
-        my_table.add_row("Minimum y sum", str(self.min_y_sum))
+        my_table.add_row("Minimum k sum", str(self.min_k_sum))
+        my_table.add_row("Minimum N at each position", str(self.min_N_at_each_pos))
 
         my_table.add_row(
             "Substitution bases forward", str(self.substitution_bases_forward)

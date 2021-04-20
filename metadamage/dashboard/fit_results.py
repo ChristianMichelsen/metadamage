@@ -45,8 +45,8 @@ class FitResults:
         with about_time() as times["df_fit_results"]:
             self._load_df_fit_results()
 
-        with about_time() as times["df_fit_predictions"]:
-            self._load_df_fit_predictions()
+        # with about_time() as times["df_fit_predictions"]:
+        #     self._load_df_fit_predictions()
 
         with about_time() as times["ranges"]:
             self._compute_ranges()
@@ -101,9 +101,9 @@ class FitResults:
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
 
-    def _load_df_fit_predictions(self):
-        self.df_fit_predictions = self._load_parquet_file("fit_predictions")
-        # self.df_fit_predictions = io.Parquet(self.folder / "fit_predictions").load()
+    # def _load_df_fit_predictions(self):
+    #     self.df_fit_predictions = self._load_parquet_file("fit_predictions")
+    #     # self.df_fit_predictions = io.Parquet(self.folder / "fit_predictions").load()
 
     def _get_range_of_column(self, column, spacing):
         array = self.df_fit_results[column]
@@ -239,9 +239,9 @@ class FitResults:
         df_counts_group = self.load_df_counts_shortname(shortname)
         return df_counts_group.query(f"tax_id == {tax_id}")
 
-    def get_single_fit_prediction(self, shortname, tax_id):
-        query = f"shortname == '{shortname}' & tax_id == {tax_id}"
-        return self.df_fit_predictions.query(query)
+    # def get_single_fit_prediction(self, shortname, tax_id):
+    #     query = f"shortname == '{shortname}' & tax_id == {tax_id}"
+    #     return self.df_fit_predictions.query(query)
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
@@ -270,9 +270,8 @@ class FitResults:
         columns = list(self.df_fit_results.columns)
 
         contains_Bayesian = any(["Bayesian" in column for column in columns])
-        contains_frequentist = any(["frequentist" in column for column in columns])
 
-        if contains_Bayesian and contains_frequentist:
+        if contains_Bayesian:
 
             self.custom_data_columns = [
                 "shortname",
@@ -294,7 +293,7 @@ class FitResults:
                 # Counts
                 "N_alignments",
                 "N_sum_total",
-                "y_sum_total",
+                "k_sum_total",
             ]
 
             self.hovertemplate = (
@@ -373,7 +372,7 @@ class FitResults:
             "frequentist_D_max": r"$\large D_\mathrm{max}$",
             "N_z1": r"$\large N_{z=1}$",
             "N_sum": r"$\large N_\mathrm{sum}$",
-            "y_sum": r"$\large y_\mathrm{sum}$",
+            "k_sum": r"$\large y_\mathrm{sum}$",
             # "normalized_noise": r"$\large \mathrm{noise}$",
         }
 

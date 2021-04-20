@@ -264,7 +264,7 @@ class Bootstrap:
             "q_mean",
             "concentration_mean",
             "N_alignments",
-            "y_sum_total",
+            "k_sum_total",
             "N_sum_total",
         ]
 

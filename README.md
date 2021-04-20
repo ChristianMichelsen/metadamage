@@ -123,7 +123,8 @@ The `metadamage fit` CLI has the following options.
 - Minimum values or cuts/thresholds for plots
   - `--min-alignments`: Minimum number of alignments (![N_\mathrm{alignments}](https://render.githubusercontent.com/render/math?math=%5Clarge+%5Cdisplaystyle+N_%5Cmathrm%7Balignments%7D)
 ) of a single TaxID to be fitted. Default is 10.
-  - `--min-y-sum`: Minimum sum of `y` of a single TaxID to be fitted. Here `y` might be e.g. the number of A→T transitions in the forward direction and the number of G→A transitions in the reverse direction.  In that case, it would be: ![\mathtt{y} = \sum_{z=1}^{15} \left( N_{\mathrm{CT}}(z)  +  N_{\mathrm{GA}}(-z) \right)](https://render.githubusercontent.com/render/math?math=%5Ctextstyle+%5Cmathtt%7By%7D+%3D+%5Csum_%7Bz%3D1%7D%5E%7B15%7D+%5Cleft%28+N_%7B%5Cmathrm%7BCT%7D%7D%28z%29++%2B++N_%7B%5Cmathrm%7BGA%7D%7D%28-z%29+%5Cright%29).  Default is 10.
+  - `--min-k-sum`: Minimum sum of `k` of a single TaxID to be fitted. Here `k` might be e.g. the number of A→T transitions in the forward direction and the number of G→A transitions in the reverse direction.  In that case, it would be: ![\mathtt{k} = \sum_{z=1}^{15} \left( N_{\mathrm{CT}}(z)  +  N_{\mathrm{GA}}(-z) \right)](https://render.githubusercontent.com/render/math?math=%5Ctextstyle+%5Cmathtt%7By%7D+%3D+%5Csum_%7Bz%3D1%7D%5E%7B15%7D+%5Cleft%28+N_%7B%5Cmathrm%7BCT%7D%7D%28z%29++%2B++N_%7B%5Cmathrm%7BGA%7D%7D%28-z%29+%5Cright%29).  Default is 10.
+- `--min-N-at-each-pos`: Minimum number of N at each position.
 
 - Other:
   - `--substitution-bases-forward`:  Which substitution to check for damage in the forward region. Do not change this value except for control checks. Default is `CT`.

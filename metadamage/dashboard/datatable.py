@@ -60,7 +60,7 @@ def get_data_table_keywords(id="data_table"):
             "type": "numeric",
             "format": {"specifier": ".3s"},
         },
-        "y_sum_total": {
+        "k_sum_total": {
             "name": "y sum total",
             "type": "numeric",
             "format": {"specifier": ".3s"},
@@ -106,12 +106,12 @@ def get_data_table_keywords(id="data_table"):
             "type": "numeric",
             "format": {"specifier": ".3s"},
         },
-        "y_sum_forward": {
+        "k_sum_forward": {
             "name": "y sum, forward",
             "type": "numeric",
             "format": {"specifier": ".3s"},
         },
-        "y_sum_reverse": {
+        "k_sum_reverse": {
             "name": "y sum, reverse",
             "type": "numeric",
             "format": {"specifier": ".3s"},

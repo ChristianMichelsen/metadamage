@@ -176,36 +176,59 @@ def replace_nans_with_zeroes(df):
     return df.fillna(0)
 
 
-def compute_y_sum_total(group, cfg):
-    y_sum_total = 0
+def compute_k_sum_total(group, cfg):
+    k_sum_total = 0
     forward_bases = (
         cfg.substitution_bases_forward[0] + cfg.substitution_bases_forward[1]
     )
-    y_sum_total += group[group.position > 0][forward_bases].sum()
+    k_sum_total += group[group.position > 0][forward_bases].sum()
     reverse_bases = (
         cfg.substitution_bases_reverse[0] + cfg.substitution_bases_reverse[1]
     )
-    y_sum_total += group[group.position < 0][reverse_bases].sum()
-    return y_sum_total
+    k_sum_total += group[group.position < 0][reverse_bases].sum()
+    return k_sum_total
 
 
-def add_y_sum_counts(df, cfg):
+def add_k_sum_counts(df, cfg):
 
     meta = pd.Series(
         [],
-        name="y_sum_total",
+        name="k_sum_total",
         index=pd.Index([], name="tax_id", dtype=int),
         dtype=int,
     )
 
-    ds = df.groupby("tax_id").apply(compute_y_sum_total, cfg, meta=meta)
+    ds = df.groupby("tax_id").apply(compute_k_sum_total, cfg, meta=meta)
+    ds = ds.reset_index()
+    df = dd.merge(df, ds, on=["tax_id"])
+    return df
+
+
+def compute_min_N_in_group(group, cfg):
+    min_N_forward = group[group.position > 0][cfg.substitution_bases_forward[0]].min()
+    min_N_reverse = group[group.position < 0][cfg.substitution_bases_reverse[0]].min()
+    return min(min_N_forward, min_N_reverse)
+
+
+def add_min_N_in_group(df, cfg):
+
+    meta = pd.Series(
+        [],
+        name="min_N_in_group",
+        index=pd.Index([], name="tax_id", dtype=int),
+        dtype=int,
+    )
+
+    ds = df.groupby("tax_id").apply(compute_min_N_in_group, cfg, meta=meta)
     ds = ds.reset_index()
     df = dd.merge(df, ds, on=["tax_id"])
     return df
 
 
 def filter_cut_based_on_cfg(df, cfg):
-    query = f"(N_alignments >= {cfg.min_alignments}) & (y_sum_total >= {cfg.min_y_sum})"
+    query = f"(N_alignments >= {cfg.min_alignments}) "
+    query += f"& (k_sum_total >= {cfg.min_k_sum})"
+    query += f"& (min_N_in_group >= {cfg.min_N_at_each_pos})"
     return df.query(query)
 
 
@@ -237,13 +260,13 @@ def compute_counts_with_dask(cfg, use_processes=True):
             # compute error rates
             .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
             .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
-            # error rates forward
+            # # error rates forward
             .pipe(
                 add_error_rates,
                 ref=cfg.substitution_bases_forward[0],
                 obs=cfg.substitution_bases_forward[1],
             )
-            # error rates reverse
+            # # error rates reverse
             .pipe(
                 add_error_rates,
                 ref=cfg.substitution_bases_reverse[0],
@@ -253,11 +276,12 @@ def compute_counts_with_dask(cfg, use_processes=True):
             .pipe(make_position_1_indexed)
             .pipe(make_reverse_position_negative)
             .pipe(replace_nans_with_zeroes)
-            .pipe(add_y_sum_counts, cfg=cfg)
+            .pipe(add_k_sum_counts, cfg=cfg)
+            .pipe(add_min_N_in_group, cfg=cfg)
             .pipe(filter_cut_based_on_cfg, cfg)
             # turns dask dataframe into pandas dataframe
             .compute()
-            # .pipe(remove_tax_ids_with_too_few_y_sum_total, cfg)
+            # .pipe(remove_tax_ids_with_too_few_k_sum_total, cfg)
             # .pipe(cut_NANs_away)  # remove any tax_ids containing nans
             .reset_index(drop=True)
             .pipe(sort_by_alignments)
@@ -286,7 +310,8 @@ def load_counts(cfg):
 
         include = [
             "min_alignments",
-            "min_y_sum",
+            "min_k_sum",
+            "min_N_at_each_pos",
             "substitution_bases_forward",
             "substitution_bases_reverse",
             "shortname",
