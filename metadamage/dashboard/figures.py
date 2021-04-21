@@ -40,8 +40,8 @@ def plot_fit_results(fit_results, df_fit_results=None):
 
     fig = px.scatter(
         df_fit_results,
-        x="Bayesian_n_sigma",
-        y="Bayesian_D_max",
+        x="LR",
+        y="D_max",
         size="size",
         color="shortname",
         hover_name="shortname",
@@ -49,7 +49,7 @@ def plot_fit_results(fit_results, df_fit_results=None):
         # opacity=1,
         color_discrete_map=fit_results.d_cmap,
         custom_data=fit_results.custom_data_columns,
-        range_x=fit_results.ranges["Bayesian_n_sigma"],
+        range_x=fit_results.ranges["LR"],
         range_y=[0, 1],
         render_mode="webgl",
         symbol="shortname",
@@ -65,9 +65,10 @@ def plot_fit_results(fit_results, df_fit_results=None):
     )
 
     fig.update_layout(
-        xaxis_title=r"$\Large n_\sigma$",
+        xaxis_title=r"$\Large \lambda_\mathrm{LR}$",
         yaxis_title=r"$\Large D_\mathrm{max}$",
-        legend_title="Files",
+        # legend_title="Files",
+        showlegend=False,
     )
 
     fig.for_each_trace(

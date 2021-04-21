@@ -246,9 +246,9 @@ if utils.is_ipython():
         return fig
 
     savefig = False
-    savefig = True
+    # savefig = True
 
-    # x = x
+    x = x
 
     df["LR"] = np.clip(df["LR"], a_min=-10, a_max=None)
 
