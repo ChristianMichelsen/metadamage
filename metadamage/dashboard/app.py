@@ -252,7 +252,9 @@ def get_app(out_dir_default, verbose=True):
     def update_dropdown_when_Select_All(dropdown_file_selection):
         if key_is_in_list_case_insensitive(dropdown_file_selection, "Select all"):
             dropdown_file_selection = fit_results.shortnames
-        elif key_is_in_list_case_insensitive(dropdown_file_selection, "Deselect"):
+        elif key_is_in_list_case_insensitive(
+            dropdown_file_selection, "Default selection"
+        ):
             dropdown_file_selection = dashboard.elements.get_shortnames_each(
                 fit_results.shortnames
             )
@@ -340,6 +342,7 @@ def get_app(out_dir_default, verbose=True):
             fit_results.set_marker_size(marker_transformation, marker_size_max)
 
             d_filter = {"shortnames": dropdown_file_selection}
+
             slider_names = [id["index"] for id in slider_ids]
             for shortname, values in zip(slider_names, slider_values):
                 d_filter[shortname] = values

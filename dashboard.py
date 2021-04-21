@@ -2,156 +2,87 @@ import dash
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
+from dash.dependencies import Input, Output, State, ALL, MATCH
 import plotly.express as px
-
-
+import dashboard_helper
 import pandas as pd
+from pathlib import Path
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
-app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
+external_scripts = [
+    "https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.4/"
+    "MathJax.js?config=TeX-MML-AM_CHTML",
+]
+
+app = dash.Dash(
+    __name__,
+    external_stylesheets=external_stylesheets,
+    external_scripts=external_scripts,
+    title="metaDashboard",
+    update_title="Updating...",
+)
+
+# to allow custom css
+app.scripts.config.serve_locally = True
+
+# First Party
+from metadamage import dashboard
+
+dashboard.utils.set_custom_theme()
+# reload(dashboard)
 
 
-df = pd.read_csv("https://plotly.github.io/datasets/country_indicators.csv")
-available_indicators = df["Indicator Name"].unique()
+#%%
+
+graph_kwargs = dict(
+    config={
+        "displaylogo": False,
+        "doubleClick": "reset",
+        "showTips": True,
+        "modeBarButtonsToRemove": [
+            "select2d",
+            "lasso2d",
+            "autoScale2d",
+            "hoverClosestCartesian",
+            "hoverCompareCartesian",
+            "toggleSpikelines",
+        ],
+    },
+    # # https://css-tricks.com/fun-viewport-units/
+    # style={"width": "100%", "height": "55vh"},
+)
 
 
-style_sidebar_base = {
-    "position": "fixed",
-    "top": 62.5,
-    "bottom": 0,
-    "height": "100%",
-    "z-index": 1,
-    "overflow-x": "hidden",
-    "transition": "all 0.5s",
-    "padding": "0.5rem 1rem",
-    "background-color": "#f8f9fa",
-}
+#%%
+
+
+fit_results = dashboard.fit_results.FitResults(
+    folder=Path("./data/out/"),
+    use_memoization=False,
+)
+
+# fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
+# df = fit_results.df_fit_results
+
+# df = pd.read_csv("https://plotly.github.io/datasets/country_indicators.csv")
+available_indicators = list(fit_results.df_fit_results.columns)
+
 
 # (1) No sidebars, (2) Only left filter sidebar,
 # (3) Only right filter sidebar, (4) Both sidebars
-start_configuration_id = 1
+start_configuration_id = 2
 
 sidebar_filter_width = 30  # in %
 sidebar_plot_width = 20  # in %
 content_main_margin = 1  # in %
 
-# the style arguments for the sidebar_plot. We use position:fixed and a fixed width
-style_sidebar_filter_shown = {
-    **style_sidebar_base,
-    "left": "0%",
-    "width": f"{sidebar_filter_width}%",
-}
 
-style_sidebar_filter_hidden = {
-    **style_sidebar_base,
-    "left": f"-{sidebar_filter_width}%",
-    "width": f"{sidebar_filter_width}%",
-}
-
-# the style arguments for the sidebar_plot. We use position:fixed and a fixed width
-style_sidebar_plot_shown = {
-    **style_sidebar_base,
-    "left": f"{100-sidebar_plot_width}%",
-    "width": f"{sidebar_plot_width}%",
-}
-
-style_sidebar_plot_hidden = {
-    **style_sidebar_base,
-    "left": "100%",
-    "width": f"{sidebar_plot_width}%",
-}
-
-style_main_base = {
-    "transition": "margin .5s",
-    "padding": "2rem 1rem",
-    "background-color": "#f8f9fa",
-}
-
-style_main_both_sidebars = {
-    **style_main_base,
-    "margin-left": f"{sidebar_filter_width+content_main_margin}%",
-    "margin-right": f"{sidebar_plot_width+content_main_margin}%",
-}
-
-style_main_no_sidebars = {
-    **style_main_base,
-    "margin-left": f"{content_main_margin}%",
-    "margin-right": f"{content_main_margin}%",
-}
-
-style_main_filter_sidebar = {
-    **style_main_base,
-    "margin-left": f"{sidebar_filter_width+content_main_margin}%",
-    "margin-right": f"{content_main_margin}%",
-}
-
-style_main_plot_sidebar = {
-    **style_main_base,
-    "margin-left": f"{content_main_margin}%",
-    "margin-right": f"{sidebar_plot_width+content_main_margin}%",
-}
-
-
-from collections import namedtuple
-
-configuration = namedtuple(
-    "configuration",
-    [
-        "style_content_main",
-        "style_sidebar_filter",
-        "style_sidebar_plot",
-        "state_sidebar_filter",
-        "state_sidebar_plot",
-    ],
+configurations = dashboard_helper.get_configurations(
+    sidebar_filter_width,
+    sidebar_plot_width,
+    content_main_margin,
 )
-
-
-d_sidebar_filter = {
-    "shown": {
-        "style_sidebar_filter": style_sidebar_filter_shown,
-        "state_sidebar_filter": "SHOWN",
-    },
-    "hidden": {
-        "style_sidebar_filter": style_sidebar_filter_hidden,
-        "state_sidebar_filter": "HIDDEN",
-    },
-}
-
-
-d_sidebar_plot = {
-    "shown": {
-        "style_sidebar_plot": style_sidebar_plot_shown,
-        "state_sidebar_plot": "SHOWN",
-    },
-    "hidden": {
-        "style_sidebar_plot": style_sidebar_plot_hidden,
-        "state_sidebar_plot": "HIDDEN",
-    },
-}
-
-configurations = {
-    1: configuration(
-        style_content_main=style_main_no_sidebars,
-        **d_sidebar_filter["hidden"],
-        **d_sidebar_plot["hidden"],
-    ),
-    2: configuration(
-        style_content_main=style_main_filter_sidebar,
-        **d_sidebar_filter["shown"],
-        **d_sidebar_plot["hidden"],
-    ),
-    3: configuration(
-        style_content_main=style_main_plot_sidebar,
-        **d_sidebar_filter["hidden"],
-        **d_sidebar_plot["shown"],
-    ),
-    4: configuration(
-        style_content_main=style_main_both_sidebars,
-        **d_sidebar_filter["shown"],
-        **d_sidebar_plot["shown"],
-    ),
-}
+start_configuration = configurations[start_configuration_id]
 
 
 navbar = dbc.NavbarSimple(
@@ -179,29 +110,27 @@ navbar = dbc.NavbarSimple(
 )
 
 
-start_configuration = configurations[start_configuration_id]
-
 dropdown_x_axis = dcc.Dropdown(
-    id="xaxis-column",
+    id="xaxis_column",
     options=[{"label": i, "value": i} for i in available_indicators],
-    value="Fertility rate, total (births per woman)",
+    value="LR",
 )
 
 lin_log_scale_x_axis = dcc.RadioItems(
-    id="xaxis-type",
+    id="xaxis_type",
     options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
     value="Linear",
     labelStyle={"display": "inline-block"},
 )
 
 dropdown_y_axis = dcc.Dropdown(
-    id="yaxis-column",
+    id="yaxis_column",
     options=[{"label": i, "value": i} for i in available_indicators],
-    value="Life expectancy at birth, total (years)",
+    value="D_max",
 )
 
 lin_log_scale_y_axis = dcc.RadioItems(
-    id="yaxis-type",
+    id="yaxis_type",
     options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
     value="Linear",
     labelStyle={"display": "inline-block"},
@@ -222,20 +151,11 @@ div_y_axis = html.Div(
 )
 
 
-slider = dcc.Slider(
-    id="year--slider",
-    min=df["Year"].min(),
-    max=df["Year"].max(),
-    value=df["Year"].max(),
-    marks={str(year): str(year) for year in df["Year"].unique()},
-    step=None,
-)
-
 content_main = html.Div(
     html.Div(
         [
             html.Div([div_x_axis, div_y_axis]),
-            dcc.Graph(id="indicator-graphic"),
+            dcc.Graph(id="indicator_graphic", **graph_kwargs),
             # slider,
         ]
     ),
@@ -244,11 +164,209 @@ content_main = html.Div(
 )
 
 
+#%%
+
+
+filter_dropdown_file = dbc.FormGroup(
+    [
+        html.Br(),
+        dbc.Col(html.H3("Input samples"), width=12),
+        dashboard.elements.get_dropdown_file_selection(
+            fit_results=fit_results,
+            id="sidebar_filter_dropdown_shortnames",
+            shortnames_to_show="each",  # one for each first letter in shortname
+        ),
+    ]
+)
+
+filters_collapse_files = html.Div(
+    [
+        dbc.Button(
+            "Filter Files",
+            id="filters_toggle_files_button",
+            color="secondary",
+            block=True,
+            outline=True,
+            size="lg",
+        ),
+        dbc.Collapse(
+            filter_dropdown_file,
+            id="filters_dropdown_files",
+            is_open=False,
+        ),
+    ]
+)
+
+
+#%%
+
+
+# Standard Library
+import itertools
+
+filter_tax_id = dbc.Row(
+    [
+        dbc.Col(html.Br(), width=12),
+        dbc.Col(html.H3("Specific taxa"), width=12),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dcc.Dropdown(
+                        id="tax_id_filter_input",
+                        options=[
+                            {"label": tax, "value": tax}
+                            for tax in itertools.chain.from_iterable(
+                                [
+                                    fit_results.all_tax_ranks,
+                                    fit_results.all_tax_names,
+                                    fit_results.all_tax_ids,
+                                ]
+                            )
+                        ],
+                        clearable=True,
+                        multi=True,
+                        placeholder="Select taxas...",
+                    ),
+                ],
+            ),
+            width=12,
+        ),
+        dbc.Col(html.Br(), width=12),
+        dbc.Col(html.H3("Taxanomic descendants"), width=12),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dbc.Input(
+                        id="tax_id_filter_input_descendants",
+                        placeholder="Input goes here...",
+                        type="text",
+                        autoComplete="off",
+                    ),
+                ]
+            ),
+            width=12,
+        ),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dbc.Checklist(
+                        options=[
+                            {"label": "Include subspecies", "value": True},
+                        ],
+                        value=[True],
+                        id="tax_id_filter_subspecies",
+                    ),
+                ]
+            ),
+            width=12,
+        ),
+        dbc.Col(html.P(id="tax_id_filter_counts_output"), width=12),
+        dbc.Col(
+            dbc.FormGroup(
+                [
+                    dbc.Button(
+                        "Plot", id="tax_id_plot_button", color="primary", block=True
+                    ),
+                ]
+            ),
+        ),
+    ],
+    justify="between",
+    form=True,
+)
+
+
+filters_collapse_tax_id = html.Div(
+    [
+        dbc.Button(
+            "Filter Tax IDs",
+            id="filters_toggle_tax_ids_button",
+            color="secondary",
+            block=True,
+            outline=True,
+            size="lg",
+        ),
+        dbc.Collapse(
+            filter_tax_id,
+            id="filters_dropdown_tax_ids",
+            is_open=False,
+        ),
+    ]
+)
+
+#%%
+
+
+slider_names = [
+    "LR",
+    "D_max",
+    "q",
+    "phi",
+    "N_alignments",
+    "k_sum_total",
+    "N_sum_total",
+]
+
+filters_collapse_ranges = html.Div(
+    [
+        dbc.Button(
+            "Filter Fit Results",
+            id="filters_toggle_ranges_button",
+            color="secondary",
+            block=True,
+            outline=True,
+            size="lg",
+        ),
+        dbc.Collapse(
+            [
+                html.Br(),
+                dbc.Col(
+                    html.H3("Fit results"),
+                    width=12,
+                ),
+                dbc.Col(
+                    dcc.Dropdown(
+                        id="dropdown_slider",
+                        options=[
+                            {"label": shortname, "value": shortname}
+                            for shortname in slider_names
+                        ],
+                        value=[],
+                        multi=True,
+                        placeholder="Select a variable to filter on...",
+                        optionHeight=30,
+                    ),
+                    width=12,
+                ),
+                dbc.Col(
+                    id="dynamic_slider_container",
+                    children=[],
+                    width=12,
+                ),
+            ],
+            id="filters_dropdown_ranges_button",
+            is_open=False,
+        ),
+    ]
+)
+
+
+#%%
+
 sidebar_filter = html.Div(
     [
         html.H2("Filter", className="display-4"),
         html.Hr(),
         html.P("filter here", className="lead"),
+        dbc.Form(
+            [
+                filters_collapse_files,
+                html.Hr(),
+                filters_collapse_tax_id,
+                html.Hr(),
+                filters_collapse_ranges,
+            ]
+        ),
     ],
     id="sidebar_filter",
     style=start_configuration.style_sidebar_filter,
@@ -267,64 +385,441 @@ sidebar_plot = html.Div(
 
 app.layout = html.Div(
     [
+        # dcc.Store(id="store"),
         dcc.Store(id="sidebar_plot_state"),
         dcc.Store(id="sidebar_filter_state"),
         navbar,
         sidebar_filter,
         content_main,
         sidebar_plot,
+        dbc.Modal(
+            [
+                dbc.ModalHeader("Filtering Error"),
+                dbc.ModalBody(
+                    "Too restrictive filtering, no points left to plot. "
+                    "Please choose a less restrictive filtering."
+                ),
+                dbc.ModalFooter(
+                    dbc.Button("Close", id="modal_close_button", className="ml-auto")
+                ),
+            ],
+            centered=True,
+            id="modal",
+        ),
     ],
 )
 
 
-@app.callback(
-    Output("indicator-graphic", "figure"),
-    Input("xaxis-column", "value"),
-    Input("yaxis-column", "value"),
-    Input("xaxis-type", "value"),
-    Input("yaxis-type", "value"),
-    # Input("year--slider", "value"),
-)
-def update_graph(
+def include_subspecies(subspecies):
+    if len(subspecies) == 1:
+        return True
+    return False
+
+
+def append_to_list_if_exists(d, key, value):
+    if key in d:
+        d[key].append(value)
+    else:
+        d[key] = [value]
+
+
+def apply_tax_id_filter(d_filter, tax_id_filter_input):
+    if tax_id_filter_input is None or len(tax_id_filter_input) == 0:
+        return None
+
+    for tax in tax_id_filter_input:
+        if tax in fit_results.all_tax_ids:
+            append_to_list_if_exists(d_filter, "tax_ids", tax)
+        elif tax in fit_results.all_tax_names:
+            append_to_list_if_exists(d_filter, "tax_names", tax)
+        elif tax in fit_results.all_tax_ranks:
+            append_to_list_if_exists(d_filter, "tax_ranks", tax)
+        else:
+            raise AssertionError(f"Tax {tax} could not be found. ")
+
+
+from metadamage import taxonomy
+
+
+def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies):
+    if tax_name is None:
+        return None
+
+    tax_ids = taxonomy.extract_descendant_tax_ids(
+        tax_name,
+        include_subspecies=include_subspecies(tax_id_filter_subspecies),
+    )
+    N_tax_ids = len(tax_ids)
+    if N_tax_ids != 0:
+        if "tax_id" in d_filter:
+            d_filter["tax_ids"].extend(tax_ids)
+        else:
+            d_filter["tax_ids"] = tax_ids
+
+
+from dash.exceptions import PreventUpdate
+
+
+def make_figure(
+    df,
     xaxis_column_name,
     yaxis_column_name,
     xaxis_type,
     yaxis_type,
-    # year_value,
 ):
-    # dff = df[df["Year"] == year_value]
-
-    dff = df
 
     fig = px.scatter(
-        x=dff[dff["Indicator Name"] == xaxis_column_name]["Value"],
-        y=dff[dff["Indicator Name"] == yaxis_column_name]["Value"],
-        hover_name=dff[dff["Indicator Name"] == yaxis_column_name]["Country Name"],
+        df,
+        x=xaxis_column_name,
+        y=yaxis_column_name,
+        size="size",
+        color="shortname",
+        hover_name="shortname",
+        color_discrete_map=fit_results.d_cmap,
+        custom_data=fit_results.custom_data_columns,
+        render_mode="webgl",
+        symbol="shortname",
+        symbol_map=fit_results.d_symbols,
     )
 
-    fig.update_layout(margin={"l": 40, "b": 40, "t": 10, "r": 0}, hovermode="closest")
+    fig.update_traces(
+        hovertemplate=fit_results.hovertemplate,
+        marker_line_width=0,
+        marker_sizeref=2.0
+        * fit_results.max_of_size
+        / (fit_results.marker_size_max ** 2),
+    )
+
+    fig.update_layout(
+        xaxis_title=xaxis_column_name,
+        yaxis_title=yaxis_column_name,
+        showlegend=False,
+        # legend_title="Files",
+    )
+
+    fig.for_each_trace(
+        lambda trace: dashboard.figures.set_opacity_for_trace(
+            trace,
+            method="sqrt",
+            scale=20 / df.shortname.nunique(),
+            opacity_min=0.3,
+            opacity_max=0.95,
+        )
+    )
 
     fig.update_xaxes(
-        title=xaxis_column_name, type="linear" if xaxis_type == "Linear" else "log"
+        title=xaxis_column_name,
+        type="linear" if xaxis_type == "Linear" else "log",
     )
 
     fig.update_yaxes(
-        title=yaxis_column_name, type="linear" if yaxis_type == "Linear" else "log"
+        title=yaxis_column_name,
+        type="linear" if yaxis_type == "Linear" else "log",
     )
 
     return fig
 
 
+@app.callback(
+    Output("indicator_graphic", "figure"),
+    Output("modal", "is_open"),
+    Input("sidebar_filter_dropdown_shortnames", "value"),
+    Input("tax_id_filter_input", "value"),
+    Input("tax_id_plot_button", "n_clicks"),
+    Input({"type": "dynamic_slider", "index": ALL}, "value"),
+    Input("xaxis_column", "value"),
+    Input("yaxis_column", "value"),
+    Input("xaxis_type", "value"),
+    Input("yaxis_type", "value"),
+    Input("modal_close_button", "n_clicks"),
+    State({"type": "dynamic_slider", "index": ALL}, "id"),
+    State("tax_id_filter_input_descendants", "value"),
+    State("tax_id_filter_subspecies", "value"),
+    State("modal", "is_open"),
+)
+def update_graph(
+    dropdown_file_selection,
+    tax_id_filter_input,
+    tax_id_button,
+    slider_values,
+    xaxis_column_name,
+    yaxis_column_name,
+    xaxis_type,
+    yaxis_type,
+    n_clicks_modal,
+    slider_ids,
+    tax_id_filter_input_descendants,
+    tax_id_filter_subspecies,
+    modal_is_open,
+):
+
+    # if modal is open and the "close" button is clicked, close down modal
+    if n_clicks_modal and modal_is_open:
+        return dash.no_update, False
+
+    # if no files selected
+    if not dropdown_file_selection:
+        raise PreventUpdate
+
+    # fit_results.set_marker_size(marker_transformation, marker_size_max)
+
+    d_filter = {"shortnames": dropdown_file_selection}
+
+    slider_names = [id["index"] for id in slider_ids]
+    for shortname, values in zip(slider_names, slider_values):
+        d_filter[shortname] = values
+
+    apply_tax_id_filter(
+        d_filter,
+        tax_id_filter_input,
+    )
+
+    apply_tax_id_descendants_filter(
+        d_filter,
+        tax_id_filter_input_descendants,
+        tax_id_filter_subspecies,
+    )
+
+    df_fit_results_filtered = fit_results.filter(d_filter)
+
+    # raise modal warning if no results due to too restrictive filtering
+    if len(df_fit_results_filtered) == 0:
+        return dash.no_update, True
+
+    fig = make_figure(
+        df=df_fit_results_filtered,
+        xaxis_column_name=xaxis_column_name,
+        yaxis_column_name=yaxis_column_name,
+        xaxis_type=xaxis_type,
+        yaxis_type=yaxis_type,
+    )
+
+    return fig, dash.no_update
+
+
 #%%
 
 
-def get_button_id(ctx):
-    " Get button clicked"
-    if not ctx.triggered:
-        button_id = None
+def key_is_in_list_case_insensitive(lst, key):
+    return any([key.lower() in s.lower() for s in lst])
+
+
+@app.callback(
+    Output("sidebar_filter_dropdown_shortnames", "value"),
+    Input("sidebar_filter_dropdown_shortnames", "value"),
+)
+def update_dropdown_when_Select_All(dropdown_file_selection):
+    if key_is_in_list_case_insensitive(dropdown_file_selection, "Select all"):
+        dropdown_file_selection = fit_results.shortnames
+    elif key_is_in_list_case_insensitive(dropdown_file_selection, "Default selection"):
+        dropdown_file_selection = dashboard.elements.get_shortnames_each(
+            fit_results.shortnames
+        )
+
+    dropdown_file_selection = list(sorted(dropdown_file_selection))
+
+    return dropdown_file_selection
+
+
+#%%
+
+
+def get_id_dict(child):
+    return child["props"]["id"]
+
+
+def find_index_in_children(children, id_type, search_index):
+    for i, child in enumerate(children):
+        d_id = get_id_dict(child)
+        if d_id["type"] == id_type and d_id["index"] == search_index:
+            return i
+
+
+def get_current_names(current_ids):
+    return [x["index"] for x in current_ids if x]
+
+
+def slider_is_added(current_names, dropdown_names):
+    "Returns True if a new slider is added, False otherwise"
+    return set(current_names).issubset(dropdown_names)
+
+
+def get_name_of_added_slider(current_names, dropdown_names):
+    return list(set(dropdown_names).difference(current_names))[0]
+
+
+def get_name_of_removed_slider(current_names, dropdown_names):
+    return list(set(current_names).difference(dropdown_names))[0]
+
+
+def remove_name_from_children(column, children, id_type):
+    " Given a column, remove the corresponding child element from children"
+    index = find_index_in_children(children, id_type=id_type, search_index=column)
+    children.pop(index)
+
+
+from metadamage import utils
+
+
+def get_slider_name(column, low_high):
+    if isinstance(low_high, dict):
+        low = low_high["min"]
+        high = low_high["max"]
+    elif isinstance(low_high, (tuple, list)):
+        low = low_high[0]
+        high = low_high[1]
+
+    if column in dashboard.utils.log_transform_columns:
+        low = dashboard.utils.log_transform_slider(low)
+        high = dashboard.utils.log_transform_slider(high)
+
+    low = utils.human_format(low)
+    high = utils.human_format(high)
+
+    return f"{column}: [{low}, {high}]"
+
+
+def make_new_slider(column, id_type, N_steps=100):
+
+    d_range_slider = dashboard.elements.get_range_slider_keywords(
+        fit_results,
+        column=column,
+        N_steps=N_steps,
+    )
+
+    return dbc.Container(
+        [
+            dbc.Row(html.Br()),
+            dbc.Row(
+                html.P(
+                    get_slider_name(column, d_range_slider),
+                    id={"type": "dynamic_slider_name", "index": column},
+                ),
+                justify="center",
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dcc.RangeSlider(
+                        id={"type": "dynamic_slider", "index": column},
+                        **d_range_slider,
+                    ),
+                    width=12,
+                ),
+            ),
+        ],
+        id={"type": id_type, "index": column},
+    )
+
+
+@app.callback(
+    Output("dynamic_slider_container", "children"),
+    Input("dropdown_slider", "value"),
+    State("dynamic_slider_container", "children"),
+    State({"type": "dynamic_slider", "index": ALL}, "id"),
+    prevent_initial_call=True,
+)
+def add_or_remove_slider(
+    dropdown_names,
+    children,
+    current_ids,
+):
+
+    id_type = "dbc"
+
+    current_names = get_current_names(current_ids)
+
+    # add new slider
+    if slider_is_added(current_names, dropdown_names):
+        column = get_name_of_added_slider(current_names, dropdown_names)
+        new_element = make_new_slider(column, id_type=id_type)
+        children.append(new_element)
+
+    # remove selected slider
     else:
-        button_id = ctx.triggered[0]["prop_id"].split(".")[0]
-    return button_id
+        column = get_name_of_removed_slider(current_names, dropdown_names)
+        remove_name_from_children(column, children, id_type=id_type)
+
+    return children
+
+
+@app.callback(
+    Output({"type": "dynamic_slider_name", "index": MATCH}, "children"),
+    Input({"type": "dynamic_slider", "index": MATCH}, "value"),
+    State({"type": "dynamic_slider", "index": MATCH}, "id"),
+    prevent_initial_call=True,
+)
+def update_slider_name(dynamic_slider_values, dynamic_slider_name):
+    column = dynamic_slider_name["index"]
+    name = get_slider_name(column, dynamic_slider_values)
+    return name
+
+
+#%%
+
+
+@app.callback(
+    Output("tax_id_filter_counts_output", "children"),
+    Input("tax_id_filter_input_descendants", "value"),
+    Input("tax_id_filter_subspecies", "value"),
+)
+def update_tax_id_filter_counts(tax_name, subspecies):
+
+    if tax_name is None or tax_name == "":
+        return f"No specific Tax IDs selected, defaults to ALL."
+        # raise PreventUpdate
+
+    tax_ids = taxonomy.extract_descendant_tax_ids(
+        tax_name,
+        include_subspecies=include_subspecies(subspecies),
+    )
+    N_tax_ids = len(tax_ids)
+    if N_tax_ids == 0:
+        return f"Couldn't find any Tax IDs for {tax_name} in NCBI"
+    return f"Found {utils.human_format(N_tax_ids)} Tax IDs for {tax_name} in NCBI"
+
+
+#%%
+
+
+@app.callback(
+    Output("filters_dropdown_files", "is_open"),
+    Output("filters_toggle_files_button", "outline"),
+    Input("filters_toggle_files_button", "n_clicks"),
+    State("filters_dropdown_files", "is_open"),
+)
+def toggle_collapse_files(n, is_open):
+    # after click
+    if n:
+        return not is_open, is_open
+    # initial setup
+    return is_open, True
+
+
+@app.callback(
+    Output("filters_dropdown_tax_ids", "is_open"),
+    Output("filters_toggle_tax_ids_button", "outline"),
+    Input("filters_toggle_tax_ids_button", "n_clicks"),
+    State("filters_dropdown_tax_ids", "is_open"),
+)
+def toggle_collapse_tax_ids(n, is_open):
+    if n:
+        return not is_open, is_open
+    return is_open, True
+
+
+@app.callback(
+    Output("filters_dropdown_ranges_button", "is_open"),
+    Output("filters_toggle_ranges_button", "outline"),
+    Input("filters_toggle_ranges_button", "n_clicks"),
+    State("filters_dropdown_ranges_button", "is_open"),
+)
+def toggle_collapse_ranges(n, is_open):
+    if n:
+        return not is_open, is_open
+    return is_open, True
+
+
+#%%
 
 
 @app.callback(
@@ -345,81 +840,27 @@ def toggle_sidebars(
     current_state_sidebar_plot,
 ):
 
-    button_id = get_button_id(dash.callback_context)
+    button_id = dashboard_helper.get_button_id(dash.callback_context)
 
     # if the toggle filter button was clicked
     if button_id == "btn_toggle_filter":
-        return toggle_filter(current_state_sidebar_filter, current_state_sidebar_plot)
+        return dashboard_helper.toggle_filter(
+            configurations,
+            current_state_sidebar_filter,
+            current_state_sidebar_plot,
+        )
 
     # if the toggle plot button was clicked
     elif button_id == "btn_toggle_plot":
-        return toggle_plot(current_state_sidebar_filter, current_state_sidebar_plot)
+        return dashboard_helper.toggle_plot(
+            configurations,
+            current_state_sidebar_filter,
+            current_state_sidebar_plot,
+        )
 
     # base configuration
     else:
         return start_configuration
-
-
-def toggle_plot(current_state_sidebar_filter, current_state_sidebar_plot):
-
-    # going from (4) -> (2)
-    if (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "SHOWN"
-    ):
-        return configurations[2]
-
-    # going from (2) -> (4)
-    elif (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "HIDDEN"
-    ):
-        return configurations[4]
-
-    # going from (3) -> (1)
-    elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "SHOWN"
-    ):
-        return configurations[1]
-
-    # going from (1) -> (3)
-    elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "HIDDEN"
-    ):
-        return configurations[3]
-
-
-def toggle_filter(current_state_sidebar_filter, current_state_sidebar_plot):
-
-    # going from (4) -> (3)
-    if (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "SHOWN"
-    ):
-        return configurations[3]
-
-    # going from (2) -> (1)
-    elif (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "HIDDEN"
-    ):
-        return configurations[1]
-
-    # going from (3) -> (4)
-    elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "SHOWN"
-    ):
-        return configurations[4]
-
-    # going from (1) -> (2)
-    elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "HIDDEN"
-    ):
-        return configurations[2]
 
 
 if __name__ == "__main__":

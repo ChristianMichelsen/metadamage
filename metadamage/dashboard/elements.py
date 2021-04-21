@@ -26,9 +26,9 @@ def get_shortnames_each(all_shortnames):
     return values
 
 
-def get_dropdown_file_selection(id, fit_results, shortnames_to_show="all"):
+def get_dropdown_file_selection(fit_results, id, shortnames_to_show="all"):
 
-    special_shortnames = ["Select all", "Deselect (almost) all"]
+    special_shortnames = ["Select all", "Default selection"]
     N_special_shortnames = len(special_shortnames)
     all_shortnames = special_shortnames + fit_results.shortnames
 
@@ -45,6 +45,8 @@ def get_dropdown_file_selection(id, fit_results, shortnames_to_show="all"):
 
         elif shortnames_to_show == "each":
             values = get_shortnames_each(fit_results.shortnames)
+
+    values = list(sorted(values))
 
     dropdown_file_selection = dcc.Dropdown(
         id=id,
@@ -245,7 +247,7 @@ def get_card_dropdown_file_selection(fit_results):
     card_dropdown_file_selection = dbc.Card(
         [
             html.H3("File Selection", className="card-title"),
-            get_dropdown_file_selection(fit_results, id="XXX"),
+            get_dropdown_file_selection(fit_results=fit_results, id="XXX"),
         ],
         body=True,  # spacing before border
     )

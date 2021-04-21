@@ -89,11 +89,10 @@ class FitResults:
 
         df["N_alignments_log10"] = np.log10(df["N_alignments"])
         df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-        # with np.errstate(divide="ignore", invalid="ignore"):
         df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
 
         df["_LR"] = df["LR"]
-        df["LR"] = np.clip(df["LR"], a_min=-10, a_max=None)
+        df["LR"] = np.clip(df["LR"], a_min=0, a_max=None)
         df["phi_log10"] = np.log10(df["phi"])
         df["D_max_significance"] = df["D_max"] / df["D_max_std"]
         df["rho_Ac_abs"] = np.abs(df["rho_Ac"])

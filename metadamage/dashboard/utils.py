@@ -18,7 +18,6 @@ def set_custom_theme():
             font_size=16,
             title_font_size=30,
             legend=dict(
-                # title="",
                 title_font_size=20,
                 font_size=16,
                 itemsizing="constant",
@@ -27,13 +26,6 @@ def set_custom_theme():
             ),
             hoverlabel_font_family="Monaco, Lucida Console, Courier, monospace",
             dragmode="zoom",
-            # width=width,
-            # height=height,
-            # uirevision=True,
-            # margin=dict(
-            #     t=50,  # top margin: 30px
-            #     b=20,  # bottom margin: 10px
-            # ),
         )
     )
 
