@@ -27,7 +27,7 @@ app = dash.Dash(
 )
 
 # to allow custom css
-app.scripts.config.serve_locally = True
+# app.scripts.config.serve_locally = True
 
 # First Party
 from metadamage import dashboard
@@ -36,157 +36,13 @@ dashboard.utils.set_custom_theme()
 # reload(dashboard)
 
 
-#%%
-
-graph_kwargs = dict(
-    config={
-        "displaylogo": False,
-        "doubleClick": "reset",
-        "showTips": True,
-        "modeBarButtonsToRemove": [
-            "select2d",
-            "lasso2d",
-            "autoScale2d",
-            "hoverClosestCartesian",
-            "hoverCompareCartesian",
-            "toggleSpikelines",
-        ],
-    },
-    # # https://css-tricks.com/fun-viewport-units/
-    # style={"width": "100%", "height": "55vh"},
-)
-
-
-graph_kwargs_no_buttons = dict(
-    config={
-        "displaylogo": False,
-        "doubleClick": "reset",
-        "showTips": True,
-        "modeBarButtonsToRemove": [
-            "zoom2d",
-            "pan2d",
-            "select2d",
-            "lasso2d",
-            "zoomIn2d",
-            "zoomOut2d",
-            "autoScale2d",
-            "resetScale2d",
-            "hoverClosestCartesian",
-            "hoverCompareCartesian",
-            "toggleSpikelines",
-            "toImage",
-        ],
-    },
-)
-
-
-#%%
-
-
 fit_results = dashboard.fit_results.FitResults(
     folder=Path("./data/out/"),
-    use_memoization=False,
+    use_memoization=True,
 )
 
-# x = x
-
-# fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
-# df = fit_results.df_fit_results
-
-# df = pd.read_csv("https://plotly.github.io/datasets/country_indicators.csv")
-columns = list(fit_results.df_fit_results.columns)
-exclude_cols_including = [
-    "tax",
-    "valid",
-    "LR_P",
-    "LR_n_sigma",
-    "size",
-    "shortname",
-    "_log10",
-    "_sqrt",
-]
-columns = [
-    column
-    for column in columns
-    if not any([word in column for word in exclude_cols_including])
-]
-exclude_cols = ["_LR", "_forward_LR", "_reverse_LR"]
-columns = [column for column in columns if column not in exclude_cols]
-
-
-d_columns_latex = {
-    "LR": r"$\lambda_\text{LR}$",
-    "D_max": r"$D_\text{max}$",
-    "D_max_std": r"$\sigma_{D_\text{max}}$",
-    "q": r"$q$",
-    "q_std": r"$\sigma_q$",
-    "phi": r"$\phi$",
-    "phi_std": r"$\sigma_\phi$",
-    "A": r"$A$",
-    "A_std": r"$\sigma_A$",
-    "c": r"$c$",
-    "c_std": r"$\sigma_c$",
-    "rho_Ac": r"$\rho_{A, c}$",
-    "LR_P": r"$\text{P}_\lambda$",
-    "LR_n_sigma": r"$\sigma_\lambda$",
-    "asymmetry": r"$\text{asymmetry}$",
-    #
-    "forward_LR": r"$ \lambda_\text{LR} \,\, \text{(forward)}$",
-    "forward_D_max": r"$ D\text{max} \,\, \text{(forward)}$",
-    "forward_D_max_std": r"$ \sigma_{D_\text{max}} \,\, \text{(forward)}$",
-    "forward_q": r"$ q \,\, \text{(forward)}$",
-    "forward_q_std": r"$ \sigma_q \,\, \text{(forward)}$",
-    "forward_phi": r"$ \phi \,\, \text{(forward)}$",
-    "forward_phi_std": r"$ \sigma_\phi \,\, \text{(forward)}$",
-    "forward_A": r"$ A \,\, \text{(forward)}$",
-    "forward_A_std": r"$ \sigma_A \,\, \text{(forward)}$",
-    "forward_c": r"$ c \,\, \text{(forward)}$",
-    "forward_c_std": r"$ \sigma_c \,\, \text{(forward)}$",
-    "forward_rho_Ac": r"$ \rho_{A, c} \,\, \text{(forward)}$",
-    "forward_LR_P": r"$ \text{P}_\lambda \,\, \text{(forward)}$",
-    "forward_LR_n_sigma": r"$ \sigma_\lambda \,\, \text{(forward)}$",
-    #
-    "reverse_LR": r"$ \lambda_\text{LR} \,\, \text{(reverse)}$",
-    "reverse_D_max": r"$ D\text{max} \,\, \text{(reverse)}$",
-    "reverse_D_max_std": r"$ \sigma_{D_\text{max}} \,\, \text{(reverse)}$",
-    "reverse_q": r"$ q \,\, \text{(reverse)}$",
-    "reverse_q_std": r"$ \sigma_q \,\, \text{(reverse)}$",
-    "reverse_phi": r"$ \phi \,\, \text{(reverse)}$",
-    "reverse_phi_std": r"$ \sigma_\phi \,\, \text{(reverse)}$",
-    "reverse_A": r"$ A \,\, \text{(reverse)}$",
-    "reverse_A_std": r"$ \sigma_A \,\, \text{(reverse)}$",
-    "reverse_c": r"$ c \,\, \text{(reverse)}$",
-    "reverse_c_std": r"$ \sigma_c \,\, \text{(reverse)}$",
-    "reverse_rho_Ac": r"$ \rho_{A, c} \,\, \text{(reverse)}$",
-    "reverse_LR_P": r"$ \text{P}_\lambda \,\, \text{(reverse)}$",
-    "reverse_LR_n_sigma": r"$ \sigma_\lambda \,\, \text{(reverse)}$",
-    #
-    "N_alignments": r"$N_\text{alignments}$",
-    #
-    "N_z1_forward": r"$N_{z=1} \,\, \text{(forward)}$",
-    "N_z1_reverse": r"$N_{z=1} \,\, \text{(reverse)}$",
-    #
-    "N_sum_total": r"$\sum_i N_i$",
-    "N_sum_forward": r"$\sum_i N_i \,\, \text{(forward)}$",
-    "N_sum_reverse": r"$\sum_i N_i \,\, \text{(reverse)}$",
-    #
-    "N_min": r"$\text{min} N_i$",
-    #
-    "k_sum_total": r"$\sum_i k_i$",
-    "k_sum_forward": r"$\sum_i k_i \,\, \text{(forward)}$",
-    "k_sum_reverse": r"$\sum_i k_i \,\, \text{(reverse)}$",
-    #
-    "Bayesian_D_max": r"$D_\text{max} \,\, \text{(Bayesian)}$",
-    "Bayesian_D_max_std": r"$\sigma_{D_\text{max}} \,\, \text{(Bayesian)}$",
-    "Bayesian_n_sigma": r"$n_\sigma \,\, \text{(Bayesian)}$",
-    "Bayesian_A": r"$A \,\, \text{(Bayesian)}$",
-    "Bayesian_q": r"$q \,\, \text{(Bayesian)}$",
-    "Bayesian_c": r"$c \,\, \text{(Bayesian)}$",
-    "Bayesian_phi": r"$\phi \,\, \text{(Bayesian)}$",
-    #
-    "D_max_significance": r"$Z_{D_\text{max}}$",
-    "rho_Ac_abs": r"$|\rho_{A, c}|$",
-}
+columns = dashboard_helper.get_columns(fit_results)
+d_columns_latex = dashboard_helper.get_d_columns_latex()
 
 # x = x
 
@@ -210,18 +66,25 @@ start_configuration = configurations[start_configuration_id]
 navbar = dbc.NavbarSimple(
     [
         dbc.Button(
-            "Toggle Filter",
+            "Toggle filters",
             outline=True,
             color="secondary",
             className="mr-1",
             id="btn_toggle_filter",
         ),
         dbc.Button(
-            "Toggle Plot",
+            "Toggle plots",
             outline=True,
             color="secondary",
             className="mr-1",
             id="btn_toggle_plot",
+        ),
+        dbc.Button(
+            "Toggle variables",
+            outline=True,
+            color="secondary",
+            className="mr-1",
+            id="btn_toggle_variables",
         ),
     ],
     brand="metaDashboard",
@@ -276,14 +139,31 @@ div_y_axis = html.Div(
 content_main = html.Div(
     html.Div(
         [
-            html.Div([div_x_axis, div_y_axis]),
-            dcc.Graph(id="indicator_graphic", **graph_kwargs),
-            # slider,
+            dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
+            dbc.Collapse(
+                html.Div([div_x_axis, div_y_axis]),
+                id="collapsed_variable_selections",
+                is_open=False,
+            ),
         ]
     ),
     id="content_main",
     style=start_configuration.style_content_main,
 )
+
+
+@app.callback(
+    Output("collapsed_variable_selections", "is_open"),
+    Output("btn_toggle_variables", "outline"),
+    Input("btn_toggle_variables", "n_clicks"),
+    State("collapsed_variable_selections", "is_open"),
+)
+def toggle_collapse_files(n, is_open):
+    # after click
+    if n:
+        return not is_open, is_open
+    # initial setup
+    return is_open, True
 
 
 #%%
@@ -502,7 +382,7 @@ sidebar_plot_combined_graph = dbc.FormGroup(
         dcc.Graph(
             figure=dashboard.figures.create_empty_figure(),
             id="graph_plot_data",
-            **graph_kwargs_no_buttons,
+            **dashboard_helper.get_graph_kwargs_no_buttons(),
         ),
     ]
 )
@@ -544,13 +424,13 @@ sidebar_plot_forward_reverse_graph = dbc.FormGroup(
             figure=dashboard.figures.create_empty_figure(),
             id="graph_plot_data_forward",
             style={"height": "20vh"},
-            **graph_kwargs_no_buttons,
+            **dashboard_helper.get_graph_kwargs_no_buttons(),
         ),
         dcc.Graph(
             figure=dashboard.figures.create_empty_figure(),
             id="graph_plot_data_reverse",
             style={"height": "20vh"},
-            **graph_kwargs_no_buttons,
+            **dashboard_helper.get_graph_kwargs_no_buttons(),
         ),
     ]
 )
@@ -1272,39 +1152,53 @@ def toggle_collapse_ranges(n, is_open):
     Output("sidebar_plot", "style"),
     Output("sidebar_filter_state", "data"),
     Output("sidebar_plot_state", "data"),
+    Output("btn_toggle_filter", "outline"),
+    Output("btn_toggle_plot", "outline"),
     Input("btn_toggle_filter", "n_clicks"),
     Input("btn_toggle_plot", "n_clicks"),
     State("sidebar_filter_state", "data"),
     State("sidebar_plot_state", "data"),
+    State("btn_toggle_filter", "outline"),
+    State("btn_toggle_plot", "outline"),
 )
 def toggle_sidebars(
     _btn_toggle_filter,
     _btn_toggle_plot,
     current_state_sidebar_filter,
     current_state_sidebar_plot,
+    btn_toggle_filter_outline,
+    btn_toggle_plot_outline,
 ):
 
     button_id = dashboard_helper.get_button_id(dash.callback_context)
 
     # if the toggle filter button was clicked
     if button_id == "btn_toggle_filter":
-        return dashboard_helper.toggle_filter(
-            configurations,
-            current_state_sidebar_filter,
-            current_state_sidebar_plot,
+        return (
+            *dashboard_helper.toggle_filter(
+                configurations,
+                current_state_sidebar_filter,
+                current_state_sidebar_plot,
+            ),
+            not btn_toggle_filter_outline,
+            btn_toggle_plot_outline,
         )
 
     # if the toggle plot button was clicked
     elif button_id == "btn_toggle_plot":
-        return dashboard_helper.toggle_plot(
-            configurations,
-            current_state_sidebar_filter,
-            current_state_sidebar_plot,
+        return (
+            *dashboard_helper.toggle_plot(
+                configurations,
+                current_state_sidebar_filter,
+                current_state_sidebar_plot,
+            ),
+            btn_toggle_filter_outline,
+            not btn_toggle_plot_outline,
         )
 
     # base configuration
     else:
-        return start_configuration
+        return *start_configuration, True, True
 
 
 if __name__ == "__main__":
