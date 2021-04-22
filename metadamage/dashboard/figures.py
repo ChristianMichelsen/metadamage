@@ -620,7 +620,6 @@ def plot_count_fraction(group, chosen_mismatch_columns=None, fit=None):
         chosen_mismatch_columns=chosen_mismatch_columns,
         fit=fit,
         is_forward=True,
-        # use_error_bars=False,
     )
 
     _plot_count_fraction(
@@ -629,7 +628,6 @@ def plot_count_fraction(group, chosen_mismatch_columns=None, fit=None):
         chosen_mismatch_columns=chosen_mismatch_columns,
         fit=fit,
         is_forward=False,
-        # use_error_bars=False,
     )
 
     fig.update_layout(

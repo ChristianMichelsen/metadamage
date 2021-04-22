@@ -18,6 +18,7 @@ import plotly.express as px
 # First Party
 from metadamage import dashboard, io
 
+from scipy.stats import betabinom as sp_betabinom
 
 cachedir = "memoization"
 memory = Memory(cachedir, verbose=0)
@@ -45,9 +46,6 @@ class FitResults:
         with about_time() as times["df_fit_results"]:
             self._load_df_fit_results()
 
-        # with about_time() as times["df_fit_predictions"]:
-        #     self._load_df_fit_predictions()
-
         with about_time() as times["ranges"]:
             self._compute_ranges()
 
@@ -56,15 +54,6 @@ class FitResults:
 
         with about_time() as times["hover"]:
             self._set_hover_info()
-
-        with about_time() as times["columns"]:
-            self._set_columns_scatter()
-
-        with about_time() as times["labels"]:
-            self._set_labels()
-
-        with about_time() as times["columns_scatter_forward_reverse"]:
-            self._set_columns_scatter_forward_reverse()
 
         if very_verbose:
             for key, val in times.items():
@@ -87,13 +76,15 @@ class FitResults:
     def _load_df_fit_results(self):
         df = self._load_parquet_file("fit_results")
 
-        df["N_alignments_log10"] = np.log10(df["N_alignments"])
-        df["N_alignments_sqrt"] = np.sqrt(df["N_alignments"])
-        df["N_sum_total_log10"] = np.log10(df["N_sum_total"])
-
         df["_LR"] = df["LR"]
         df["LR"] = np.clip(df["LR"], a_min=0, a_max=None)
-        df["phi_log10"] = np.log10(df["phi"])
+
+        df["_forward_LR"] = df["forward_LR"]
+        df["forward_LR"] = np.clip(df["forward_LR"], a_min=0, a_max=None)
+
+        df["_reverse_LR"] = df["reverse_LR"]
+        df["reverse_LR"] = np.clip(df["reverse_LR"], a_min=0, a_max=None)
+
         df["D_max_significance"] = df["D_max"] / df["D_max_std"]
         df["rho_Ac_abs"] = np.abs(df["rho_Ac"])
 
@@ -105,10 +96,6 @@ class FitResults:
         self.shortnames = list(self.df_fit_results.shortname.unique())
         self.columns = list(self.df_fit_results.columns)
         self.set_marker_size(marker_transformation="sqrt")
-
-    # def _load_df_fit_predictions(self):
-    #     self.df_fit_predictions = self._load_parquet_file("fit_predictions")
-    #     # self.df_fit_predictions = io.Parquet(self.folder / "fit_predictions").load()
 
     def _get_range_of_column(self, column, spacing):
         array = self.df_fit_results[column]
@@ -233,23 +220,14 @@ class FitResults:
 
         if "fit_results" in df_type:
             return self.df_fit_results.query(query)
-        # elif "counts" in df:
-        # return self.df_counts.query(query)
         else:
             raise AssertionError(
                 f"df_type = {df_type} not implemented yet, only 'df_fit_results'"
             )
 
-    def get_single_count_group(self, shortname, tax_id):
-        df_counts_group = self.load_df_counts_shortname(shortname)
-        return df_counts_group.query(f"tax_id == {tax_id}")
-
-    # def get_single_fit_prediction(self, shortname, tax_id):
-    #     query = f"shortname == '{shortname}' & tax_id == {tax_id}"
-    #     return self.df_fit_predictions.query(query)
-
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
+        # blue, orange, green, red, purple, brown, pink, grey, camouflage, turquoise
         cmap = px.colors.qualitative.D3
         N_cmap = len(cmap)
 
@@ -269,6 +247,8 @@ class FitResults:
         self.cmap = cmap
         self.d_cmap = d_cmap
         self.d_symbols = d_symbols
+
+        self.d_cmap_fit = {"Forward": cmap[0], "Reverse": cmap[3], "Fit": cmap[2]}
 
     def _set_hover_info(self):
 
@@ -371,63 +351,19 @@ class FitResults:
 
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
-    def _set_columns_scatter(self):
-        self.columns_scatter = [
-            "LR",
-            "D_max",
-            "q",
-            "phi",
-            "asymmetry",
-            "N_alignments_log10",
-            "N_sum_total_log10",
-        ]
+        self.hovertemplate_fit = (
+            # "<b>Fit:</b> "
+            # "D(z=%{x}) = %{y:.3f} ± %{error_y.array:.3f}<br>"
+            "D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>"
+            "<extra></extra>"
+        )
 
-    def _set_labels(self):
-
-        labels_list = [
-            r"$\large \lambda_\mathrm{LR}$",
-            r"$\large D_\mathrm{max}$",
-            r"$\large \bar{q}$",
-            r"$\large \bar{\phi}$",
-            r"$\large \mathrm{asymmetry}$",
-            r"$\large \log_{10} N_\mathrm{alignments}$",
-            r"$\large \log_{10} N_\mathrm{sum}$",
-            # r"$\large \mathrm{noise}$",
-        ]
-
-        iterator = zip(self.columns_scatter, labels_list)
-        self.labels = {column: label for column, label in iterator}
-
-    def _get_col_row_from_iteration(self, i, N_cols):
-        col = i % N_cols
-        row = (i - col) // N_cols
-        col += 1
-        row += 1
-        return col, row
-
-    def iterate_over_scatter_columns(self, N_cols):
-        for i, column in enumerate(self.columns_scatter):
-            col, row = self._get_col_row_from_iteration(i, N_cols)
-            yield column, row, col
-
-    def _set_columns_scatter_forward_reverse(self):
-        self.columns_scatter_forward_reverse = {
-            "LR": r"$\large \lambda_\mathrm{LR}$",
-            "D_max": r"$\large D_\mathrm{max}$",
-            "N_z1": r"$\large N_{z=1}$",
-            "N_sum": r"$\large N_\mathrm{sum}$",
-            "k_sum": r"$\large y_\mathrm{sum}$",
-            # "normalized_noise": r"$\large \mathrm{noise}$",
-        }
-
-    def iterate_over_scatter_columns_forward_reverse(self, N_cols):
-        showlegend = True
-        for i, column in enumerate(self.columns_scatter_forward_reverse.keys()):
-            col, row = self._get_col_row_from_iteration(i, N_cols)
-            forward = f"{column}_forward"
-            reverse = f"{column}_reverse"
-            yield column, row, col, showlegend, forward, reverse
-            showlegend = False
+    # def _get_col_row_from_iteration(self, i, N_cols):
+    #     col = i % N_cols
+    #     row = (i - col) // N_cols
+    #     col += 1
+    #     row += 1
+    #     return col, row
 
     def parse_click_data(self, click_data, column):
         try:
@@ -437,3 +373,59 @@ class FitResults:
 
         except Exception as e:
             raise e
+
+    def get_single_count_group(self, shortname, tax_id, forward_reverse=""):
+        df_counts_group = self.load_df_counts_shortname(shortname)
+        group = df_counts_group.query(f"tax_id == {tax_id}").copy()
+        reverse = group.position < 0
+        group.loc[:, "z"] = np.abs(group["position"])
+        group.loc[:, "f"] = group["f_CT"]
+        group.loc[reverse, "f"] = group.loc[reverse, "f_GA"]
+        group.loc[:, "direction"] = "Forward"
+        group.loc[reverse, "direction"] = "Reverse"
+        group.loc[:, "k"] = group["CT"]
+        group.loc[reverse, "k"] = group.loc[reverse, "GA"]
+        group.loc[:, "N"] = group["C"]
+        group.loc[reverse, "N"] = group.loc[reverse, "G"]
+
+        if forward_reverse.lower() == "forward":
+            return group.query(f"direction=='Forward'")
+        elif forward_reverse.lower() == "reverse":
+            return group.query(f"direction=='Reverse'")
+        else:
+            return group
+
+    def get_single_fit_prediction(self, shortname, tax_id, forward_reverse=""):
+        query = f"shortname == '{shortname}' & tax_id == {tax_id}"
+        ds = self.df_fit_results.query(query)
+        if len(ds) != 1:
+            raise AssertionError(f"Sometrhing wrong here, got: {ds}")
+
+        group = self.get_single_count_group(shortname, tax_id, forward_reverse)
+
+        if forward_reverse.lower() == "forward":
+            prefix = "forward_"
+        elif forward_reverse.lower() == "reverse":
+            prefix = "reverse_"
+        else:
+            prefix = ""
+
+        A = getattr(ds, f"{prefix}A").values
+        q = getattr(ds, f"{prefix}q").values
+        c = getattr(ds, f"{prefix}c").values
+        phi = getattr(ds, f"{prefix}phi").values
+
+        z = group.z.values[:15]
+        N = group.N.values[:15]
+
+        Dz = A * (1 - q) ** (np.abs(z) - 1) + c
+
+        alpha = Dz * phi
+        beta = (1 - Dz) * phi
+
+        dist = sp_betabinom(n=N, a=alpha, b=beta)
+        std = np.sqrt(dist.var()) / N
+
+        d_out = {"mu": Dz, "std": std, "Dz": Dz, "z": z}
+
+        return d_out

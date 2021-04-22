@@ -79,14 +79,15 @@ def add_count_information(fit_result, group, data):
     fit_result["N_z1_forward"] = data["N"][0]
     fit_result["N_z1_reverse"] = data["N"][15]
 
+    fit_result["N_sum_total"] = data["N"].sum()
     fit_result["N_sum_forward"] = data["N"][:15].sum()
     fit_result["N_sum_reverse"] = data["N"][15:].sum()
-    fit_result["N_sum_total"] = data["N"].sum()
+
     fit_result["N_min"] = data["N"].min()
 
+    fit_result["k_sum_total"] = data["k"].sum()
     fit_result["k_sum_forward"] = data["k"][:15].sum()
     fit_result["k_sum_reverse"] = data["k"][15:].sum()
-    fit_result["k_sum_total"] = data["k"].sum()
 
 
 #%%
