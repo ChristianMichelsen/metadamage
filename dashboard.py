@@ -22,7 +22,7 @@ app = dash.Dash(
     __name__,
     external_stylesheets=external_stylesheets,
     external_scripts=external_scripts,
-    title="metaDashboard",
+    title="mDamage",
     update_title="Updating...",
 )
 
@@ -87,7 +87,7 @@ navbar = dbc.NavbarSimple(
             id="btn_toggle_variables",
         ),
     ],
-    brand="metaDashboard",
+    brand="mDamage",
     brand_href="#",
     color="dark",
     dark=True,
@@ -107,100 +107,29 @@ dropdown_y_axis = dcc.Dropdown(
     value="D_max",
 )
 
-# div_x_axis = html.Div(
-#     [dropdown_x_axis],
-#     style={"width": "48%", "display": "inline-block"},
-# )
-
-# div_y_axis = html.Div(
-#     [dropdown_y_axis],
-#     style={"width": "48%", "float": "right", "display": "inline-block"},
-# )
-
-
-# content_main = html.Div(
-#     html.Div(
-#         [
-#             dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
-#             dbc.Collapse(
-#                 html.Div([div_x_axis, div_y_axis]),
-#                 id="collapsed_variable_selections",
-#                 is_open=False,
-#             ),
-#         ]
-#     ),
-#     id="content_main",
-#     style=start_configuration.style_content_main,
-# )
-#
-
-
-# form_overview_marker_transformation = dbc.FormGroup(
-#     [
-#         dbc.Label("Marker transformation", className="mr-2"),
-#         # dbc.Col(
-#         dcc.Dropdown(  # possible fix for ReferenceError
-#             id={"type": "dropdown_overview_marker_transformation", "index": 0},
-#             options=[
-#                 {"label": "Identity", "value": "identity"},
-#                 {"label": "Sqrt", "value": "sqrt"},
-#                 {"label": "Log", "value": "log10"},
-#                 {"label": "Constant", "value": "constant"},
-#             ],
-#             value="sqrt",
-#             searchable=False,
-#             clearable=False,
-#             style={"min-width": "100px"},
-#             # ),
-#             # width=5,
-#         ),
-#     ],
-#     className="mr-6",
-# )
-
 
 XY_axis_dropdowns = [
     dbc.Col(
         [
             dbc.Row(
-                html.P("X-axis: ", className="lead"),
-                justify="center",
-                align="end",
-                no_gutters=True,
-            ),
-            dbc.Row(
-                dbc.Col(
-                    dropdown_x_axis,
-                    xs=12,
-                    sm=11,
-                    md=10,
-                    lg=9,
-                ),
-                justify="center",
-                no_gutters=True,
+                [
+                    dbc.Col(html.Center("X-axis: ")),
+                    dbc.Col(dropdown_x_axis, width=12),
+                ]
             ),
         ],
+        width=6,
     ),
     dbc.Col(
         [
             dbc.Row(
-                html.P("Y-axis: ", className="lead"),
-                justify="center",
-                align="end",
-                no_gutters=True,
-            ),
-            dbc.Row(
-                dbc.Col(
-                    dropdown_y_axis,
-                    xs=12,
-                    sm=11,
-                    md=10,
-                    lg=9,
-                ),
-                justify="center",
-                no_gutters=True,
+                [
+                    dbc.Col(html.Center("Y-axis: ")),
+                    dbc.Col(dropdown_y_axis, width=12),
+                ]
             ),
         ],
+        width=6,
     ),
 ]
 
@@ -236,6 +165,36 @@ marker_transformation_slider = dcc.Slider(
     marks={mark: str(mark) for mark in [1, 10, 20, 30, 40, 50, 60]},
 )
 
+marker_transformations = [
+    dbc.Col(
+        dbc.Row(
+            [
+                dbc.Col(html.Center("Variable:")),
+                dbc.Col(marker_transformation_variable, width=12),
+            ],
+        ),
+        width=4,
+    ),
+    dbc.Col(
+        dbc.Row(
+            [
+                dbc.Col(html.Center("Function:")),
+                dbc.Col(marker_transformation_function, width=12),
+            ],
+        ),
+        width=2,
+    ),
+    dbc.Col(
+        dbc.Row(
+            [
+                dbc.Col(html.Center("Scale:")),
+                dbc.Col(marker_transformation_slider, width=12),
+            ],
+        ),
+        width=6,
+    ),
+]
+
 
 content_main = html.Div(
     html.Div(
@@ -243,25 +202,13 @@ content_main = html.Div(
             dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
             dbc.Collapse(
                 [
-                    dbc.Row(XY_axis_dropdowns),
                     dbc.Row(dbc.Col(html.Hr())),
-                    dbc.Row(dbc.Col(html.Center("Marker Size", className="lead"))),
-                    dbc.Row(
-                        [
-                            dbc.Col(html.Center("Variable:"), width=3),
-                            dbc.Col(html.Center("Function:"), width=3),
-                            dbc.Col(html.Center("Scale:"), width=6),
-                        ],
-                    ),
-                    dbc.Row(
-                        [
-                            dbc.Col(marker_transformation_variable, width=3),
-                            dbc.Col(marker_transformation_function, width=3),
-                            dbc.Col(marker_transformation_slider, width=6),
-                        ],
-                    ),
+                    dbc.Row(dbc.Col(html.Center("Axis variables", className="lead"))),
+                    dbc.Row(XY_axis_dropdowns, no_gutters=True),
+                    dbc.Row(dbc.Col(html.Hr())),
+                    dbc.Row(dbc.Col(html.Center("Marker size", className="lead"))),
+                    dbc.Row(marker_transformations, no_gutters=True),
                 ],
-                # html.Div([div_x_axis, div_y_axis]),
                 id="collapsed_variable_selections",
                 is_open=False,
             ),
