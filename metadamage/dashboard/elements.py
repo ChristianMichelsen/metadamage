@@ -310,11 +310,7 @@ def get_dropdown_marker_transformation(fit_results):
 def get_slider_keywords():
     marks = [1, 10, 20, 30, 40, 50, 60]
     return dict(
-        min=1,
-        max=60,
-        step=1,
-        value=30,
-        marks={mark: str(mark) for mark in marks},
+        
     )
 
 

@@ -48,7 +48,7 @@ def get_configurations(
     style_main_base = {
         "transition": "margin .5s",
         "padding": "2rem 1rem",
-        "background-color": "#f8f9fa",
+        # "background-color": "#f8f9fa",
     }
 
     style_main_both_sidebars = {

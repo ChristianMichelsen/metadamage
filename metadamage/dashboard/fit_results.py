@@ -46,8 +46,8 @@ class FitResults:
         with about_time() as times["df_fit_results"]:
             self._load_df_fit_results()
 
-        with about_time() as times["ranges"]:
-            self._compute_ranges()
+        # with about_time() as times["ranges"]:
+        #     self._compute_ranges()
 
         with about_time() as times["cmap"]:
             self._set_cmap()
@@ -100,87 +100,70 @@ class FitResults:
         self.all_tax_ranks = set(self.df_fit_results.tax_rank.unique())
         self.shortnames = list(self.df_fit_results.shortname.unique())
         self.columns = list(self.df_fit_results.columns)
-        self.set_marker_size(marker_transformation="sqrt")
+        self.set_marker_size(variable="N_alignments", function="sqrt", slider=30)
 
-    def _get_range_of_column(self, column, spacing):
-        array = self.df_fit_results[column]
-        array = array[np.isfinite(array) & array.notnull()]
-        range_min = array.min()
-        range_max = array.max()
-        delta = range_max - range_min
-        ranges = [range_min - delta / spacing, range_max + delta / spacing]
-        return ranges
+    # def _get_range_of_column(self, column, spacing):
+    #     array = self.df_fit_results[column]
+    #     array = array[np.isfinite(array) & array.notnull()]
+    #     range_min = array.min()
+    #     range_max = array.max()
+    #     delta = range_max - range_min
+    #     ranges = [range_min - delta / spacing, range_max + delta / spacing]
+    #     return ranges
 
-    def _compute_ranges(self, spacing=20):
-        ranges = {}
-        for column in self.columns:
-            try:
-                ranges[column] = self._get_range_of_column(column, spacing=spacing)
-            except TypeError:  # skip categorical columns
-                pass
+    # def _compute_ranges(self, spacing=20):
+    #     ranges = {}
+    #     for column in self.columns:
+    #         try:
+    #             ranges[column] = self._get_range_of_column(column, spacing=spacing)
+    #         except TypeError:  # skip categorical columns
+    #             pass
 
-        for column, range_ in ranges.items():
-            if not ("_forward" in column or "_reverse" in column):
-                column_forward = f"{column}_forward"
-                column_reverse = f"{column}_reverse"
-                if column_forward in ranges.keys() and column_reverse in ranges.keys():
-                    range_forward = ranges[column_forward]
-                    range_reverse = ranges[column_reverse]
+    #     for column, range_ in ranges.items():
+    #         if not ("_forward" in column or "_reverse" in column):
+    #             column_forward = f"{column}_forward"
+    #             column_reverse = f"{column}_reverse"
+    #             if column_forward in ranges.keys() and column_reverse in ranges.keys():
+    #                 range_forward = ranges[column_forward]
+    #                 range_reverse = ranges[column_reverse]
 
-                    if column == "LR":
-                        paddding = 1
-                    elif column == "D_max":
-                        paddding = 0.1
-                    # elif column == "noise":
-                    # paddding = 1
+    #                 if column == "LR":
+    #                     paddding = 1
+    #                 elif column == "D_max":
+    #                     paddding = 0.1
+    #                 # elif column == "noise":
+    #                 # paddding = 1
 
-                    if range_forward[0] < range_[0] - paddding:
-                        range_forward[0] = range_[0] - paddding
-                    if range_forward[1] > range_[1] + paddding:
-                        range_forward[1] = range_[1] + paddding
+    #                 if range_forward[0] < range_[0] - paddding:
+    #                     range_forward[0] = range_[0] - paddding
+    #                 if range_forward[1] > range_[1] + paddding:
+    #                     range_forward[1] = range_[1] + paddding
 
-                    if range_reverse[0] < range_[0] - paddding:
-                        range_reverse[0] = range_[0] - paddding
-                    if range_reverse[1] > range_[1] + paddding:
-                        range_reverse[1] = range_[1] + paddding
+    #                 if range_reverse[0] < range_[0] - paddding:
+    #                     range_reverse[0] = range_[0] - paddding
+    #                 if range_reverse[1] > range_[1] + paddding:
+    #                     range_reverse[1] = range_[1] + paddding
 
-                    ranges[column_forward] = range_forward
-                    ranges[column_reverse] = range_reverse
+    #                 ranges[column_forward] = range_forward
+    #                 ranges[column_reverse] = range_reverse
 
-        self.ranges = ranges
+    #     self.ranges = ranges
 
-    def set_marker_size(self, marker_transformation="sqrt", marker_size_max=30):
+    def set_marker_size(self, variable="N_alignments", function="sqrt", slider=30):
 
         df = self.df_fit_results
 
-        if isinstance(marker_transformation, list) and isinstance(
-            marker_size_max, list
-        ):
-            if len(marker_transformation) == 0 and len(marker_size_max) == 0:
-                return None
-            marker_transformation = marker_transformation[0]
-            marker_size_max = marker_size_max[0]
+        d_functions = {
+            "constant": np.ones_like,
+            "identity": lambda x: x,
+            "sqrt": np.sqrt,
+            "log10": np.log10,
+        }
 
-        if marker_transformation == "identity":
-            df.loc[:, "size"] = df["N_alignments"]
-
-        elif marker_transformation == "sqrt":
-            df.loc[:, "size"] = np.sqrt(df["N_alignments"])
-
-        elif marker_transformation == "log10":
-            df.loc[:, "size"] = np.log10(df["N_alignments"])
-
-        elif marker_transformation == "constant":
-            df.loc[:, "size"] = np.ones_like(df["N_alignments"])
-
-        else:
-            raise AssertionError(
-                f"Did not recieve proper marker_transformation: {marker_transformation}"
-            )
+        df.loc[:, "size"] = d_functions[function](df[variable])
 
         self.max_of_size = np.max(df["size"])
-        self.marker_size_max = marker_size_max
-        return None
+        self.marker_size = slider
 
     def filter(self, filters, df_type="df_fit_results"):
         query = ""
@@ -216,7 +199,6 @@ class FitResults:
             else:
                 low, high = filter
                 if dashboard.utils.is_log_transform_column(column):
-                # if column in dashboard.utils.log_transform_columns:
                     low = dashboard.utils.log_transform_slider(low)
                     high = dashboard.utils.log_transform_slider(high)
                 query += f"({low} <= {column} <= {high}) & "

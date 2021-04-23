@@ -43,7 +43,7 @@ fit_results = dashboard.fit_results.FitResults(
 
 d_columns_latex = dashboard_helper.get_d_columns_latex()
 columns = list(d_columns_latex.keys())
-
+columns_no_log = [col for col in columns if not col.startswith("log_")]
 # x = x
 
 # (1) No sidebars, (2) Only left filter sidebar,
@@ -134,57 +134,133 @@ dropdown_y_axis = dcc.Dropdown(
 # )
 #
 
+
+# form_overview_marker_transformation = dbc.FormGroup(
+#     [
+#         dbc.Label("Marker transformation", className="mr-2"),
+#         # dbc.Col(
+#         dcc.Dropdown(  # possible fix for ReferenceError
+#             id={"type": "dropdown_overview_marker_transformation", "index": 0},
+#             options=[
+#                 {"label": "Identity", "value": "identity"},
+#                 {"label": "Sqrt", "value": "sqrt"},
+#                 {"label": "Log", "value": "log10"},
+#                 {"label": "Constant", "value": "constant"},
+#             ],
+#             value="sqrt",
+#             searchable=False,
+#             clearable=False,
+#             style={"min-width": "100px"},
+#             # ),
+#             # width=5,
+#         ),
+#     ],
+#     className="mr-6",
+# )
+
+
+XY_axis_dropdowns = [
+    dbc.Col(
+        [
+            dbc.Row(
+                html.P("X-axis: ", className="lead"),
+                justify="center",
+                align="end",
+                no_gutters=True,
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dropdown_x_axis,
+                    xs=12,
+                    sm=11,
+                    md=10,
+                    lg=9,
+                ),
+                justify="center",
+                no_gutters=True,
+            ),
+        ],
+    ),
+    dbc.Col(
+        [
+            dbc.Row(
+                html.P("Y-axis: ", className="lead"),
+                justify="center",
+                align="end",
+                no_gutters=True,
+            ),
+            dbc.Row(
+                dbc.Col(
+                    dropdown_y_axis,
+                    xs=12,
+                    sm=11,
+                    md=10,
+                    lg=9,
+                ),
+                justify="center",
+                no_gutters=True,
+            ),
+        ],
+    ),
+]
+
+
+marker_transformation_function = dcc.Dropdown(
+    id="marker_transformation_function",
+    options=[
+        {"label": "Constant", "value": "constant"},
+        {"label": "Identity", "value": "identity"},
+        {"label": "Sqrt", "value": "sqrt"},
+        {"label": "Log", "value": "log10"},
+    ],
+    value="sqrt",
+    searchable=False,
+    clearable=False,
+)
+
+
+marker_transformation_variable = dcc.Dropdown(
+    id="marker_transformation_variable",
+    options=[{"label": col, "value": col} for col in columns_no_log],
+    value="N_alignments",
+    searchable=True,
+    clearable=False,
+)
+
+marker_transformation_slider = dcc.Slider(
+    id="marker_transformation_slider",
+    min=1,
+    max=60,
+    step=1,
+    value=30,
+    marks={mark: str(mark) for mark in [1, 10, 20, 30, 40, 50, 60]},
+)
+
+
 content_main = html.Div(
     html.Div(
         [
             dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
             dbc.Collapse(
-                dbc.Row(
-                    [
-                        dbc.Col(
-                            [
-                                dbc.Row(
-                                    html.P("X-axis: ", className="lead"),
-                                    justify="center",
-                                    align="end",
-                                    no_gutters=True,
-                                ),
-                                dbc.Row(
-                                    dbc.Col(
-                                        dropdown_x_axis,
-                                        xs=12,
-                                        sm=11,
-                                        md=10,
-                                        lg=9,
-                                    ),
-                                    justify="center",
-                                    no_gutters=True,
-                                ),
-                            ],
-                        ),
-                        dbc.Col(
-                            [
-                                dbc.Row(
-                                    html.P("Y-axis: ", className="lead"),
-                                    justify="center",
-                                    align="end",
-                                    no_gutters=True,
-                                ),
-                                dbc.Row(
-                                    dbc.Col(
-                                        dropdown_y_axis,
-                                        xs=12,
-                                        sm=11,
-                                        md=10,
-                                        lg=9,
-                                    ),
-                                    justify="center",
-                                    no_gutters=True,
-                                ),
-                            ],
-                        ),
-                    ]
-                ),
+                [
+                    dbc.Row(XY_axis_dropdowns),
+                    dbc.Row(dbc.Col(html.Hr())),
+                    dbc.Row(dbc.Col(html.Center("Marker Size", className="lead"))),
+                    dbc.Row(
+                        [
+                            dbc.Col(html.Center("Variable:"), width=3),
+                            dbc.Col(html.Center("Function:"), width=3),
+                            dbc.Col(html.Center("Scale:"), width=6),
+                        ],
+                    ),
+                    dbc.Row(
+                        [
+                            dbc.Col(marker_transformation_variable, width=3),
+                            dbc.Col(marker_transformation_function, width=3),
+                            dbc.Col(marker_transformation_slider, width=6),
+                        ],
+                    ),
+                ],
                 # html.Div([div_x_axis, div_y_axis]),
                 id="collapsed_variable_selections",
                 is_open=False,
@@ -343,8 +419,6 @@ filters_collapse_tax_id = html.Div(
 #%%
 
 
-filter_slider_names = [column for column in columns if not column.startswith("log_")]
-
 filters_collapse_ranges = html.Div(
     [
         dbc.Button(
@@ -367,7 +441,7 @@ filters_collapse_ranges = html.Div(
                         id="dropdown_slider",
                         options=[
                             {"label": shortname, "value": shortname}
-                            for shortname in filter_slider_names
+                            for shortname in columns_no_log
                         ],
                         value=[],
                         multi=True,
@@ -806,12 +880,13 @@ def make_figure(df, xaxis_column_name, yaxis_column_name):
         symbol_map=fit_results.d_symbols,
     )
 
+    # 2. * max(array of size values) / (desired maximum marker size ** 2)
+
     fig.update_traces(
         hovertemplate=fit_results.hovertemplate,
         marker_line_width=0,
-        marker_sizeref=2.0
-        * fit_results.max_of_size
-        / (fit_results.marker_size_max ** 2),
+        marker_sizemode="area",
+        marker_sizeref=2.0 * fit_results.max_of_size / (fit_results.marker_size ** 2),
     )
 
     fig.update_layout(
@@ -846,6 +921,9 @@ def make_figure(df, xaxis_column_name, yaxis_column_name):
     Input({"type": "dynamic_slider", "index": ALL}, "value"),
     Input("xaxis_column", "value"),
     Input("yaxis_column", "value"),
+    Input("marker_transformation_variable", "value"),
+    Input("marker_transformation_function", "value"),
+    Input("marker_transformation_slider", "value"),
     Input("modal_close_button", "n_clicks"),
     State({"type": "dynamic_slider", "index": ALL}, "id"),
     State("tax_id_filter_input_descendants", "value"),
@@ -859,6 +937,9 @@ def update_graph(
     slider_values,
     xaxis_column_name,
     yaxis_column_name,
+    marker_transformation_variable,
+    marker_transformation_function,
+    marker_transformation_slider,
     n_clicks_modal,
     slider_ids,
     tax_id_filter_input_descendants,
@@ -874,12 +955,22 @@ def update_graph(
     if not dropdown_file_selection:
         raise PreventUpdate
 
-    # fit_results.set_marker_size(marker_transformation, marker_size_max)
+    # print(
+    #     marker_transformation_variable,
+    #     marker_transformation_function,
+    #     marker_transformation_slider,
+    # )
+
+    fit_results.set_marker_size(
+        marker_transformation_variable,
+        marker_transformation_function,
+        marker_transformation_slider,
+    )
 
     d_filter = {"shortnames": dropdown_file_selection}
 
-    filter_slider_names = [id["index"] for id in slider_ids]
-    for shortname, values in zip(filter_slider_names, slider_values):
+    columns_no_log = [id["index"] for id in slider_ids]
+    for shortname, values in zip(columns_no_log, slider_values):
         d_filter[shortname] = values
 
     apply_tax_id_filter(
