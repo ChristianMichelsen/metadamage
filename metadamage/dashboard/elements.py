@@ -82,7 +82,8 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
 
     df = fit_results.df_fit_results
 
-    if column in dashboard.utils.log_transform_columns:
+    if dashboard.utils.is_log_transform_column(column):
+        # if column in dashboard.utils.log_transform_columns:
 
         x = df[column]
 

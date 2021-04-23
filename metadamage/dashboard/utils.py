@@ -37,7 +37,10 @@ def set_custom_theme():
 
 #%%
 
-log_transform_columns = ["N_alignments", "k_sum_total", "N_sum_total"]
+
+def is_log_transform_column(column):
+    log_transform_columns = ["N_alignments", "k_sum_", "N_sum_"]
+    return any([log_col in column for log_col in log_transform_columns])
 
 
 def log_transform_slider(x):

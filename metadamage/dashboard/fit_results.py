@@ -88,7 +88,7 @@ class FitResults:
         df["D_max_significance"] = df["D_max"] / df["D_max_std"]
         df["rho_Ac_abs"] = np.abs(df["rho_Ac"])
 
-        log_columns = ["LR", "phi", "N_alignments"]
+        log_columns = ["LR", "phi", "N_alignments", "k_sum_total", "N_sum_total"]
         for column in log_columns:
             log_column = "log_" + column
             df.loc[:, log_column] = np.log10(1 + df[column])
@@ -215,7 +215,8 @@ class FitResults:
 
             else:
                 low, high = filter
-                if column in dashboard.utils.log_transform_columns:
+                if dashboard.utils.is_log_transform_column(column):
+                # if column in dashboard.utils.log_transform_columns:
                     low = dashboard.utils.log_transform_slider(low)
                     high = dashboard.utils.log_transform_slider(high)
                 query += f"({low} <= {column} <= {high}) & "

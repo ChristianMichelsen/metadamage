@@ -281,15 +281,7 @@ filters_collapse_tax_id = html.Div(
 #%%
 
 
-slider_names = [
-    "LR",
-    "D_max",
-    "q",
-    "phi",
-    "N_alignments",
-    "k_sum_total",
-    "N_sum_total",
-]
+filter_slider_names = [column for column in columns if not column.startswith("log_")]
 
 filters_collapse_ranges = html.Div(
     [
@@ -313,7 +305,7 @@ filters_collapse_ranges = html.Div(
                         id="dropdown_slider",
                         options=[
                             {"label": shortname, "value": shortname}
-                            for shortname in slider_names
+                            for shortname in filter_slider_names
                         ],
                         value=[],
                         multi=True,
@@ -824,8 +816,8 @@ def update_graph(
 
     d_filter = {"shortnames": dropdown_file_selection}
 
-    slider_names = [id["index"] for id in slider_ids]
-    for shortname, values in zip(slider_names, slider_values):
+    filter_slider_names = [id["index"] for id in slider_ids]
+    for shortname, values in zip(filter_slider_names, slider_values):
         d_filter[shortname] = values
 
     apply_tax_id_filter(
@@ -926,7 +918,7 @@ def get_slider_name(column, low_high):
         low = low_high[0]
         high = low_high[1]
 
-    if column in dashboard.utils.log_transform_columns:
+    if dashboard.utils.is_log_transform_column(column):
         low = dashboard.utils.log_transform_slider(low)
         high = dashboard.utils.log_transform_slider(high)
 
@@ -975,11 +967,7 @@ def make_new_slider(column, id_type, N_steps=100):
     State({"type": "dynamic_slider", "index": ALL}, "id"),
     prevent_initial_call=True,
 )
-def add_or_remove_slider(
-    dropdown_names,
-    children,
-    current_ids,
-):
+def add_or_remove_slider(dropdown_names, children, current_ids):
 
     id_type = "dbc"
 

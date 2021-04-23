@@ -259,28 +259,6 @@ def get_graph_kwargs_no_buttons():
     return graph_kwargs_no_buttons
 
 
-# def get_columns(fit_results):
-#     columns = list(fit_results.df_fit_results.columns)
-#     exclude_cols_including = [
-#         "tax",
-#         "valid",
-#         "LR_P",
-#         "LR_n_sigma",
-#         "size",
-#         "shortname",
-#         "_log10",
-#         "_sqrt",
-#     ]
-#     columns = [
-#         column
-#         for column in columns
-#         if not any([word in column for word in exclude_cols_including])
-#     ]
-#     exclude_cols = ["_LR", "_forward_LR", "_reverse_LR"]
-#     columns = [column for column in columns if column not in exclude_cols]
-#     return columns
-
-
 def get_d_columns_latex():
     d_columns_latex = {
         "LR": r"$\lambda_\text{LR}$",
@@ -310,6 +288,8 @@ def get_d_columns_latex():
         "log_LR": r"$\log_{10}(1+\lambda_\text{LR})$",
         "log_phi": r"$\log_{10}(1+\phi)$",
         "log_N_alignments": r"$\log_{10}(1+N_\text{alignments})$",
+        "log_k_sum_total": r"$\log_{10}(1+\sum_i k_i)$",
+        "log_N_sum_total": r"$\log_{10}(1+\sum_i N_i)$",
         #
         "forward_LR": r"$ \lambda_\text{LR} \,\, \text{(forward)}$",
         "forward_D_max": r"$ D\text{max} \,\, \text{(forward)}$",
