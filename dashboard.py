@@ -107,23 +107,85 @@ dropdown_y_axis = dcc.Dropdown(
     value="D_max",
 )
 
-div_x_axis = html.Div(
-    [dropdown_x_axis],
-    style={"width": "48%", "display": "inline-block"},
-)
+# div_x_axis = html.Div(
+#     [dropdown_x_axis],
+#     style={"width": "48%", "display": "inline-block"},
+# )
 
-div_y_axis = html.Div(
-    [dropdown_y_axis],
-    style={"width": "48%", "float": "right", "display": "inline-block"},
-)
+# div_y_axis = html.Div(
+#     [dropdown_y_axis],
+#     style={"width": "48%", "float": "right", "display": "inline-block"},
+# )
 
+
+# content_main = html.Div(
+#     html.Div(
+#         [
+#             dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
+#             dbc.Collapse(
+#                 html.Div([div_x_axis, div_y_axis]),
+#                 id="collapsed_variable_selections",
+#                 is_open=False,
+#             ),
+#         ]
+#     ),
+#     id="content_main",
+#     style=start_configuration.style_content_main,
+# )
+#
 
 content_main = html.Div(
     html.Div(
         [
             dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
             dbc.Collapse(
-                html.Div([div_x_axis, div_y_axis]),
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            [
+                                dbc.Row(
+                                    html.P("X-axis: ", className="lead"),
+                                    justify="center",
+                                    align="end",
+                                    no_gutters=True,
+                                ),
+                                dbc.Row(
+                                    dbc.Col(
+                                        dropdown_x_axis,
+                                        xs=12,
+                                        sm=11,
+                                        md=10,
+                                        lg=9,
+                                    ),
+                                    justify="center",
+                                    no_gutters=True,
+                                ),
+                            ],
+                        ),
+                        dbc.Col(
+                            [
+                                dbc.Row(
+                                    html.P("Y-axis: ", className="lead"),
+                                    justify="center",
+                                    align="end",
+                                    no_gutters=True,
+                                ),
+                                dbc.Row(
+                                    dbc.Col(
+                                        dropdown_y_axis,
+                                        xs=12,
+                                        sm=11,
+                                        md=10,
+                                        lg=9,
+                                    ),
+                                    justify="center",
+                                    no_gutters=True,
+                                ),
+                            ],
+                        ),
+                    ]
+                ),
+                # html.Div([div_x_axis, div_y_axis]),
                 id="collapsed_variable_selections",
                 is_open=False,
             ),
