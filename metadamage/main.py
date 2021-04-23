@@ -177,8 +177,6 @@ if utils.is_ipython():
     # Third Party
     import plotly.express as px
 
-    # fig = dashboard.figures.plot_fit_results(fit_results)
-
     def compute_range(df, x, range_x):
         if range_x is None:
             return df[x].min(), df[x].max()

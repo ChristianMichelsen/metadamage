@@ -88,6 +88,11 @@ class FitResults:
         df["D_max_significance"] = df["D_max"] / df["D_max_std"]
         df["rho_Ac_abs"] = np.abs(df["rho_Ac"])
 
+        log_columns = ["LR", "phi", "N_alignments"]
+        for column in log_columns:
+            log_column = "log_" + column
+            df.loc[:, log_column] = np.log10(1 + df[column])
+
         self.df_fit_results = df
 
         self.all_tax_ids = set(self.df_fit_results.tax_id.unique())
@@ -254,6 +259,8 @@ class FitResults:
 
         columns = list(self.df_fit_results.columns)
 
+        placeholder = "_XXX_"
+
         contains_Bayesian = any(["Bayesian" in column for column in columns])
 
         if contains_Bayesian:
@@ -272,6 +279,7 @@ class FitResults:
                 "phi",
                 "phi_std",
                 "asymmetry",
+                "rho_Ac",
                 # Bayesian Fits
                 "Bayesian_n_sigma",
                 "Bayesian_D_max",
@@ -285,26 +293,27 @@ class FitResults:
             ]
 
             self.hovertemplate = (
-                "<b>%{customdata[0]}</b><br><br>"
+                "<b>%{customdata[_XXX_]}</b><br><br>"
                 "<b>Tax</b>: <br>"
-                "    Name: %{customdata[1]} <br>"
-                "    Rank: %{customdata[2]} <br>"
-                "    ID:   %{customdata[3]} <br><br>"
+                "    Name: %{customdata[_XXX_]} <br>"
+                "    Rank: %{customdata[_XXX_]} <br>"
+                "    ID:   %{customdata[_XXX_]} <br><br>"
                 "<b>Fit Results</b>: <br>"
-                "    LR:       %{customdata[4]:9.2f} <br>"
-                "    D max:    %{customdata[5]:9.2f} +/- %{customdata[6]:.2f} <br>"
-                "    q:        %{customdata[7]:9.2f} +/- %{customdata[8]:.2f} <br>"
-                "    phi:      %{customdata[9]:9.3s} +/- %{customdata[10]:.3s} <br>"
-                "    asymmetry:%{customdata[11]:9.3f} <br><br>"
+                "    LR:       %{customdata[_XXX_]:9.2f} <br>"
+                "    D max:    %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
+                "    q:        %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
+                "    phi:      %{customdata[_XXX_]:9.3s} +/- %{customdata[_XXX_]:.3s} <br>"
+                "    asymmetry:%{customdata[_XXX_]:9.3f} <br>"
+                "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Bayesian Fit Results</b>: <br>"
-                "    n sigma:  %{customdata[12]:9.2f} <br>"
-                "    D max:    %{customdata[13]:9.2f} <br>"
-                "    q:        %{customdata[14]:9.2f} <br>"
-                "    phi:      %{customdata[15]:9.3s} <br><br>"
+                "    n sigma:  %{customdata[_XXX_]:9.2f} <br>"
+                "    D max:    %{customdata[_XXX_]:9.2f} <br>"
+                "    q:        %{customdata[_XXX_]:9.2f} <br>"
+                "    phi:      %{customdata[_XXX_]:9.3s} <br><br>"
                 "<b>Counts</b>: <br>"
-                "    N alignments:%{customdata[16]:6.3s} <br>"
-                "    N sum total: %{customdata[17]:6.3s} <br>"
-                "    y sum total: %{customdata[18]:6.3s} <br>"
+                "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
+                "    N sum total: %{customdata[_XXX_]:6.3s} <br>"
+                "    k sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "<extra></extra>"
             )
 
@@ -331,29 +340,44 @@ class FitResults:
             ]
 
             self.hovertemplate = (
-                "<b>%{customdata[0]}</b><br><br>"
+                "<b>%{customdata[_XXX_]}</b><br><br>"
                 "<b>Tax</b>: <br>"
-                "    Name: %{customdata[1]} <br>"
-                "    Rank: %{customdata[2]} <br>"
-                "    ID:   %{customdata[3]} <br><br>"
+                "    Name: %{customdata[_XXX_]} <br>"
+                "    Rank: %{customdata[_XXX_]} <br>"
+                "    ID:   %{customdata[_XXX_]} <br><br>"
                 "<b>Fit Results</b>: <br>"
-                "    LR:       %{customdata[4]:9.2f} <br>"
-                "    D max:    %{customdata[5]:9.2f} +/- %{customdata[6]:.2f} <br>"
-                "    q:        %{customdata[7]:9.2f} +/- %{customdata[8]:.2f} <br>"
-                "    phi:      %{customdata[9]:9.3s} +/- %{customdata[10]:.3s} <br>"
-                "    asymmetry:%{customdata[11]:9.3f} <br><br>"
+                "    LR:       %{customdata[_XXX_]:9.2f} <br>"
+                "    D max:    %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
+                "    q:        %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
+                "    phi:      %{customdata[_XXX_]:9.3s} +/- %{customdata[_XXX_]:.3s} <br>"
+                "    asymmetry:%{customdata[_XXX_]:9.3f} <br>"
+                "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Counts</b>: <br>"
-                "    N alignments:%{customdata[12]:6.3s} <br>"
-                "    N sum total: %{customdata[13]:6.3s} <br>"
-                "    y sum total: %{customdata[14]:6.3s} <br>"
+                "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
+                "    N sum total: %{customdata[_XXX_]:6.3s} <br>"
+                "    k sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "<extra></extra>"
             )
+
+        data_counter = 0
+        i = 0
+        while True:
+            if self.hovertemplate[i : i + len(placeholder)] == placeholder:
+                # break
+                s_new = self.hovertemplate[:i]
+                s_new += str(data_counter)
+                s_new += self.hovertemplate[i + len(placeholder) :]
+                self.hovertemplate = s_new
+                data_counter += 1
+            i += 1
+
+            if i >= len(self.hovertemplate):
+                break
 
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
         self.hovertemplate_fit = (
-            "D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>"
-            "<extra></extra>"
+            "D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>" "<extra></extra>"
         )
 
     # def _get_col_row_from_iteration(self, i, N_cols):
@@ -427,3 +451,6 @@ class FitResults:
         d_out = {"mu": Dz, "std": std, "Dz": Dz, "z": z}
 
         return d_out
+
+
+# %

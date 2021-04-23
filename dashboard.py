@@ -41,8 +41,8 @@ fit_results = dashboard.fit_results.FitResults(
     use_memoization=True,
 )
 
-columns = dashboard_helper.get_columns(fit_results)
 d_columns_latex = dashboard_helper.get_d_columns_latex()
+columns = list(d_columns_latex.keys())
 
 # x = x
 
@@ -101,38 +101,20 @@ dropdown_x_axis = dcc.Dropdown(
     value="LR",
 )
 
-lin_log_scale_x_axis = dcc.RadioItems(
-    id="xaxis_type",
-    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
-    value="Linear",
-    labelStyle={"display": "inline-block"},
-)
-
 dropdown_y_axis = dcc.Dropdown(
     id="yaxis_column",
     options=[{"label": i, "value": i} for i in columns],
     value="D_max",
 )
 
-lin_log_scale_y_axis = dcc.RadioItems(
-    id="yaxis_type",
-    options=[{"label": i, "value": i} for i in ["Linear", "Log"]],
-    value="Linear",
-    labelStyle={"display": "inline-block"},
-)
-
 div_x_axis = html.Div(
-    [dropdown_x_axis, lin_log_scale_x_axis],
+    [dropdown_x_axis],
     style={"width": "48%", "display": "inline-block"},
 )
 
 div_y_axis = html.Div(
-    [dropdown_y_axis, lin_log_scale_y_axis],
-    style={
-        "width": "48%",
-        "float": "right",
-        "display": "inline-block",
-    },
+    [dropdown_y_axis],
+    style={"width": "48%", "float": "right", "display": "inline-block"},
 )
 
 
@@ -754,13 +736,7 @@ def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies
             d_filter["tax_ids"] = tax_ids
 
 
-def make_figure(
-    df,
-    xaxis_column_name,
-    yaxis_column_name,
-    xaxis_type,
-    yaxis_type,
-):
+def make_figure(df, xaxis_column_name, yaxis_column_name):
 
     fig = px.scatter(
         df,
@@ -801,15 +777,8 @@ def make_figure(
         )
     )
 
-    fig.update_xaxes(
-        title=d_columns_latex[xaxis_column_name],
-        type="linear" if xaxis_type == "Linear" else "log",
-    )
-
-    fig.update_yaxes(
-        title=d_columns_latex[yaxis_column_name],
-        type="linear" if yaxis_type == "Linear" else "log",
-    )
+    fig.update_xaxes(title=d_columns_latex[xaxis_column_name])
+    fig.update_yaxes(title=d_columns_latex[yaxis_column_name])
 
     return fig
 
@@ -823,8 +792,6 @@ def make_figure(
     Input({"type": "dynamic_slider", "index": ALL}, "value"),
     Input("xaxis_column", "value"),
     Input("yaxis_column", "value"),
-    Input("xaxis_type", "value"),
-    Input("yaxis_type", "value"),
     Input("modal_close_button", "n_clicks"),
     State({"type": "dynamic_slider", "index": ALL}, "id"),
     State("tax_id_filter_input_descendants", "value"),
@@ -838,8 +805,6 @@ def update_graph(
     slider_values,
     xaxis_column_name,
     yaxis_column_name,
-    xaxis_type,
-    yaxis_type,
     n_clicks_modal,
     slider_ids,
     tax_id_filter_input_descendants,
@@ -884,8 +849,6 @@ def update_graph(
         df=df_fit_results_filtered,
         xaxis_column_name=xaxis_column_name,
         yaxis_column_name=yaxis_column_name,
-        xaxis_type=xaxis_type,
-        yaxis_type=yaxis_type,
     )
 
     return fig, dash.no_update

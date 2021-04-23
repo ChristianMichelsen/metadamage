@@ -259,100 +259,105 @@ def get_graph_kwargs_no_buttons():
     return graph_kwargs_no_buttons
 
 
-def get_columns(fit_results):
-    columns = list(fit_results.df_fit_results.columns)
-    exclude_cols_including = [
-        "tax",
-        "valid",
-        "LR_P",
-        "LR_n_sigma",
-        "size",
-        "shortname",
-        "_log10",
-        "_sqrt",
-    ]
-    columns = [
-        column
-        for column in columns
-        if not any([word in column for word in exclude_cols_including])
-    ]
-    exclude_cols = ["_LR", "_forward_LR", "_reverse_LR"]
-    columns = [column for column in columns if column not in exclude_cols]
-    return columns
+# def get_columns(fit_results):
+#     columns = list(fit_results.df_fit_results.columns)
+#     exclude_cols_including = [
+#         "tax",
+#         "valid",
+#         "LR_P",
+#         "LR_n_sigma",
+#         "size",
+#         "shortname",
+#         "_log10",
+#         "_sqrt",
+#     ]
+#     columns = [
+#         column
+#         for column in columns
+#         if not any([word in column for word in exclude_cols_including])
+#     ]
+#     exclude_cols = ["_LR", "_forward_LR", "_reverse_LR"]
+#     columns = [column for column in columns if column not in exclude_cols]
+#     return columns
 
 
 def get_d_columns_latex():
     d_columns_latex = {
         "LR": r"$\lambda_\text{LR}$",
         "D_max": r"$D_\text{max}$",
-        "D_max_std": r"$\sigma_{D_\text{max}}$",
         "q": r"$q$",
-        "q_std": r"$\sigma_q$",
         "phi": r"$\phi$",
-        "phi_std": r"$\sigma_\phi$",
         "A": r"$A$",
-        "A_std": r"$\sigma_A$",
         "c": r"$c$",
-        "c_std": r"$\sigma_c$",
+        "asymmetry": r"$\text{asymmetry}$",
+        "D_max_significance": r"$Z_{D_\text{max}}$",
         "rho_Ac": r"$\rho_{A, c}$",
+        "rho_Ac_abs": r"$|\rho_{A, c}|$",
         "LR_P": r"$\text{P}_\lambda$",
         "LR_n_sigma": r"$\sigma_\lambda$",
-        "asymmetry": r"$\text{asymmetry}$",
+        #
+        "D_max_std": r"$\sigma_{D_\text{max}}$",
+        "q_std": r"$\sigma_q$",
+        "phi_std": r"$\sigma_\phi$",
+        "A_std": r"$\sigma_A$",
+        "c_std": r"$\sigma_c$",
+        #
+        "N_alignments": r"$N_\text{alignments}$",
+        "k_sum_total": r"$\sum_i k_i$",
+        "N_sum_total": r"$\sum_i N_i$",
+        "N_min": r"$\text{min} N_i$",
+        #
+        "log_LR": r"$\log_{10}(1+\lambda_\text{LR})$",
+        "log_phi": r"$\log_{10}(1+\phi)$",
+        "log_N_alignments": r"$\log_{10}(1+N_\text{alignments})$",
         #
         "forward_LR": r"$ \lambda_\text{LR} \,\, \text{(forward)}$",
         "forward_D_max": r"$ D\text{max} \,\, \text{(forward)}$",
-        "forward_D_max_std": r"$ \sigma_{D_\text{max}} \,\, \text{(forward)}$",
         "forward_q": r"$ q \,\, \text{(forward)}$",
-        "forward_q_std": r"$ \sigma_q \,\, \text{(forward)}$",
         "forward_phi": r"$ \phi \,\, \text{(forward)}$",
-        "forward_phi_std": r"$ \sigma_\phi \,\, \text{(forward)}$",
         "forward_A": r"$ A \,\, \text{(forward)}$",
-        "forward_A_std": r"$ \sigma_A \,\, \text{(forward)}$",
         "forward_c": r"$ c \,\, \text{(forward)}$",
-        "forward_c_std": r"$ \sigma_c \,\, \text{(forward)}$",
         "forward_rho_Ac": r"$ \rho_{A, c} \,\, \text{(forward)}$",
         "forward_LR_P": r"$ \text{P}_\lambda \,\, \text{(forward)}$",
         "forward_LR_n_sigma": r"$ \sigma_\lambda \,\, \text{(forward)}$",
         #
+        "forward_D_max_std": r"$ \sigma_{D_\text{max}} \,\, \text{(forward)}$",
+        "forward_q_std": r"$ \sigma_q \,\, \text{(forward)}$",
+        "forward_phi_std": r"$ \sigma_\phi \,\, \text{(forward)}$",
+        "forward_A_std": r"$ \sigma_A \,\, \text{(forward)}$",
+        "forward_c_std": r"$ \sigma_c \,\, \text{(forward)}$",
+        #
+        "k_sum_forward": r"$\sum_i k_i \,\, \text{(forward)}$",
+        "N_z1_forward": r"$N_{z=1} \,\, \text{(forward)}$",
+        "N_sum_forward": r"$\sum_i N_i \,\, \text{(forward)}$",
+        #
         "reverse_LR": r"$ \lambda_\text{LR} \,\, \text{(reverse)}$",
         "reverse_D_max": r"$ D\text{max} \,\, \text{(reverse)}$",
-        "reverse_D_max_std": r"$ \sigma_{D_\text{max}} \,\, \text{(reverse)}$",
         "reverse_q": r"$ q \,\, \text{(reverse)}$",
-        "reverse_q_std": r"$ \sigma_q \,\, \text{(reverse)}$",
         "reverse_phi": r"$ \phi \,\, \text{(reverse)}$",
-        "reverse_phi_std": r"$ \sigma_\phi \,\, \text{(reverse)}$",
         "reverse_A": r"$ A \,\, \text{(reverse)}$",
-        "reverse_A_std": r"$ \sigma_A \,\, \text{(reverse)}$",
         "reverse_c": r"$ c \,\, \text{(reverse)}$",
-        "reverse_c_std": r"$ \sigma_c \,\, \text{(reverse)}$",
         "reverse_rho_Ac": r"$ \rho_{A, c} \,\, \text{(reverse)}$",
         "reverse_LR_P": r"$ \text{P}_\lambda \,\, \text{(reverse)}$",
         "reverse_LR_n_sigma": r"$ \sigma_\lambda \,\, \text{(reverse)}$",
         #
-        "N_alignments": r"$N_\text{alignments}$",
+        "reverse_D_max_std": r"$ \sigma_{D_\text{max}} \,\, \text{(reverse)}$",
+        "reverse_q_std": r"$ \sigma_q \,\, \text{(reverse)}$",
+        "reverse_phi_std": r"$ \sigma_\phi \,\, \text{(reverse)}$",
+        "reverse_A_std": r"$ \sigma_A \,\, \text{(reverse)}$",
+        "reverse_c_std": r"$ \sigma_c \,\, \text{(reverse)}$",
         #
-        "N_z1_forward": r"$N_{z=1} \,\, \text{(forward)}$",
+        "k_sum_reverse": r"$\sum_i k_i \,\, \text{(reverse)}$",
         "N_z1_reverse": r"$N_{z=1} \,\, \text{(reverse)}$",
-        #
-        "N_sum_total": r"$\sum_i N_i$",
-        "N_sum_forward": r"$\sum_i N_i \,\, \text{(forward)}$",
         "N_sum_reverse": r"$\sum_i N_i \,\, \text{(reverse)}$",
         #
-        "N_min": r"$\text{min} N_i$",
-        #
-        "k_sum_total": r"$\sum_i k_i$",
-        "k_sum_forward": r"$\sum_i k_i \,\, \text{(forward)}$",
-        "k_sum_reverse": r"$\sum_i k_i \,\, \text{(reverse)}$",
-        #
-        "Bayesian_D_max": r"$D_\text{max} \,\, \text{(Bayesian)}$",
-        "Bayesian_D_max_std": r"$\sigma_{D_\text{max}} \,\, \text{(Bayesian)}$",
         "Bayesian_n_sigma": r"$n_\sigma \,\, \text{(Bayesian)}$",
-        "Bayesian_A": r"$A \,\, \text{(Bayesian)}$",
+        "Bayesian_D_max": r"$D_\text{max} \,\, \text{(Bayesian)}$",
         "Bayesian_q": r"$q \,\, \text{(Bayesian)}$",
-        "Bayesian_c": r"$c \,\, \text{(Bayesian)}$",
         "Bayesian_phi": r"$\phi \,\, \text{(Bayesian)}$",
+        "Bayesian_A": r"$A \,\, \text{(Bayesian)}$",
+        "Bayesian_c": r"$c \,\, \text{(Bayesian)}$",
+        "Bayesian_D_max_std": r"$\sigma_{D_\text{max}} \,\, \text{(Bayesian)}$",
         #
-        "D_max_significance": r"$Z_{D_\text{max}}$",
-        "rho_Ac_abs": r"$|\rho_{A, c}|$",
     }
     return d_columns_latex
