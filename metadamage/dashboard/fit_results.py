@@ -352,8 +352,6 @@ class FitResults:
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
         self.hovertemplate_fit = (
-            # "<b>Fit:</b> "
-            # "D(z=%{x}) = %{y:.3f} ± %{error_y.array:.3f}<br>"
             "D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>"
             "<extra></extra>"
         )

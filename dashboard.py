@@ -523,33 +523,12 @@ def plot_group(group, fit=None, forward_reverse=""):
 
     custom_data_columns = [
         "direction",
-        # "z",
         "k",
         "N",
-        # "shortname",
-        # "tax_name",
-        # "tax_rank",
-        # "tax_id",
     ]
-
-    # hovertemplate = (
-    #     "<b>Direction: %{customdata[0]}</b><br><br>"
-    #     "<b>Data</b>: <br>"
-    #     "    z:    %{customdata[1]:4d} <br>"
-    #     "    k:    %{customdata[2]:2.3s} <br>"
-    #     "    N:    %{customdata[3]:2.3s} <br><br>"
-    #     # "<b>Sample</b>: <br>"
-    #     # "    Name: %{customdata[4]} <br><br>"
-    #     # "<b>Tax</b>: <br>"
-    #     # "    Name: %{customdata[5]} <br>"
-    #     # "    Rank: %{customdata[6]} <br>"
-    #     # "    ID:   %{customdata[7]} <br><br>"
-    #     "<extra></extra>"
-    # )
 
     hovertemplate = (
         "<b>Direction: %{customdata[0]}</b><br>"
-        # "z: %{customdata[1]:8d} <br>"
         "k: %{customdata[1]:8d} <br>"
         "N: %{customdata[2]:8d} <br>"
         "<extra></extra>"
@@ -583,6 +562,7 @@ def plot_group(group, fit=None, forward_reverse=""):
         margin=dict(l=10, r=10, t=10, b=10),
         # hovermode="x",
         hovermode="x unified",
+        hoverlabel_font_size=14,
     )
 
     if forward_reverse == "":
@@ -677,61 +657,51 @@ def plot_group(group, fit=None, forward_reverse=""):
 # tax_id = 20802
 
 
-@app.callback(
-    Output("graph_plot_data", "figure"),
-    Input("indicator_graphic", "clickData"),
-)
-def update_dropdowns_based_on_click_data(click_data):
+def update_raw_count_plots(click_data, forward_reverse):
     if click_data is not None:
 
         shortname, tax_id = get_shortname_tax_id_from_click_data(
-            fit_results, click_data
+            fit_results,
+            click_data,
         )
-        forward_reverse = ""
-        group = fit_results.get_single_count_group(shortname, tax_id, forward_reverse)
-        fit = fit_results.get_single_fit_prediction(shortname, tax_id, forward_reverse)
+        group = fit_results.get_single_count_group(
+            shortname,
+            tax_id,
+            forward_reverse,
+        )
+        fit = fit_results.get_single_fit_prediction(
+            shortname,
+            tax_id,
+            forward_reverse,
+        )
         fig = plot_group(group, fit, forward_reverse)
         return fig
     else:
         raise PreventUpdate
+
+
+@app.callback(
+    Output("graph_plot_data", "figure"),
+    Input("indicator_graphic", "clickData"),
+)
+def update_raw_count_plots_combined(click_data):
+    return update_raw_count_plots(click_data, forward_reverse="")
 
 
 @app.callback(
     Output("graph_plot_data_forward", "figure"),
     Input("indicator_graphic", "clickData"),
 )
-def update_dropdowns_based_on_click_data(click_data):
-    if click_data is not None:
-
-        shortname, tax_id = get_shortname_tax_id_from_click_data(
-            fit_results, click_data
-        )
-        forward_reverse = "Forward"
-        group = fit_results.get_single_count_group(shortname, tax_id, forward_reverse)
-        fit = fit_results.get_single_fit_prediction(shortname, tax_id, forward_reverse)
-        fig = plot_group(group, fit, forward_reverse)
-        return fig
-    else:
-        raise PreventUpdate
+def update_raw_count_plots_forward(click_data):
+    return update_raw_count_plots(click_data, forward_reverse="Forward")
 
 
 @app.callback(
     Output("graph_plot_data_reverse", "figure"),
     Input("indicator_graphic", "clickData"),
 )
-def update_dropdowns_based_on_click_data(click_data):
-    if click_data is not None:
-
-        shortname, tax_id = get_shortname_tax_id_from_click_data(
-            fit_results, click_data
-        )
-        forward_reverse = "Reverse"
-        group = fit_results.get_single_count_group(shortname, tax_id, forward_reverse)
-        fit = fit_results.get_single_fit_prediction(shortname, tax_id, forward_reverse)
-        fig = plot_group(group, fit, forward_reverse)
-        return fig
-    else:
-        raise PreventUpdate
+def update_raw_count_plots_reverse(click_data):
+    return update_raw_count_plots(click_data, forward_reverse="Reverse")
 
 
 #%%
