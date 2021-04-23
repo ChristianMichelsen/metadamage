@@ -80,6 +80,9 @@ def _insert_mark_values(mark_values):
 
 def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
 
+    no_min = "Min"
+    no_max = "Max"
+
     df = fit_results.df_fit_results
 
     if dashboard.utils.is_log_transform_column(column):
@@ -105,10 +108,10 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
         f = lambda x: human_format(dashboard.utils.log_transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
-        marks[marks_steps[0]] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
-        marks[marks_steps[-1]] = {"label": "No Max.", "style": {"color": "#a3ada9"}}
+        marks[marks_steps[0]] = {"label": no_min, "style": {"color": "#a3ada9"}}
+        marks[marks_steps[-1]] = {"label": no_max, "style": {"color": "#a3ada9"}}
 
-    elif column == "D_max" or column == "q_mean":
+    elif column == "D_max" or column == "q" or column == "c":
         range_min = 0.0
         range_max = 1.0
         marks = {
@@ -116,8 +119,8 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
             0.5: "0.5",
             0.75: "0.75",
         }
-        marks[0] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
-        marks[1] = {"label": "No Max.", "style": {"color": "#a3ada9"}}
+        marks[0] = {"label": no_min, "style": {"color": "#a3ada9"}}
+        marks[1] = {"label": no_max, "style": {"color": "#a3ada9"}}
 
     else:
 
@@ -141,9 +144,9 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
             mark_values = np.linspace(range_min, range_max, 5)
             marks = {float(val): str(val) for val in mark_values[1:-1]}
 
-        marks[int(mark_values[0])] = {"label": "No Min.", "style": {"color": "#a3ada9"}}
+        marks[int(mark_values[0])] = {"label": no_min, "style": {"color": "#a3ada9"}}
         marks[int(mark_values[-1])] = {
-            "label": "No Max.",
+            "label": no_max,
             "style": {"color": "#a3ada9"},
         }
 
@@ -309,9 +312,7 @@ def get_dropdown_marker_transformation(fit_results):
 
 def get_slider_keywords():
     marks = [1, 10, 20, 30, 40, 50, 60]
-    return dict(
-        
-    )
+    return dict()
 
 
 def get_card_marker_size_slider(fit_results):

@@ -44,6 +44,7 @@ fit_results = dashboard.fit_results.FitResults(
 d_columns_latex = dashboard_helper.get_d_columns_latex()
 columns = list(d_columns_latex.keys())
 columns_no_log = [col for col in columns if not col.startswith("log_")]
+
 # x = x
 
 # (1) No sidebars, (2) Only left filter sidebar,
@@ -65,24 +66,25 @@ start_configuration = configurations[start_configuration_id]
 
 navbar = dbc.NavbarSimple(
     [
+        # html.H4("Toggle", style={"textAlign": "center", "color": "white"}),
         dbc.Button(
-            "Toggle filters",
+            "Filters",
             outline=True,
-            color="secondary",
+            color="light",
             className="mr-1",
             id="btn_toggle_filter",
         ),
         dbc.Button(
-            "Toggle plots",
+            "Counts",
             outline=True,
-            color="secondary",
+            color="light",
             className="mr-1",
             id="btn_toggle_plot",
         ),
         dbc.Button(
-            "Toggle variables",
+            "Styling",
             outline=True,
-            color="secondary",
+            color="light",
             className="mr-1",
             id="btn_toggle_variables",
         ),
@@ -238,8 +240,8 @@ def toggle_collapse_files(n, is_open):
 
 filter_dropdown_file = dbc.FormGroup(
     [
-        html.Br(),
-        dbc.Col(html.H3("Input samples"), width=12),
+        # html.Br(),
+        # dbc.Col(html.H3("Samples"), width=12),
         dashboard.elements.get_dropdown_file_selection(
             fit_results=fit_results,
             id="sidebar_filter_dropdown_shortnames",
@@ -251,7 +253,7 @@ filter_dropdown_file = dbc.FormGroup(
 filters_collapse_files = html.Div(
     [
         dbc.Button(
-            "Filter Files",
+            "Samples",
             id="filters_toggle_files_button",
             color="secondary",
             block=True,
@@ -276,7 +278,7 @@ import itertools
 filter_tax_id = dbc.Row(
     [
         dbc.Col(html.Br(), width=12),
-        dbc.Col(html.H3("Specific taxa"), width=12),
+        dbc.Col(html.H6("Specific taxas:"), width=12),
         dbc.Col(
             dbc.FormGroup(
                 [
@@ -301,7 +303,7 @@ filter_tax_id = dbc.Row(
             width=12,
         ),
         dbc.Col(html.Br(), width=12),
-        dbc.Col(html.H3("Taxanomic descendants"), width=12),
+        dbc.Col(html.H6("Taxanomic descendants:"), width=12),
         dbc.Col(
             dbc.FormGroup(
                 [
@@ -334,7 +336,10 @@ filter_tax_id = dbc.Row(
             dbc.FormGroup(
                 [
                     dbc.Button(
-                        "Plot", id="tax_id_plot_button", color="primary", block=True
+                        "Update",
+                        id="tax_id_plot_button",
+                        color="light",
+                        block=True,
                     ),
                 ]
             ),
@@ -348,7 +353,7 @@ filter_tax_id = dbc.Row(
 filters_collapse_tax_id = html.Div(
     [
         dbc.Button(
-            "Filter Tax IDs",
+            "Taxanomics",
             id="filters_toggle_tax_ids_button",
             color="secondary",
             block=True,
@@ -369,7 +374,7 @@ filters_collapse_tax_id = html.Div(
 filters_collapse_ranges = html.Div(
     [
         dbc.Button(
-            "Filter Fit Results",
+            "Fits",
             id="filters_toggle_ranges_button",
             color="secondary",
             block=True,
@@ -380,7 +385,7 @@ filters_collapse_ranges = html.Div(
             [
                 html.Br(),
                 dbc.Col(
-                    html.H3("Fit results"),
+                    html.H6("Fit results:"),
                     width=12,
                 ),
                 dbc.Col(
@@ -392,7 +397,7 @@ filters_collapse_ranges = html.Div(
                         ],
                         value=[],
                         multi=True,
-                        placeholder="Select a variable to filter on...",
+                        placeholder="Select a variable ...",
                         optionHeight=30,
                     ),
                     width=12,
@@ -414,9 +419,7 @@ filters_collapse_ranges = html.Div(
 
 sidebar_filter = html.Div(
     [
-        html.H2("Filter", className="display-4"),
-        html.Hr(),
-        html.P("filter here", className="lead"),
+        html.H2("Filters", className="display-4"),
         dbc.Form(
             [
                 filters_collapse_files,
@@ -556,8 +559,8 @@ def toggle_collapse_plot_forward_reverse(n, is_open):
 
 sidebar_plot = html.Div(
     [
-        html.H2("Plot", className="display-4"),
-        html.Hr(),
+        html.H2("Counts", className="display-4"),
+        # html.Hr(),
         sidebar_plot_combined,
         html.Hr(),
         sidebar_plot_fit_results,
@@ -815,6 +818,7 @@ def update_datatable(click_data):
 
         # fmt: off
         lines = [
+            html.Br(),
             f"Name: {ds['shortname']}", html.Br(), html.Br(),
 
             f"Tax Name: {ds['tax_name']}", html.Br(),
