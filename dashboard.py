@@ -434,6 +434,37 @@ sidebar_filter = html.Div(
 #%%
 
 
+sidebar_plot_fit_results = html.Div(
+    [
+        dbc.Button(
+            "Fit Results",
+            id="sidebar_plot_toggle_fit_results",
+            color="secondary",
+            block=True,
+            outline=True,
+            size="lg",
+        ),
+        dbc.Collapse(
+            html.Div("Blabla", id="blabla"),
+            id="sidebar_plot_fit_results",
+            is_open=False,
+        ),
+    ]
+)
+
+
+@app.callback(
+    Output("sidebar_plot_fit_results", "is_open"),
+    Output("sidebar_plot_toggle_fit_results", "outline"),
+    Input("sidebar_plot_toggle_fit_results", "n_clicks"),
+    State("sidebar_plot_fit_results", "is_open"),
+)
+def toggle_collapse_plot_combined(n, is_open):
+    if n:
+        return not is_open, is_open
+    return is_open, True
+
+
 sidebar_plot_combined_graph = dbc.FormGroup(
     [
         dcc.Graph(
@@ -529,6 +560,8 @@ sidebar_plot = html.Div(
         html.Hr(),
         sidebar_plot_combined,
         html.Hr(),
+        sidebar_plot_fit_results,
+        html.Hr(),
         sidebar_plot_forward_reverse,
     ],
     id="sidebar_plot",
@@ -585,7 +618,7 @@ def plot_group(group, fit=None, forward_reverse=""):
     ]
 
     hovertemplate = (
-        "<b>Direction: %{customdata[0]}</b><br>"
+        "<b>%{customdata[0]}</b><br>"
         "k: %{customdata[1]:8d} <br>"
         "N: %{customdata[2]:8d} <br>"
         "<extra></extra>"
@@ -759,6 +792,47 @@ def update_raw_count_plots_forward(click_data):
 )
 def update_raw_count_plots_reverse(click_data):
     return update_raw_count_plots(click_data, forward_reverse="Reverse")
+
+
+import dash_table
+
+
+@app.callback(
+    Output("blabla", "children"),
+    Input("indicator_graphic", "clickData"),
+)
+def update_datatable(click_data):
+    if click_data:
+        shortname, tax_id = get_shortname_tax_id_from_click_data(
+            fit_results, click_data
+        )
+
+        df_fit = fit_results.filter({"shortname": shortname, "tax_id": tax_id})
+        if len(df_fit) != 1:
+            raise AssertionError(f"Should only be length 1")
+
+        ds = df_fit.iloc[0]
+
+        # fmt: off
+        lines = [
+            f"Name: {ds['shortname']}", html.Br(), html.Br(),
+
+            f"Tax Name: {ds['tax_name']}", html.Br(),
+            f"Tax Rank: {ds['tax_rank']}", html.Br(),
+            f"Tax ID: {ds['tax_id']}", html.Br(), html.Br(),
+
+            f"LR: {ds['LR']:.2f}",html.Br(),
+            f"D_max: {ds['D_max']:.3f} ± {ds['D_max_std']:.3f}", html.Br(),
+            f"q: {ds['q']:.3f} ± {ds['q_std']:.3f}", html.Br(),
+            f"phi: {ds['phi']:.1f} ± {ds['phi_std']:.1f}", html.Br(),
+            f"asymmetry: {ds['asymmetry']:.3f}", html.Br(),
+            f"rho_Ac: {ds['rho_Ac']:.3f}", html.Br(),
+        ]
+        # fmt: on
+
+        return html.P(lines)
+
+    return html.P(["Please select a point"])
 
 
 #%%

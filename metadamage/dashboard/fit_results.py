@@ -165,7 +165,7 @@ class FitResults:
         self.max_of_size = np.max(df["size"])
         self.marker_size = slider
 
-    def filter(self, filters, df_type="df_fit_results"):
+    def filter(self, filters):
         query = ""
         for column, filter in filters.items():
 
@@ -206,12 +206,7 @@ class FitResults:
         query = query[:-2]
         # print(query)
 
-        if "fit_results" in df_type:
-            return self.df_fit_results.query(query)
-        else:
-            raise AssertionError(
-                f"df_type = {df_type} not implemented yet, only 'df_fit_results'"
-            )
+        return self.df_fit_results.query(query)
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
@@ -283,9 +278,9 @@ class FitResults:
                 "    ID:   %{customdata[_XXX_]} <br><br>"
                 "<b>Fit Results</b>: <br>"
                 "    LR:       %{customdata[_XXX_]:9.2f} <br>"
-                "    D max:    %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
-                "    q:        %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
-                "    phi:      %{customdata[_XXX_]:9.3s} +/- %{customdata[_XXX_]:.3s} <br>"
+                "    D max:    %{customdata[_XXX_]:9.2f} ± %{customdata[_XXX_]:.2f} <br>"
+                "    q:        %{customdata[_XXX_]:9.2f} ± %{customdata[_XXX_]:.2f} <br>"
+                "    phi:        %{customdata[_XXX_]:9.3s} ± %{customdata[_XXX_]:.3s} <br>"
                 "    asymmetry:%{customdata[_XXX_]:9.3f} <br>"
                 "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Bayesian Fit Results</b>: <br>"
@@ -330,9 +325,9 @@ class FitResults:
                 "    ID:   %{customdata[_XXX_]} <br><br>"
                 "<b>Fit Results</b>: <br>"
                 "    LR:       %{customdata[_XXX_]:9.2f} <br>"
-                "    D max:    %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
-                "    q:        %{customdata[_XXX_]:9.2f} +/- %{customdata[_XXX_]:.2f} <br>"
-                "    phi:      %{customdata[_XXX_]:9.3s} +/- %{customdata[_XXX_]:.3s} <br>"
+                "    D max:    %{customdata[_XXX_]:9.2f} ± %{customdata[_XXX_]:.2f} <br>"
+                "    q:        %{customdata[_XXX_]:9.2f} ± %{customdata[_XXX_]:.2f} <br>"
+                "    phi:      %{customdata[_XXX_]:9.3s} ± %{customdata[_XXX_]:.3s} <br>"
                 "    asymmetry:%{customdata[_XXX_]:9.3f} <br>"
                 "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Counts</b>: <br>"
