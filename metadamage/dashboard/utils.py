@@ -2,14 +2,22 @@
 import numpy as np
 
 # Standard Library
+from collections import namedtuple
 from threading import Timer
 import webbrowser
 
 # Third Party
 from PIL import ImageColor
+from dash.exceptions import PreventUpdate
+
+#%%
+import dash_core_components as dcc
 import plotly.graph_objects as go
 import plotly.io as pio
-from collections import namedtuple
+
+# First Party
+from metadamage import taxonomy
+from metadamage.utils import human_format
 
 
 def set_custom_theme():
@@ -65,10 +73,6 @@ def hex_to_rgb(hex_string, opacity=1):
     return f"rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})"
 
 
-#%%
-import dash_core_components as dcc
-
-
 def get_shortnames_each(all_shortnames):
     first_letters = {s[0] for s in all_shortnames}
     values = []
@@ -116,8 +120,6 @@ def get_dropdown_file_selection(fit_results, id, shortnames_to_show="all"):
 
 
 #%%
-
-from metadamage.utils import human_format
 
 
 def _insert_mark_values(mark_values):
@@ -222,6 +224,72 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
         #     placement="bottom",
         # ),
     )
+
+
+#%%
+
+
+def get_shortname_tax_id_from_click_data(fit_results, click_data):
+    try:
+        shortname = fit_results.parse_click_data(click_data, column="shortname")
+        tax_id = fit_results.parse_click_data(click_data, column="tax_id")
+    except KeyError:
+        raise PreventUpdate
+    return shortname, tax_id
+
+
+#%%
+
+
+def include_subspecies(subspecies):
+    if len(subspecies) == 1:
+        return True
+    return False
+
+
+def append_to_list_if_exists(d, key, value):
+    if key in d:
+        d[key].append(value)
+    else:
+        d[key] = [value]
+
+
+def apply_tax_id_filter(fit_results, d_filter, tax_id_filter_input):
+    if tax_id_filter_input is None or len(tax_id_filter_input) == 0:
+        return None
+
+    for tax in tax_id_filter_input:
+        if tax in fit_results.all_tax_ids:
+            append_to_list_if_exists(d_filter, "tax_ids", tax)
+        elif tax in fit_results.all_tax_names:
+            append_to_list_if_exists(d_filter, "tax_names", tax)
+        elif tax in fit_results.all_tax_ranks:
+            append_to_list_if_exists(d_filter, "tax_ranks", tax)
+        else:
+            raise AssertionError(f"Tax {tax} could not be found. ")
+
+
+def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies):
+    if tax_name is None:
+        return None
+
+    tax_ids = taxonomy.extract_descendant_tax_ids(
+        tax_name,
+        include_subspecies=include_subspecies(tax_id_filter_subspecies),
+    )
+    N_tax_ids = len(tax_ids)
+    if N_tax_ids != 0:
+        if "tax_id" in d_filter:
+            d_filter["tax_ids"].extend(tax_ids)
+        else:
+            d_filter["tax_ids"] = tax_ids
+
+
+#%%
+
+
+def key_is_in_list_case_insensitive(lst, key):
+    return any([key.lower() in s.lower() for s in lst])
 
 
 #%%
@@ -572,4 +640,8 @@ def get_d_columns_latex():
         "Bayesian_D_max_std": r"$\sigma_{D_\text{max}} \,\, \text{(Bayesian)}$",
         #
     }
-    return d_columns_latex
+
+    columns = list(d_columns_latex.keys())
+    columns_no_log = [col for col in columns if not col.startswith("log_")]
+
+    return d_columns_latex, columns, columns_no_log

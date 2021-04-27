@@ -25,7 +25,7 @@ from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import counts, fits_frequentist, fits_Bayesian, io, utils
+from metadamage import counts, fits_Bayesian, fits_frequentist, io, utils
 from metadamage.progressbar import progress
 
 

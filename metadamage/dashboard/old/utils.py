@@ -2,6 +2,7 @@
 import numpy as np
 
 # Standard Library
+from collections import namedtuple
 from threading import Timer
 import webbrowser
 
@@ -9,7 +10,6 @@ import webbrowser
 from PIL import ImageColor
 import plotly.graph_objects as go
 import plotly.io as pio
-from collections import namedtuple
 
 
 def set_custom_theme():
@@ -63,6 +63,7 @@ def open_browser_in_background():
 def hex_to_rgb(hex_string, opacity=1):
     rgb = ImageColor.getcolor(hex_string, "RGB")
     return f"rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})"
+
 
 #%%
 
@@ -199,6 +200,7 @@ def get_configurations(
 
     return configurations
 
+
 #%%
 
 
@@ -235,6 +237,7 @@ def toggle_plot(
         and current_state_sidebar_plot == "HIDDEN"
     ):
         return configurations[3]
+
 
 #%%
 

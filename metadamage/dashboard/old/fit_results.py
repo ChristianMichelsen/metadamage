@@ -1,6 +1,7 @@
 # Scientific Library
 import numpy as np
 import pandas as pd
+from scipy.stats import betabinom as sp_betabinom
 
 # Standard Library
 from datetime import datetime
@@ -18,7 +19,6 @@ import plotly.express as px
 # First Party
 from metadamage import dashboard, io
 
-from scipy.stats import betabinom as sp_betabinom
 
 cachedir = "memoization"
 memory = Memory(cachedir, verbose=0)

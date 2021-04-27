@@ -6,10 +6,14 @@ from scipy.stats import (
     betabinom as sp_betabinom,
     expon as sp_exponential,
 )
+
+# Third Party
 from iminuit import Minuit
 from numba import njit
 
+# First Party
 from metadamage import fits_utils
+
 
 #%%
 

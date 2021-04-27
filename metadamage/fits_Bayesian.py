@@ -1,5 +1,7 @@
+# Scientific Library
 import numpy as np
 import pandas as pd
+from scipy.special import logsumexp
 
 # Third Party
 import jax
@@ -13,11 +15,9 @@ import timeout_decorator
 from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
-
-from scipy.special import logsumexp
-
 # First Party
 from metadamage import fits_utils
+
 
 #%%
 

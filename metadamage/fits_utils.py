@@ -1,13 +1,15 @@
-import math
-import numpy as np
+# Scientific Library
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.special import erf, erfinv
+from scipy.stats import beta as sp_beta, chi2 as sp_chi2
+
+# Standard Library
+import math
+
+# Third Party
 from iminuit import describe
 from numba import njit
-from scipy.stats import (
-    beta as sp_beta,
-    chi2 as sp_chi2,
-)
 
 
 def get_priors():
@@ -260,7 +262,6 @@ def plot_beta_distribution_mu_phi(mu, phi):
 #         return out
 
 
-
 # def add_assymetry_results_to_fit_results(
 #     mcmc_PMD_forward_reverse,
 #     mcmc_null_forward_reverse,
@@ -340,5 +341,3 @@ def plot_beta_distribution_mu_phi(mu, phi):
 #         fit_result["normalized_noise"] = np.nanstd(noise_z.values)
 #         fit_result["normalized_noise_forward"] = np.nanstd(noise_z.iloc[:15].values)
 #         fit_result["normalized_noise_reverse"] = np.nanstd(noise_z.iloc[15:].values)
-
-
