@@ -64,166 +64,6 @@ def hex_to_rgb(hex_string, opacity=1):
     rgb = ImageColor.getcolor(hex_string, "RGB")
     return f"rgba({rgb[0]}, {rgb[1]}, {rgb[2]}, {opacity})"
 
-
-#%%
-import dash_core_components as dcc
-
-
-def get_shortnames_each(all_shortnames):
-    first_letters = {s[0] for s in all_shortnames}
-    values = []
-    for first_letter in first_letters:
-        for shortname in all_shortnames:
-            if shortname[0] == first_letter:
-                values.append(shortname)
-                break
-    return values
-
-
-def get_dropdown_file_selection(fit_results, id, shortnames_to_show="all"):
-
-    special_shortnames = ["Select all", "Default selection"]
-    N_special_shortnames = len(special_shortnames)
-    all_shortnames = special_shortnames + fit_results.shortnames
-
-    if shortnames_to_show is None:
-        values = all_shortnames
-
-    elif isinstance(shortnames_to_show, int):
-        values = all_shortnames[: shortnames_to_show + N_special_shortnames]
-
-    elif isinstance(shortnames_to_show, str):
-
-        if shortnames_to_show == "all":
-            values = all_shortnames
-
-        elif shortnames_to_show == "each":
-            values = get_shortnames_each(fit_results.shortnames)
-
-    values = list(sorted(values))
-
-    dropdown_file_selection = dcc.Dropdown(
-        id=id,
-        options=[
-            {"label": shortname, "value": shortname} for shortname in all_shortnames
-        ],
-        value=values,
-        multi=True,
-        placeholder="Select files to plot",
-    )
-
-    return dropdown_file_selection
-
-
-#%%
-
-from metadamage.utils import human_format
-
-
-def _insert_mark_values(mark_values):
-    # https://github.com/plotly/dash-core-components/issues/159
-    # work-around bug reported in https://github.com/plotly/dash-core-components/issues/159
-    # if mark keys happen to fall on integers, cast them to int
-
-    mark_labels = {}
-    for mark_val in mark_values:
-        # close enough to an int for my use case
-        if abs(mark_val - round(mark_val)) < 1e-3:
-            mark_val = int(mark_val)
-        mark_labels[mark_val] = human_format(mark_val)
-    return mark_labels
-
-
-def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
-
-    no_min = "Min"
-    no_max = "Max"
-
-    df = fit_results.df_fit_results
-
-    if is_log_transform_column(column):
-        # if column in dashboard.utils.log_transform_columns:
-
-        x = df[column]
-
-        range_log = np.log10(x[x > 0])
-        range_min = np.floor(range_log.min())
-        range_max = np.ceil(range_log.max())
-        marks_steps = np.arange(range_min, range_max + 1)
-
-        # if x contains 0-values
-        if (x <= 0).sum() != 0:
-            range_min = -1
-            marks_steps = np.insert(marks_steps, 0, -1)
-
-        if len(marks_steps) > 6:
-            marks_steps = (
-                [marks_steps[0]] + [x for x in marks_steps[1:-1:2]] + [marks_steps[-1]]
-            )
-
-        f = lambda x: human_format(log_transform_slider(x))
-        marks = {int(i): f"{f(i)}" for i in marks_steps}
-
-        marks[marks_steps[0]] = {"label": no_min, "style": {"color": "#a3ada9"}}
-        marks[marks_steps[-1]] = {"label": no_max, "style": {"color": "#a3ada9"}}
-
-    elif column in ["D_max", "q", "A", "c"]:
-        range_min = 0.0
-        range_max = 1.0
-        marks = {
-            0.25: "0.25",
-            0.5: "0.5",
-            0.75: "0.75",
-        }
-        marks[0] = {"label": no_min, "style": {"color": "#a3ada9"}}
-        marks[1] = {"label": no_max, "style": {"color": "#a3ada9"}}
-
-    else:
-
-        array = df[column]
-        array = array[np.isfinite(array) & array.notnull()]
-
-        range_min = np.min(array)
-        range_max = np.max(array)
-
-        if range_max - range_min > 1:
-            range_min = np.floor(range_min)
-            range_max = np.ceil(range_max)
-            mark_values = np.linspace(range_min, range_max, 5, dtype=int)
-            marks = _insert_mark_values(mark_values[1:-1])
-
-        else:
-            decimals = abs(int(np.floor(np.log10(range_max - range_min))))
-            range_min = np.around(range_min, decimals=decimals)
-            range_max = np.around(range_max, decimals=decimals)
-
-            mark_values = np.linspace(range_min, range_max, 5)
-            marks = {float(val): str(val) for val in mark_values[1:-1]}
-
-        marks[int(mark_values[0])] = {"label": no_min, "style": {"color": "#a3ada9"}}
-        marks[int(mark_values[-1])] = {
-            "label": no_max,
-            "style": {"color": "#a3ada9"},
-        }
-
-    step = (range_max - range_min) / N_steps
-
-    return dict(
-        min=range_min,
-        max=range_max,
-        step=step,
-        marks=marks,
-        value=[range_min, range_max],
-        allowCross=False,
-        updatemode="mouseup",
-        included=True,
-        # tooltip=dict(
-        #     always_visible=False,
-        #     placement="bottom",
-        # ),
-    )
-
-
 #%%
 
 
@@ -359,7 +199,6 @@ def get_configurations(
 
     return configurations
 
-
 #%%
 
 
@@ -396,7 +235,6 @@ def toggle_plot(
         and current_state_sidebar_plot == "HIDDEN"
     ):
         return configurations[3]
-
 
 #%%
 

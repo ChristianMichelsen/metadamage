@@ -4,11 +4,9 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State, ALL, MATCH
 import plotly.express as px
-import dashboard_helper
 import pandas as pd
 from pathlib import Path
 import numpy as np
-
 from dash.exceptions import PreventUpdate
 
 
@@ -41,11 +39,9 @@ fit_results = dashboard.fit_results.FitResults(
     use_memoization=True,
 )
 
-d_columns_latex = dashboard_helper.get_d_columns_latex()
+d_columns_latex = dashboard.utils.get_d_columns_latex()
 columns = list(d_columns_latex.keys())
 columns_no_log = [col for col in columns if not col.startswith("log_")]
-
-# x = x
 
 # (1) No sidebars, (2) Only left filter sidebar,
 # (3) Only right plot sidebar, (4) Both sidebars
@@ -56,7 +52,7 @@ sidebar_plot_width = 35  # in %
 content_main_margin = 1  # in %
 
 
-configurations = dashboard_helper.get_configurations(
+configurations = dashboard.utils.get_configurations(
     sidebar_filter_width,
     sidebar_plot_width,
     content_main_margin,
@@ -66,7 +62,6 @@ start_configuration = configurations[start_configuration_id]
 
 navbar = dbc.NavbarSimple(
     [
-        # html.H4("Toggle", style={"textAlign": "center", "color": "white"}),
         dbc.Button(
             "Filters",
             outline=True,
@@ -201,7 +196,7 @@ marker_transformations = [
 content_main = html.Div(
     html.Div(
         [
-            dcc.Graph(id="indicator_graphic", **dashboard_helper.get_graph_kwargs()),
+            dcc.Graph(id="indicator_graphic", **dashboard.utils.get_graph_kwargs()),
             dbc.Collapse(
                 [
                     dbc.Row(dbc.Col(html.Hr())),
@@ -240,9 +235,7 @@ def toggle_collapse_files(n, is_open):
 
 filter_dropdown_file = dbc.FormGroup(
     [
-        # html.Br(),
-        # dbc.Col(html.H3("Samples"), width=12),
-        dashboard.elements.get_dropdown_file_selection(
+        dashboard.utils.get_dropdown_file_selection(
             fit_results=fit_results,
             id="sidebar_filter_dropdown_shortnames",
             shortnames_to_show="each",  # one for each first letter in shortname
@@ -473,7 +466,7 @@ sidebar_plot_combined_graph = dbc.FormGroup(
         dcc.Graph(
             figure=dashboard.figures.create_empty_figure(),
             id="graph_plot_data",
-            **dashboard_helper.get_graph_kwargs_no_buttons(),
+            **dashboard.utils.get_graph_kwargs_no_buttons(),
         ),
     ]
 )
@@ -515,13 +508,13 @@ sidebar_plot_forward_reverse_graph = dbc.FormGroup(
             figure=dashboard.figures.create_empty_figure(),
             id="graph_plot_data_forward",
             style={"height": "20vh"},
-            **dashboard_helper.get_graph_kwargs_no_buttons(),
+            **dashboard.utils.get_graph_kwargs_no_buttons(),
         ),
         dcc.Graph(
             figure=dashboard.figures.create_empty_figure(),
             id="graph_plot_data_reverse",
             style={"height": "20vh"},
-            **dashboard_helper.get_graph_kwargs_no_buttons(),
+            **dashboard.utils.get_graph_kwargs_no_buttons(),
         ),
     ]
 )
@@ -1039,7 +1032,7 @@ def update_dropdown_when_Select_All(dropdown_file_selection):
     if key_is_in_list_case_insensitive(dropdown_file_selection, "Select all"):
         dropdown_file_selection = fit_results.shortnames
     elif key_is_in_list_case_insensitive(dropdown_file_selection, "Default selection"):
-        dropdown_file_selection = dashboard.elements.get_shortnames_each(
+        dropdown_file_selection = dashboard.utils.get_shortnames_each(
             fit_results.shortnames
         )
 
@@ -1108,7 +1101,7 @@ def get_slider_name(column, low_high):
 
 def make_new_slider(column, id_type, N_steps=100):
 
-    d_range_slider = dashboard.elements.get_range_slider_keywords(
+    d_range_slider = dashboard.utils.get_range_slider_keywords(
         fit_results,
         column=column,
         N_steps=N_steps,
@@ -1269,12 +1262,12 @@ def toggle_sidebars(
     btn_toggle_plot_outline,
 ):
 
-    button_id = dashboard_helper.get_button_id(dash.callback_context)
+    button_id = dashboard.utils.get_button_id(dash.callback_context)
 
     # if the toggle filter button was clicked
     if button_id == "btn_toggle_filter":
         return (
-            *dashboard_helper.toggle_filter(
+            *dashboard.utils.toggle_filter(
                 configurations,
                 current_state_sidebar_filter,
                 current_state_sidebar_plot,
@@ -1286,7 +1279,7 @@ def toggle_sidebars(
     # if the toggle plot button was clicked
     elif button_id == "btn_toggle_plot":
         return (
-            *dashboard_helper.toggle_plot(
+            *dashboard.utils.toggle_plot(
                 configurations,
                 current_state_sidebar_filter,
                 current_state_sidebar_plot,
