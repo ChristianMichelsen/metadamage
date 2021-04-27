@@ -266,11 +266,11 @@ def get_app(out_dir_default, verbose=True):
         else:
             d[key] = [value]
 
-    def apply_tax_id_filter(d_filter, tax_id_filter_input):
-        if tax_id_filter_input is None or len(tax_id_filter_input) == 0:
+    def apply_sidebar_left_tax_id(d_filter, sidebar_left_tax_id_input):
+        if sidebar_left_tax_id_input is None or len(sidebar_left_tax_id_input) == 0:
             return None
 
-        for tax in tax_id_filter_input:
+        for tax in sidebar_left_tax_id_input:
             if tax in fit_results.all_tax_ids:
                 append_to_list_if_exists(d_filter, "tax_ids", tax)
             elif tax in fit_results.all_tax_names:
@@ -280,13 +280,15 @@ def get_app(out_dir_default, verbose=True):
             else:
                 raise AssertionError(f"Tax {tax} could not be found. ")
 
-    def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies):
+    def apply_tax_id_descendants_filter(
+        d_filter, tax_name, sidebar_left_tax_id_subspecies
+    ):
         if tax_name is None:
             return None
 
         tax_ids = taxonomy.extract_descendant_tax_ids(
             tax_name,
-            include_subspecies=include_subspecies(tax_id_filter_subspecies),
+            include_subspecies=include_subspecies(sidebar_left_tax_id_subspecies),
         )
         N_tax_ids = len(tax_ids)
         if N_tax_ids != 0:
@@ -299,30 +301,30 @@ def get_app(out_dir_default, verbose=True):
         Output("store", "data"),
         Output("modal", "is_open"),
         Input("dropdown_file_selection", "value"),
-        Input("tax_id_filter_input", "value"),
+        Input("sidebar_left_tax_id_input", "value"),
         Input("tax_id_plot_button", "n_clicks"),
-        Input({"type": "dynamic_slider", "index": ALL}, "value"),
+        Input({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "value"),
         Input({"type": "slider_overview_marker_size", "index": ALL}, "value"),
         Input(
             {"type": "dropdown_overview_marker_transformation", "index": ALL}, "value"
         ),
         Input("modal_close_button", "n_clicks"),
-        State("tax_id_filter_input_descendants", "value"),
-        State("tax_id_filter_subspecies", "value"),
-        State({"type": "dynamic_slider", "index": ALL}, "id"),
+        State("sidebar_left_tax_id_input_descendants", "value"),
+        State("sidebar_left_tax_id_subspecies", "value"),
+        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
         State("modal", "is_open"),
         # State("tabs", "active_tab"),
     )
     def filter_fit_results(
         dropdown_file_selection,
-        tax_id_filter_input,
+        sidebar_left_tax_id_input,
         tax_id_button,
         slider_values,
         marker_size_max,
         marker_transformation,
         n_clicks_modal,
-        tax_id_filter_input_descendants,
-        tax_id_filter_subspecies,
+        sidebar_left_tax_id_input_descendants,
+        sidebar_left_tax_id_subspecies,
         slider_ids,
         modal_is_open,
         # active_tab,
@@ -347,15 +349,15 @@ def get_app(out_dir_default, verbose=True):
             for shortname, values in zip(slider_names, slider_values):
                 d_filter[shortname] = values
 
-            apply_tax_id_filter(
+            apply_sidebar_left_tax_id(
                 d_filter,
-                tax_id_filter_input,
+                sidebar_left_tax_id_input,
             )
 
             apply_tax_id_descendants_filter(
                 d_filter,
-                tax_id_filter_input_descendants,
-                tax_id_filter_subspecies,
+                sidebar_left_tax_id_input_descendants,
+                sidebar_left_tax_id_subspecies,
             )
 
             df_fit_results_filtered = fit_results.filter(d_filter)
@@ -431,14 +433,20 @@ def get_app(out_dir_default, verbose=True):
                 dbc.Row(
                     html.P(
                         get_slider_name(column, d_range_slider),
-                        id={"type": "dynamic_slider_name", "index": column},
+                        id={
+                            "type": "sidebar_left_fit_results_dynamic_name",
+                            "index": column,
+                        },
                     ),
                     justify="center",
                 ),
                 dbc.Row(
                     dbc.Col(
                         dcc.RangeSlider(
-                            id={"type": "dynamic_slider", "index": column},
+                            id={
+                                "type": "sidebar_left_fit_results_dynamic",
+                                "index": column,
+                            },
                             **d_range_slider,
                         ),
                         width=12,
@@ -449,10 +457,10 @@ def get_app(out_dir_default, verbose=True):
         )
 
     @app.callback(
-        Output("dynamic_slider-container", "children"),
-        Input("dropdown_slider", "value"),
-        State("dynamic_slider-container", "children"),
-        State({"type": "dynamic_slider", "index": ALL}, "id"),
+        Output("sidebar_left_fit_results_dynamic-container", "children"),
+        Input("sidebar_left_fit_results", "value"),
+        State("sidebar_left_fit_results_dynamic-container", "children"),
+        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
         prevent_initial_call=True,
     )
     def add_or_remove_slider(
@@ -479,13 +487,18 @@ def get_app(out_dir_default, verbose=True):
         return children
 
     @app.callback(
-        Output({"type": "dynamic_slider_name", "index": MATCH}, "children"),
-        Input({"type": "dynamic_slider", "index": MATCH}, "value"),
-        State({"type": "dynamic_slider", "index": MATCH}, "id"),
+        Output(
+            {"type": "sidebar_left_fit_results_dynamic_name", "index": MATCH},
+            "children",
+        ),
+        Input({"type": "sidebar_left_fit_results_dynamic", "index": MATCH}, "value"),
+        State({"type": "sidebar_left_fit_results_dynamic", "index": MATCH}, "id"),
         prevent_initial_call=True,
     )
-    def update_slider_name(dynamic_slider_values, dynamic_slider_name):
-        column = dynamic_slider_name["index"]
+    def update_slider_name(
+        dynamic_slider_values, sidebar_left_fit_results_dynamic_name
+    ):
+        column = sidebar_left_fit_results_dynamic_name["index"]
         name = get_slider_name(column, dynamic_slider_values)
         return name
 
@@ -645,12 +658,12 @@ def get_app(out_dir_default, verbose=True):
         return False
 
     @app.callback(
-        Output("tax_id_filter_counts_output", "children"),
-        # Input("tax_id_filter_button", "n_clicks"),
-        Input("tax_id_filter_input_descendants", "value"),
-        Input("tax_id_filter_subspecies", "value"),
+        Output("sidebar_left_tax_id_counts_output", "children"),
+        # Input("sidebar_left_tax_id_button", "n_clicks"),
+        Input("sidebar_left_tax_id_input_descendants", "value"),
+        Input("sidebar_left_tax_id_subspecies", "value"),
     )
-    def update_tax_id_filter_counts(tax_name, subspecies):
+    def update_sidebar_left_tax_id_counts(tax_name, subspecies):
 
         if tax_name is None or tax_name == "":
             return f"No specific Tax IDs selected, defaults to ALL."
@@ -668,10 +681,10 @@ def get_app(out_dir_default, verbose=True):
     #%%
 
     @app.callback(
-        Output("filters_dropdown_files", "is_open"),
-        Output("filters_toggle_files_button", "outline"),
-        Input("filters_toggle_files_button", "n_clicks"),
-        State("filters_dropdown_files", "is_open"),
+        Output("sidebar_left_samples_collapsed", "is_open"),
+        Output("sidebar_left_samples_btn", "outline"),
+        Input("sidebar_left_samples_btn", "n_clicks"),
+        State("sidebar_left_samples_collapsed", "is_open"),
     )
     def toggle_collapse_files(n, is_open):
         # after click
@@ -681,10 +694,10 @@ def get_app(out_dir_default, verbose=True):
         return is_open, True
 
     @app.callback(
-        Output("filters_dropdown_tax_ids", "is_open"),
-        Output("filters_toggle_tax_ids_button", "outline"),
-        Input("filters_toggle_tax_ids_button", "n_clicks"),
-        State("filters_dropdown_tax_ids", "is_open"),
+        Output("sidebar_left_taxanomics_collapsed", "is_open"),
+        Output("sidebar_left_taxanomics_btn", "outline"),
+        Input("sidebar_left_taxanomics_btn", "n_clicks"),
+        State("sidebar_left_taxanomics_collapsed", "is_open"),
     )
     def toggle_collapse_tax_ids(n, is_open):
         if n:
@@ -692,10 +705,10 @@ def get_app(out_dir_default, verbose=True):
         return is_open, True
 
     @app.callback(
-        Output("filters_dropdown_ranges_button", "is_open"),
-        Output("filters_toggle_ranges_button", "outline"),
-        Input("filters_toggle_ranges_button", "n_clicks"),
-        State("filters_dropdown_ranges_button", "is_open"),
+        Output("sidebar_left_fit_results_collapsed", "is_open"),
+        Output("sidebar_left_fit_results_btn", "outline"),
+        Input("sidebar_left_fit_results_btn", "n_clicks"),
+        State("sidebar_left_fit_results_collapsed", "is_open"),
     )
     def toggle_collapse_ranges(n, is_open):
         if n:

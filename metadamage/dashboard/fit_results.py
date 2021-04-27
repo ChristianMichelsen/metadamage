@@ -280,7 +280,7 @@ class FitResults:
                 "    LR:       %{customdata[_XXX_]:9.2f} <br>"
                 "    D max:    %{customdata[_XXX_]:9.2f} ± %{customdata[_XXX_]:.2f} <br>"
                 "    q:        %{customdata[_XXX_]:9.2f} ± %{customdata[_XXX_]:.2f} <br>"
-                "    phi:        %{customdata[_XXX_]:9.3s} ± %{customdata[_XXX_]:.3s} <br>"
+                "    phi:      %{customdata[_XXX_]:9.3s} ± %{customdata[_XXX_]:.3s} <br>"
                 "    asymmetry:%{customdata[_XXX_]:9.3f} <br>"
                 "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Bayesian Fit Results</b>: <br>"

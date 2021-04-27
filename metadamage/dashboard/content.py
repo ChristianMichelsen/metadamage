@@ -26,21 +26,21 @@ def get_navbar():
                 outline=True,
                 color="light",
                 className="mr-1",
-                id="btn_toggle_filter",
+                id="sidebar_left_toggle_btn",
             ),
             dbc.Button(
                 "Counts",
                 outline=True,
                 color="light",
                 className="mr-1",
-                id="btn_toggle_plot",
+                id="sidebar_right_toggle_btn",
             ),
             dbc.Button(
                 "Styling",
                 outline=True,
                 color="light",
                 className="mr-1",
-                id="btn_toggle_variables",
+                id="navbar_btn_toggle_styling",
             ),
         ],
         brand="mDamage",
@@ -170,7 +170,7 @@ def get_content_main(start_configuration):
                         dbc.Row(dbc.Col(html.Center("Marker size", className="lead"))),
                         dbc.Row(marker_transformations, no_gutters=True),
                     ],
-                    id="collapsed_variable_selections",
+                    id="navbar_collapsed_toggle_styling",
                     is_open=False,
                 ),
             ]
@@ -194,7 +194,7 @@ def get_sidebar_left(fit_results, start_configuration):
         [
             dashboard.utils.get_dropdown_file_selection(
                 fit_results=fit_results,
-                id="sidebar_filter_dropdown_shortnames",
+                id="sidebar_left_dropdown_samples",
                 shortnames_to_show="each",  # one for each first letter in shortname
             ),
         ]
@@ -204,7 +204,7 @@ def get_sidebar_left(fit_results, start_configuration):
         [
             dbc.Button(
                 "Samples",
-                id="filters_toggle_files_button",
+                id="sidebar_left_samples_btn",
                 color="secondary",
                 block=True,
                 outline=True,
@@ -212,7 +212,7 @@ def get_sidebar_left(fit_results, start_configuration):
             ),
             dbc.Collapse(
                 filter_dropdown_file,
-                id="filters_dropdown_files",
+                id="sidebar_left_samples_collapsed",
                 is_open=False,
             ),
         ]
@@ -226,7 +226,7 @@ def get_sidebar_left(fit_results, start_configuration):
                 dbc.FormGroup(
                     [
                         dcc.Dropdown(
-                            id="tax_id_filter_input",
+                            id="sidebar_left_tax_id_input",
                             options=[
                                 {"label": tax, "value": tax}
                                 for tax in itertools.chain.from_iterable(
@@ -251,7 +251,7 @@ def get_sidebar_left(fit_results, start_configuration):
                 dbc.FormGroup(
                     [
                         dbc.Input(
-                            id="tax_id_filter_input_descendants",
+                            id="sidebar_left_tax_id_input_descendants",
                             placeholder="Input goes here...",
                             type="text",
                             autoComplete="off",
@@ -268,13 +268,13 @@ def get_sidebar_left(fit_results, start_configuration):
                                 {"label": "Include subspecies", "value": True},
                             ],
                             value=[True],
-                            id="tax_id_filter_subspecies",
+                            id="sidebar_left_tax_id_subspecies",
                         ),
                     ]
                 ),
                 width=12,
             ),
-            dbc.Col(html.P(id="tax_id_filter_counts_output"), width=12),
+            dbc.Col(html.P(id="sidebar_left_tax_id_counts_output"), width=12),
             dbc.Col(
                 dbc.FormGroup(
                     [
@@ -296,7 +296,7 @@ def get_sidebar_left(fit_results, start_configuration):
         [
             dbc.Button(
                 "Taxanomics",
-                id="filters_toggle_tax_ids_button",
+                id="sidebar_left_taxanomics_btn",
                 color="secondary",
                 block=True,
                 outline=True,
@@ -304,7 +304,7 @@ def get_sidebar_left(fit_results, start_configuration):
             ),
             dbc.Collapse(
                 filter_tax_id,
-                id="filters_dropdown_tax_ids",
+                id="sidebar_left_taxanomics_collapsed",
                 is_open=False,
             ),
         ]
@@ -316,7 +316,7 @@ def get_sidebar_left(fit_results, start_configuration):
         [
             dbc.Button(
                 "Fits",
-                id="filters_toggle_ranges_button",
+                id="sidebar_left_fit_results_btn",
                 color="secondary",
                 block=True,
                 outline=True,
@@ -331,7 +331,7 @@ def get_sidebar_left(fit_results, start_configuration):
                     ),
                     dbc.Col(
                         dcc.Dropdown(
-                            id="dropdown_slider",
+                            id="sidebar_left_fit_results",
                             options=[
                                 {"label": shortname, "value": shortname}
                                 for shortname in columns_no_log
@@ -344,18 +344,18 @@ def get_sidebar_left(fit_results, start_configuration):
                         width=12,
                     ),
                     dbc.Col(
-                        id="dynamic_slider_container",
+                        id="sidebar_left_fit_results_container",
                         children=[],
                         width=12,
                     ),
                 ],
-                id="filters_dropdown_ranges_button",
+                id="sidebar_left_fit_results_collapsed",
                 is_open=False,
             ),
         ]
     )
 
-    sidebar_filter = html.Div(
+    sidebar_left = html.Div(
         [
             html.H2("Filters", className="display-4"),
             dbc.Form(
@@ -368,11 +368,11 @@ def get_sidebar_left(fit_results, start_configuration):
                 ]
             ),
         ],
-        id="sidebar_filter",
-        style=start_configuration.style_sidebar_filter,
+        id="sidebar_left",
+        style=start_configuration.style_sidebar_left,
     )
 
-    return sidebar_filter
+    return sidebar_left
 
 
 #%%
@@ -380,102 +380,105 @@ def get_sidebar_left(fit_results, start_configuration):
 
 def get_sidebar_right(start_configuration):
 
-    sidebar_plot_fit_results = html.Div(
+    sidebar_right_fit_results = html.Div(
         [
             dbc.Button(
                 "Fit Results",
-                id="sidebar_plot_toggle_fit_results",
+                id="sidebar_right_btn_toggle_fit_results",
                 color="secondary",
                 block=True,
                 outline=True,
                 size="lg",
             ),
             dbc.Collapse(
-                html.Div("datatable", id="datatable"),
-                id="sidebar_plot_fit_results",
+                html.Div(
+                    "sidebar_right_datatable_fit_results",
+                    id="sidebar_right_datatable_fit_results",
+                ),
+                id="sidebar_right_collapsed_toggle_fit_results",
                 is_open=False,
             ),
         ]
     )
 
-    sidebar_plot_combined_graph = dbc.FormGroup(
+    sidebar_right_collapsed_toggle_combined_graph = dbc.FormGroup(
         [
             dcc.Graph(
                 figure=dashboard.figures.create_empty_figure(),
-                id="graph_plot_data",
+                id="sidebar_right_graph_combined",
                 **dashboard.utils.get_graph_kwargs_no_buttons(),
             ),
         ]
     )
 
-    sidebar_plot_combined = html.Div(
+    sidebar_right_collapsed_toggle_combined = html.Div(
         [
             dbc.Button(
                 "Combined",
-                id="sidebar_plot_toggle_combined",
+                id="sidebar_right_btn_toggle_combined",
                 color="secondary",
                 block=True,
                 outline=False,
                 size="lg",
             ),
             dbc.Collapse(
-                sidebar_plot_combined_graph,
-                id="sidebar_plot_combined",
+                sidebar_right_collapsed_toggle_combined_graph,
+                id="sidebar_right_collapsed_toggle_combined",
                 is_open=True,
             ),
         ]
     )
 
-    sidebar_plot_forward_reverse_graph = dbc.FormGroup(
+    sidebar_right_collapsed_toggle_forward_reverse_graph = dbc.FormGroup(
         [
             dcc.Graph(
                 figure=dashboard.figures.create_empty_figure(),
-                id="graph_plot_data_forward",
+                id="sidebar_right_graph_forward",
                 style={"height": "20vh"},
                 **dashboard.utils.get_graph_kwargs_no_buttons(),
             ),
             dcc.Graph(
                 figure=dashboard.figures.create_empty_figure(),
-                id="graph_plot_data_reverse",
+                id="sidebar_right_graph_reverse",
                 style={"height": "20vh"},
                 **dashboard.utils.get_graph_kwargs_no_buttons(),
             ),
         ]
     )
 
-    sidebar_plot_forward_reverse = html.Div(
+    sidebar_right_collapsed_toggle_forward_reverse = html.Div(
         [
             dbc.Button(
                 "Forward / Reverse",
-                id="sidebar_plot_toggle_forward_reverse",
+                id="sidebar_right_btn_toggle_forward_reverse",
                 color="secondary",
                 block=True,
                 outline=True,
                 size="lg",
             ),
             dbc.Collapse(
-                sidebar_plot_forward_reverse_graph,
-                id="sidebar_plot_forward_reverse",
+                sidebar_right_collapsed_toggle_forward_reverse_graph,
+                id="sidebar_right_collapsed_toggle_forward_reverse",
                 is_open=False,
             ),
         ]
     )
 
-    sidebar_plot = html.Div(
+    sidebar_right = html.Div(
         [
             html.H2("Counts", className="display-4"),
             # html.Hr(),
-            sidebar_plot_combined,
+            sidebar_right_collapsed_toggle_combined,
             html.Hr(),
-            sidebar_plot_fit_results,
+            sidebar_right_fit_results,
             html.Hr(),
-            sidebar_plot_forward_reverse,
+            sidebar_right_collapsed_toggle_forward_reverse,
         ],
-        id="sidebar_plot",
-        style=start_configuration.style_sidebar_plot,
+        id="sidebar_right",
+        style=start_configuration.style_sidebar_right,
     )
 
-    return sidebar_plot
+    return sidebar_right
 
 
 #%%
@@ -485,18 +488,18 @@ def get_app_layout(fit_results, start_configuration):
 
     navbar = get_navbar()
     content_main = get_content_main(start_configuration)
-    sidebar_filter = get_sidebar_left(fit_results, start_configuration)
-    sidebar_plot = get_sidebar_right(start_configuration)
+    sidebar_left = get_sidebar_left(fit_results, start_configuration)
+    sidebar_right = get_sidebar_right(start_configuration)
 
     return html.Div(
         [
             # dcc.Store(id="store"),
-            dcc.Store(id="sidebar_plot_state"),
-            dcc.Store(id="sidebar_filter_state"),
+            dcc.Store(id="sidebar_right_state"),
+            dcc.Store(id="sidebar_left_state"),
             navbar,
-            sidebar_filter,
+            sidebar_left,
             content_main,
-            sidebar_plot,
+            sidebar_right,
             dbc.Modal(
                 [
                     dbc.ModalHeader("Filtering Error"),
@@ -586,14 +589,20 @@ def make_new_slider(fit_results, column, id_type, N_steps=100):
             dbc.Row(
                 html.P(
                     get_slider_name(column, d_range_slider),
-                    id={"type": "dynamic_slider_name", "index": column},
+                    id={
+                        "type": "sidebar_left_fit_results_dynamic_name",
+                        "index": column,
+                    },
                 ),
                 justify="center",
             ),
             dbc.Row(
                 dbc.Col(
                     dcc.RangeSlider(
-                        id={"type": "dynamic_slider", "index": column},
+                        id={
+                            "type": "sidebar_left_fit_results_dynamic",
+                            "index": column,
+                        },
                         **d_range_slider,
                     ),
                     width=12,

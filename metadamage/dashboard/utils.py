@@ -254,11 +254,11 @@ def append_to_list_if_exists(d, key, value):
         d[key] = [value]
 
 
-def apply_tax_id_filter(fit_results, d_filter, tax_id_filter_input):
-    if tax_id_filter_input is None or len(tax_id_filter_input) == 0:
+def apply_sidebar_left_tax_id(fit_results, d_filter, sidebar_left_tax_id_input):
+    if sidebar_left_tax_id_input is None or len(sidebar_left_tax_id_input) == 0:
         return None
 
-    for tax in tax_id_filter_input:
+    for tax in sidebar_left_tax_id_input:
         if tax in fit_results.all_tax_ids:
             append_to_list_if_exists(d_filter, "tax_ids", tax)
         elif tax in fit_results.all_tax_names:
@@ -269,13 +269,13 @@ def apply_tax_id_filter(fit_results, d_filter, tax_id_filter_input):
             raise AssertionError(f"Tax {tax} could not be found. ")
 
 
-def apply_tax_id_descendants_filter(d_filter, tax_name, tax_id_filter_subspecies):
+def apply_tax_id_descendants_filter(d_filter, tax_name, sidebar_left_tax_id_subspecies):
     if tax_name is None:
         return None
 
     tax_ids = taxonomy.extract_descendant_tax_ids(
         tax_name,
-        include_subspecies=include_subspecies(tax_id_filter_subspecies),
+        include_subspecies=include_subspecies(sidebar_left_tax_id_subspecies),
     )
     N_tax_ids = len(tax_ids)
     if N_tax_ids != 0:
@@ -296,8 +296,8 @@ def key_is_in_list_case_insensitive(lst, key):
 
 
 def get_configurations(
-    sidebar_filter_width=30,  # in %
-    sidebar_plot_width=20,  # in %
+    sidebar_left_width=30,  # in %
+    sidebar_right_width=20,  # in %
     content_main_margin=1,  # in %
 ):
 
@@ -313,30 +313,30 @@ def get_configurations(
         # "background-color": "#f8f9fa",
     }
 
-    # the style arguments for the sidebar_plot. We use position:fixed and a fixed width
-    style_sidebar_filter_shown = {
+    # the style arguments for the sidebar_right. We use position:fixed and a fixed width
+    style_sidebar_left_shown = {
         **style_sidebar_base,
         "left": "0%",
-        "width": f"{sidebar_filter_width}%",
+        "width": f"{sidebar_left_width}%",
     }
 
-    style_sidebar_filter_hidden = {
+    style_sidebar_left_hidden = {
         **style_sidebar_base,
-        "left": f"-{sidebar_filter_width}%",
-        "width": f"{sidebar_filter_width}%",
+        "left": f"-{sidebar_left_width}%",
+        "width": f"{sidebar_left_width}%",
     }
 
-    # the style arguments for the sidebar_plot. We use position:fixed and a fixed width
-    style_sidebar_plot_shown = {
+    # the style arguments for the sidebar_right. We use position:fixed and a fixed width
+    style_sidebar_right_shown = {
         **style_sidebar_base,
-        "left": f"{100-sidebar_plot_width}%",
-        "width": f"{sidebar_plot_width}%",
+        "left": f"{100-sidebar_right_width}%",
+        "width": f"{sidebar_right_width}%",
     }
 
-    style_sidebar_plot_hidden = {
+    style_sidebar_right_hidden = {
         **style_sidebar_base,
         "left": "100%",
-        "width": f"{sidebar_plot_width}%",
+        "width": f"{sidebar_right_width}%",
     }
 
     style_main_base = {
@@ -347,8 +347,8 @@ def get_configurations(
 
     style_main_both_sidebars = {
         **style_main_base,
-        "margin-left": f"{sidebar_filter_width+content_main_margin}%",
-        "margin-right": f"{sidebar_plot_width+content_main_margin}%",
+        "margin-left": f"{sidebar_left_width+content_main_margin}%",
+        "margin-right": f"{sidebar_right_width+content_main_margin}%",
     }
 
     style_main_no_sidebars = {
@@ -359,69 +359,69 @@ def get_configurations(
 
     style_main_filter_sidebar = {
         **style_main_base,
-        "margin-left": f"{sidebar_filter_width+content_main_margin}%",
+        "margin-left": f"{sidebar_left_width+content_main_margin}%",
         "margin-right": f"{content_main_margin}%",
     }
 
     style_main_plot_sidebar = {
         **style_main_base,
         "margin-left": f"{content_main_margin}%",
-        "margin-right": f"{sidebar_plot_width+content_main_margin}%",
+        "margin-right": f"{sidebar_right_width+content_main_margin}%",
     }
 
     configuration = namedtuple(
         "configuration",
         [
             "style_content_main",
-            "style_sidebar_filter",
-            "style_sidebar_plot",
-            "state_sidebar_filter",
-            "state_sidebar_plot",
+            "style_sidebar_left",
+            "style_sidebar_right",
+            "state_sidebar_left",
+            "state_sidebar_right",
         ],
     )
 
-    d_sidebar_filter = {
+    d_sidebar_left = {
         "shown": {
-            "style_sidebar_filter": style_sidebar_filter_shown,
-            "state_sidebar_filter": "SHOWN",
+            "style_sidebar_left": style_sidebar_left_shown,
+            "state_sidebar_left": "SHOWN",
         },
         "hidden": {
-            "style_sidebar_filter": style_sidebar_filter_hidden,
-            "state_sidebar_filter": "HIDDEN",
+            "style_sidebar_left": style_sidebar_left_hidden,
+            "state_sidebar_left": "HIDDEN",
         },
     }
 
-    d_sidebar_plot = {
+    d_sidebar_right = {
         "shown": {
-            "style_sidebar_plot": style_sidebar_plot_shown,
-            "state_sidebar_plot": "SHOWN",
+            "style_sidebar_right": style_sidebar_right_shown,
+            "state_sidebar_right": "SHOWN",
         },
         "hidden": {
-            "style_sidebar_plot": style_sidebar_plot_hidden,
-            "state_sidebar_plot": "HIDDEN",
+            "style_sidebar_right": style_sidebar_right_hidden,
+            "state_sidebar_right": "HIDDEN",
         },
     }
 
     configurations = {
         1: configuration(
             style_content_main=style_main_no_sidebars,
-            **d_sidebar_filter["hidden"],
-            **d_sidebar_plot["hidden"],
+            **d_sidebar_left["hidden"],
+            **d_sidebar_right["hidden"],
         ),
         2: configuration(
             style_content_main=style_main_filter_sidebar,
-            **d_sidebar_filter["shown"],
-            **d_sidebar_plot["hidden"],
+            **d_sidebar_left["shown"],
+            **d_sidebar_right["hidden"],
         ),
         3: configuration(
             style_content_main=style_main_plot_sidebar,
-            **d_sidebar_filter["hidden"],
-            **d_sidebar_plot["shown"],
+            **d_sidebar_left["hidden"],
+            **d_sidebar_right["shown"],
         ),
         4: configuration(
             style_content_main=style_main_both_sidebars,
-            **d_sidebar_filter["shown"],
-            **d_sidebar_plot["shown"],
+            **d_sidebar_left["shown"],
+            **d_sidebar_right["shown"],
         ),
     }
 
@@ -433,35 +433,32 @@ def get_configurations(
 
 def toggle_plot(
     configurations,
-    current_state_sidebar_filter,
-    current_state_sidebar_plot,
+    current_state_sidebar_left,
+    current_state_sidebar_right,
 ):
 
     # going from (4) -> (2)
-    if (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "SHOWN"
-    ):
+    if current_state_sidebar_left == "SHOWN" and current_state_sidebar_right == "SHOWN":
         return configurations[2]
 
     # going from (2) -> (4)
     elif (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "HIDDEN"
+        current_state_sidebar_left == "SHOWN"
+        and current_state_sidebar_right == "HIDDEN"
     ):
         return configurations[4]
 
     # going from (3) -> (1)
     elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "SHOWN"
+        current_state_sidebar_left == "HIDDEN"
+        and current_state_sidebar_right == "SHOWN"
     ):
         return configurations[1]
 
     # going from (1) -> (3)
     elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "HIDDEN"
+        current_state_sidebar_left == "HIDDEN"
+        and current_state_sidebar_right == "HIDDEN"
     ):
         return configurations[3]
 
@@ -471,35 +468,32 @@ def toggle_plot(
 
 def toggle_filter(
     configurations,
-    current_state_sidebar_filter,
-    current_state_sidebar_plot,
+    current_state_sidebar_left,
+    current_state_sidebar_right,
 ):
 
     # going from (4) -> (3)
-    if (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "SHOWN"
-    ):
+    if current_state_sidebar_left == "SHOWN" and current_state_sidebar_right == "SHOWN":
         return configurations[3]
 
     # going from (2) -> (1)
     elif (
-        current_state_sidebar_filter == "SHOWN"
-        and current_state_sidebar_plot == "HIDDEN"
+        current_state_sidebar_left == "SHOWN"
+        and current_state_sidebar_right == "HIDDEN"
     ):
         return configurations[1]
 
     # going from (3) -> (4)
     elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "SHOWN"
+        current_state_sidebar_left == "HIDDEN"
+        and current_state_sidebar_right == "SHOWN"
     ):
         return configurations[4]
 
     # going from (1) -> (2)
     elif (
-        current_state_sidebar_filter == "HIDDEN"
-        and current_state_sidebar_plot == "HIDDEN"
+        current_state_sidebar_left == "HIDDEN"
+        and current_state_sidebar_right == "HIDDEN"
     ):
         return configurations[2]
 

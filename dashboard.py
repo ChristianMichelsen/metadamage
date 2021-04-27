@@ -10,16 +10,23 @@ import dash
 from dash.dependencies import ALL, Input, MATCH, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
-import dash_core_components as dcc
 import dash_html_components as html
-import dash_table
-import plotly.express as px
-import plotly.graph_objects as go
 
 # First Party
 from metadamage import dashboard, taxonomy
 from metadamage.utils import human_format
 
+
+fit_results = dashboard.fit_results.FitResults(
+    folder=Path("./data/out/"),
+    use_memoization=True,
+)
+
+#%%
+
+dashboard.utils.set_custom_theme()
+
+#%%
 
 external_stylesheets = [dbc.themes.BOOTSTRAP]
 external_scripts = [
@@ -38,28 +45,21 @@ app = dash.Dash(
 # to allow custom css
 # app.scripts.config.serve_locally = True
 
-
-dashboard.utils.set_custom_theme()
-# reload(dashboard)
-
-
-fit_results = dashboard.fit_results.FitResults(
-    folder=Path("./data/out/"),
-    use_memoization=True,
-)
+#%%
 
 # (1) No sidebars, (2) Only left filter sidebar,
 # (3) Only right plot sidebar, (4) Both sidebars
 start_configuration_id = 1
 
 configurations = dashboard.utils.get_configurations(
-    sidebar_filter_width=30,
-    sidebar_plot_width=35,
+    sidebar_left_width=30,
+    sidebar_right_width=35,
     content_main_margin=1,
 )
 start_configuration = configurations[start_configuration_id]
 
 d_columns_latex, columns, columns_no_log = dashboard.utils.get_d_columns_latex()
+
 
 #%%
 
@@ -70,12 +70,12 @@ app.layout = dashboard.content.get_app_layout(fit_results, start_configuration)
 
 
 @app.callback(
-    Output("collapsed_variable_selections", "is_open"),
-    Output("btn_toggle_variables", "outline"),
-    Input("btn_toggle_variables", "n_clicks"),
-    State("collapsed_variable_selections", "is_open"),
+    Output("navbar_collapsed_toggle_styling", "is_open"),
+    Output("navbar_btn_toggle_styling", "outline"),
+    Input("navbar_btn_toggle_styling", "n_clicks"),
+    State("navbar_collapsed_toggle_styling", "is_open"),
 )
-def toggle_collapse_files(n, is_open):
+def toggle_styling(n, is_open):
     # after click
     if n:
         return not is_open, is_open
@@ -83,37 +83,40 @@ def toggle_collapse_files(n, is_open):
     return is_open, True
 
 
-@app.callback(
-    Output("sidebar_plot_fit_results", "is_open"),
-    Output("sidebar_plot_toggle_fit_results", "outline"),
-    Input("sidebar_plot_toggle_fit_results", "n_clicks"),
-    State("sidebar_plot_fit_results", "is_open"),
-)
-def toggle_collapse_plot_combined(n, is_open):
-    if n:
-        return not is_open, is_open
-    return is_open, True
+#%%
 
 
 @app.callback(
-    Output("sidebar_plot_combined", "is_open"),
-    Output("sidebar_plot_toggle_combined", "outline"),
-    Input("sidebar_plot_toggle_combined", "n_clicks"),
-    State("sidebar_plot_combined", "is_open"),
+    Output("sidebar_right_collapsed_toggle_combined", "is_open"),
+    Output("sidebar_right_btn_toggle_combined", "outline"),
+    Input("sidebar_right_btn_toggle_combined", "n_clicks"),
+    State("sidebar_right_collapsed_toggle_combined", "is_open"),
 )
-def toggle_collapse_plot_combined(n, is_open):
+def toggle_sidebar_right_combined(n, is_open):
     if n:
         return not is_open, is_open
     return is_open, False
 
 
 @app.callback(
-    Output("sidebar_plot_forward_reverse", "is_open"),
-    Output("sidebar_plot_toggle_forward_reverse", "outline"),
-    Input("sidebar_plot_toggle_forward_reverse", "n_clicks"),
-    State("sidebar_plot_forward_reverse", "is_open"),
+    Output("sidebar_right_collapsed_toggle_fit_results", "is_open"),
+    Output("sidebar_right_btn_toggle_fit_results", "outline"),
+    Input("sidebar_right_btn_toggle_fit_results", "n_clicks"),
+    State("sidebar_right_collapsed_toggle_fit_results", "is_open"),
 )
-def toggle_collapse_plot_forward_reverse(n, is_open):
+def toggle_sidebar_right_fit_results(n, is_open):
+    if n:
+        return not is_open, is_open
+    return is_open, True
+
+
+@app.callback(
+    Output("sidebar_right_collapsed_toggle_forward_reverse", "is_open"),
+    Output("sidebar_right_btn_toggle_forward_reverse", "outline"),
+    Input("sidebar_right_btn_toggle_forward_reverse", "n_clicks"),
+    State("sidebar_right_collapsed_toggle_forward_reverse", "is_open"),
+)
+def toggle_sidebar_right_forward_reverse(n, is_open):
     if n:
         return not is_open, is_open
     return is_open, True
@@ -123,10 +126,10 @@ def toggle_collapse_plot_forward_reverse(n, is_open):
 
 
 @app.callback(
-    Output("graph_plot_data", "figure"),
+    Output("sidebar_right_graph_combined", "figure"),
     Input("main_graph", "clickData"),
 )
-def update_raw_count_plots_combined(click_data):
+def update_sidebar_right_plot_combined(click_data):
     return dashboard.figures.update_raw_count_plots(
         fit_results,
         click_data,
@@ -135,10 +138,10 @@ def update_raw_count_plots_combined(click_data):
 
 
 @app.callback(
-    Output("graph_plot_data_forward", "figure"),
+    Output("sidebar_right_graph_forward", "figure"),
     Input("main_graph", "clickData"),
 )
-def update_raw_count_plots_forward(click_data):
+def update_sidebar_right_plot_forward(click_data):
     return dashboard.figures.update_raw_count_plots(
         fit_results,
         click_data,
@@ -147,10 +150,10 @@ def update_raw_count_plots_forward(click_data):
 
 
 @app.callback(
-    Output("graph_plot_data_reverse", "figure"),
+    Output("sidebar_right_graph_reverse", "figure"),
     Input("main_graph", "clickData"),
 )
-def update_raw_count_plots_reverse(click_data):
+def update_sidebar_right_plot_reverse(click_data):
     return dashboard.figures.update_raw_count_plots(
         fit_results,
         click_data,
@@ -159,10 +162,10 @@ def update_raw_count_plots_reverse(click_data):
 
 
 @app.callback(
-    Output("datatable", "children"),
+    Output("sidebar_right_datatable_fit_results", "children"),
     Input("main_graph", "clickData"),
 )
-def update_datatable(click_data):
+def update_sidebar_right_datatable_fit_results(click_data):
     if click_data:
         shortname, tax_id = dashboard.utils.get_shortname_tax_id_from_click_data(
             fit_results, click_data
@@ -203,24 +206,24 @@ def update_datatable(click_data):
 @app.callback(
     Output("main_graph", "figure"),
     Output("modal", "is_open"),
-    Input("sidebar_filter_dropdown_shortnames", "value"),
-    Input("tax_id_filter_input", "value"),
+    Input("sidebar_left_dropdown_samples", "value"),
+    Input("sidebar_left_tax_id_input", "value"),
     Input("tax_id_plot_button", "n_clicks"),
-    Input({"type": "dynamic_slider", "index": ALL}, "value"),
+    Input({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "value"),
     Input("xaxis_column", "value"),
     Input("yaxis_column", "value"),
     Input("marker_transformation_variable", "value"),
     Input("marker_transformation_function", "value"),
     Input("marker_transformation_slider", "value"),
     Input("modal_close_button", "n_clicks"),
-    State({"type": "dynamic_slider", "index": ALL}, "id"),
-    State("tax_id_filter_input_descendants", "value"),
-    State("tax_id_filter_subspecies", "value"),
+    State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
+    State("sidebar_left_tax_id_input_descendants", "value"),
+    State("sidebar_left_tax_id_subspecies", "value"),
     State("modal", "is_open"),
 )
-def update_graph(
+def update_main_graph(
     dropdown_file_selection,
-    tax_id_filter_input,
+    sidebar_left_tax_id_input,
     tax_id_button,
     slider_values,
     xaxis_column_name,
@@ -230,8 +233,8 @@ def update_graph(
     marker_transformation_slider,
     n_clicks_modal,
     slider_ids,
-    tax_id_filter_input_descendants,
-    tax_id_filter_subspecies,
+    sidebar_left_tax_id_input_descendants,
+    sidebar_left_tax_id_subspecies,
     modal_is_open,
 ):
 
@@ -255,16 +258,16 @@ def update_graph(
     for shortname, values in zip(columns_no_log, slider_values):
         d_filter[shortname] = values
 
-    dashboard.utils.apply_tax_id_filter(
+    dashboard.utils.apply_sidebar_left_tax_id(
         fit_results,
         d_filter,
-        tax_id_filter_input,
+        sidebar_left_tax_id_input,
     )
 
     dashboard.utils.apply_tax_id_descendants_filter(
         d_filter,
-        tax_id_filter_input_descendants,
-        tax_id_filter_subspecies,
+        sidebar_left_tax_id_input_descendants,
+        sidebar_left_tax_id_subspecies,
     )
 
     df_fit_results_filtered = fit_results.filter(d_filter)
@@ -288,10 +291,10 @@ def update_graph(
 
 
 @app.callback(
-    Output("sidebar_filter_dropdown_shortnames", "value"),
-    Input("sidebar_filter_dropdown_shortnames", "value"),
+    Output("sidebar_left_dropdown_samples", "value"),
+    Input("sidebar_left_dropdown_samples", "value"),
 )
-def update_dropdown_when_Select_All(dropdown_file_selection):
+def update_dropdown_samples_when_Select_all(dropdown_file_selection):
     if dashboard.utils.key_is_in_list_case_insensitive(
         dropdown_file_selection,
         "Select all",
@@ -314,13 +317,13 @@ def update_dropdown_when_Select_All(dropdown_file_selection):
 
 
 @app.callback(
-    Output("dynamic_slider_container", "children"),
-    Input("dropdown_slider", "value"),
-    State("dynamic_slider_container", "children"),
-    State({"type": "dynamic_slider", "index": ALL}, "id"),
+    Output("sidebar_left_fit_results_container", "children"),
+    Input("sidebar_left_fit_results", "value"),
+    State("sidebar_left_fit_results_container", "children"),
+    State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
     prevent_initial_call=True,
 )
-def add_or_remove_slider(dropdown_names, children, current_ids):
+def update_sidebar_left_fit_result_sliders(dropdown_names, children, current_ids):
 
     id_type = "dbc"
 
@@ -347,13 +350,17 @@ def add_or_remove_slider(dropdown_names, children, current_ids):
 
 
 @app.callback(
-    Output({"type": "dynamic_slider_name", "index": MATCH}, "children"),
-    Input({"type": "dynamic_slider", "index": MATCH}, "value"),
-    State({"type": "dynamic_slider", "index": MATCH}, "id"),
+    Output(
+        {"type": "sidebar_left_fit_results_dynamic_name", "index": MATCH}, "children"
+    ),
+    Input({"type": "sidebar_left_fit_results_dynamic", "index": MATCH}, "value"),
+    State({"type": "sidebar_left_fit_results_dynamic", "index": MATCH}, "id"),
     prevent_initial_call=True,
 )
-def update_slider_name(dynamic_slider_values, dynamic_slider_name):
-    column = dynamic_slider_name["index"]
+def update_sidebar_left_fit_result_slider_names(
+    dynamic_slider_values, sidebar_left_fit_results_dynamic_name
+):
+    column = sidebar_left_fit_results_dynamic_name["index"]
     name = dashboard.content.get_slider_name(column, dynamic_slider_values)
     return name
 
@@ -362,11 +369,11 @@ def update_slider_name(dynamic_slider_values, dynamic_slider_name):
 
 
 @app.callback(
-    Output("tax_id_filter_counts_output", "children"),
-    Input("tax_id_filter_input_descendants", "value"),
-    Input("tax_id_filter_subspecies", "value"),
+    Output("sidebar_left_tax_id_counts_output", "children"),
+    Input("sidebar_left_tax_id_input_descendants", "value"),
+    Input("sidebar_left_tax_id_subspecies", "value"),
 )
-def update_tax_id_filter_counts(tax_name, subspecies):
+def update_sidebar_left_sidebar_left_tax_id_counts(tax_name, subspecies):
 
     if tax_name is None or tax_name == "":
         return f"No specific Tax IDs selected, defaults to ALL."
@@ -386,12 +393,12 @@ def update_tax_id_filter_counts(tax_name, subspecies):
 
 
 @app.callback(
-    Output("filters_dropdown_files", "is_open"),
-    Output("filters_toggle_files_button", "outline"),
-    Input("filters_toggle_files_button", "n_clicks"),
-    State("filters_dropdown_files", "is_open"),
+    Output("sidebar_left_samples_collapsed", "is_open"),
+    Output("sidebar_left_samples_btn", "outline"),
+    Input("sidebar_left_samples_btn", "n_clicks"),
+    State("sidebar_left_samples_collapsed", "is_open"),
 )
-def toggle_collapse_files(n, is_open):
+def toggle_sidebar_left_samples(n, is_open):
     # after click
     if n:
         return not is_open, is_open
@@ -400,24 +407,24 @@ def toggle_collapse_files(n, is_open):
 
 
 @app.callback(
-    Output("filters_dropdown_tax_ids", "is_open"),
-    Output("filters_toggle_tax_ids_button", "outline"),
-    Input("filters_toggle_tax_ids_button", "n_clicks"),
-    State("filters_dropdown_tax_ids", "is_open"),
+    Output("sidebar_left_taxanomics_collapsed", "is_open"),
+    Output("sidebar_left_taxanomics_btn", "outline"),
+    Input("sidebar_left_taxanomics_btn", "n_clicks"),
+    State("sidebar_left_taxanomics_collapsed", "is_open"),
 )
-def toggle_collapse_tax_ids(n, is_open):
+def toggle_sidebar_left_taxanomics(n, is_open):
     if n:
         return not is_open, is_open
     return is_open, True
 
 
 @app.callback(
-    Output("filters_dropdown_ranges_button", "is_open"),
-    Output("filters_toggle_ranges_button", "outline"),
-    Input("filters_toggle_ranges_button", "n_clicks"),
-    State("filters_dropdown_ranges_button", "is_open"),
+    Output("sidebar_left_fit_results_collapsed", "is_open"),
+    Output("sidebar_left_fit_results_btn", "outline"),
+    Input("sidebar_left_fit_results_btn", "n_clicks"),
+    State("sidebar_left_fit_results_collapsed", "is_open"),
 )
-def toggle_collapse_ranges(n, is_open):
+def toggle_sidebar_left_fit_results(n, is_open):
     if n:
         return not is_open, is_open
     return is_open, True
@@ -428,52 +435,52 @@ def toggle_collapse_ranges(n, is_open):
 
 @app.callback(
     Output("content_main", "style"),
-    Output("sidebar_filter", "style"),
-    Output("sidebar_plot", "style"),
-    Output("sidebar_filter_state", "data"),
-    Output("sidebar_plot_state", "data"),
-    Output("btn_toggle_filter", "outline"),
-    Output("btn_toggle_plot", "outline"),
-    Input("btn_toggle_filter", "n_clicks"),
-    Input("btn_toggle_plot", "n_clicks"),
-    State("sidebar_filter_state", "data"),
-    State("sidebar_plot_state", "data"),
-    State("btn_toggle_filter", "outline"),
-    State("btn_toggle_plot", "outline"),
+    Output("sidebar_left", "style"),
+    Output("sidebar_right", "style"),
+    Output("sidebar_left_state", "data"),
+    Output("sidebar_right_state", "data"),
+    Output("sidebar_left_toggle_btn", "outline"),
+    Output("sidebar_right_toggle_btn", "outline"),
+    Input("sidebar_left_toggle_btn", "n_clicks"),
+    Input("sidebar_right_toggle_btn", "n_clicks"),
+    State("sidebar_left_state", "data"),
+    State("sidebar_right_state", "data"),
+    State("sidebar_left_toggle_btn", "outline"),
+    State("sidebar_right_toggle_btn", "outline"),
 )
 def toggle_sidebars(
-    _btn_toggle_filter,
-    _btn_toggle_plot,
-    current_state_sidebar_filter,
-    current_state_sidebar_plot,
-    btn_toggle_filter_outline,
-    btn_toggle_plot_outline,
+    _sidebar_left_toggle_btn,
+    _sidebar_right_toggle_btn,
+    current_state_sidebar_left,
+    current_state_sidebar_right,
+    sidebar_left_toggle_btn_outline,
+    sidebar_right_toggle_btn_outline,
 ):
 
     button_id = dashboard.utils.get_button_id(dash.callback_context)
 
     # if the toggle filter button was clicked
-    if button_id == "btn_toggle_filter":
+    if button_id == "sidebar_left_toggle_btn":
         return (
             *dashboard.utils.toggle_filter(
                 configurations,
-                current_state_sidebar_filter,
-                current_state_sidebar_plot,
+                current_state_sidebar_left,
+                current_state_sidebar_right,
             ),
-            not btn_toggle_filter_outline,
-            btn_toggle_plot_outline,
+            not sidebar_left_toggle_btn_outline,
+            sidebar_right_toggle_btn_outline,
         )
 
     # if the toggle plot button was clicked
-    elif button_id == "btn_toggle_plot":
+    elif button_id == "sidebar_right_toggle_btn":
         return (
             *dashboard.utils.toggle_plot(
                 configurations,
-                current_state_sidebar_filter,
-                current_state_sidebar_plot,
+                current_state_sidebar_left,
+                current_state_sidebar_right,
             ),
-            btn_toggle_filter_outline,
-            not btn_toggle_plot_outline,
+            sidebar_left_toggle_btn_outline,
+            not sidebar_right_toggle_btn_outline,
         )
 
     # base configuration
