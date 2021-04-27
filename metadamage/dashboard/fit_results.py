@@ -355,7 +355,7 @@ class FitResults:
         self.customdata = self.df_fit_results[self.custom_data_columns]
 
         self.hovertemplate_fit = (
-            "D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>" "<extra></extra>"
+            "Fit: <br>D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>" "<extra></extra>"
         )
 
     # def _get_col_row_from_iteration(self, i, N_cols):
