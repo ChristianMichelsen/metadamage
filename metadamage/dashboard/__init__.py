@@ -1,2 +1,2 @@
 # Local Folder
-from . import utils, app, content, figures, fit_results
+from . import app, content, figures, fit_results, utils
