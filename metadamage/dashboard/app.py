@@ -10,6 +10,7 @@ import dash
 from dash.dependencies import ALL, Input, MATCH, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
+from dash_extensions.snippets import send_data_frame
 import dash_html_components as html
 
 
@@ -466,6 +467,64 @@ def get_app(out_dir_default=Path("./data/out/"), verbose=True):
         # base configuration
         else:
             return *start_configuration, True, True
+
+    #%%
+
+    @app.callback(
+        Output("export", "data"),
+        Input("navbar_btn_export", "n_clicks"),
+        State("sidebar_left_dropdown_samples", "value"),
+        State("sidebar_left_tax_id_input", "value"),
+        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "value"),
+        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
+        State("sidebar_left_tax_id_input_descendants", "value"),
+        State("sidebar_left_tax_id_subspecies", "value"),
+    )
+    def export(
+        navbar_btn_export,
+        sidebar_left_dropdown_samples,
+        sidebar_left_tax_id_input,
+        sidebar_left_fit_results_dynamic_value,
+        sidebar_left_fit_results_dynamic_ids,
+        sidebar_left_tax_id_input_descendants,
+        sidebar_left_tax_id_subspecies,
+    ):
+
+        if navbar_btn_export:
+
+            d_filter = {"shortnames": sidebar_left_dropdown_samples}
+
+            columns_no_log = [
+                id["index"] for id in sidebar_left_fit_results_dynamic_ids
+            ]
+            for shortname, values in zip(
+                columns_no_log, sidebar_left_fit_results_dynamic_value
+            ):
+                d_filter[shortname] = values
+
+            dashboard.utils.apply_sidebar_left_tax_id(
+                fit_results,
+                d_filter,
+                sidebar_left_tax_id_input,
+            )
+
+            dashboard.utils.apply_tax_id_descendants_filter(
+                d_filter,
+                sidebar_left_tax_id_input_descendants,
+                sidebar_left_tax_id_subspecies,
+            )
+
+            df_fit_results_filtered = fit_results.filter(d_filter)
+
+            print(df_fit_results_filtered)
+
+            return send_data_frame(
+                df_fit_results_filtered.loc[:, :"shortname"].to_csv,
+                "filtered_results.csv",
+                index=False,
+            )
+
+    #%%
 
     return app
 

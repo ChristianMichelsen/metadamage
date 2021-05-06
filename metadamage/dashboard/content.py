@@ -4,6 +4,7 @@ import itertools
 # Third Party
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
+from dash_extensions import Download
 import dash_html_components as html
 
 # First Party
@@ -38,9 +39,17 @@ def get_navbar():
                 className="mr-1",
                 id="navbar_btn_toggle_styling",
             ),
+            dbc.Button(
+                "Export",
+                outline=True,
+                color="light",
+                className="mr-1",
+                id="navbar_btn_export",
+            ),
+            Download(id="export"),
         ],
         brand="mDamage",
-        brand_href="#",
+        brand_href="https://github.com/ChristianMichelsen/metadamage",
         color="dark",
         dark=True,
         fluid=True,
