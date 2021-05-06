@@ -516,8 +516,6 @@ def get_app(out_dir_default=Path("./data/out/"), verbose=True):
 
             df_fit_results_filtered = fit_results.filter(d_filter)
 
-            print(df_fit_results_filtered)
-
             return send_data_frame(
                 df_fit_results_filtered.loc[:, :"shortname"].to_csv,
                 "filtered_results.csv",
