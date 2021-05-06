@@ -86,14 +86,16 @@ if utils.is_ipython():
 
     cfg = utils.Config(
         out_dir=Path("./data/out/"),
-        max_fits=10,
+        # max_fits=10,
+        max_fits=None,
         max_cores=-1,
         min_alignments=10,
         min_k_sum=10,
         min_N_at_each_pos=1,
         substitution_bases_forward=cli_utils.SubstitutionBases.CT.value,
         substitution_bases_reverse=cli_utils.SubstitutionBases.GA.value,
-        bayesian=True,
+        # bayesian=True,
+        bayesian=False,
         forced=False,
         version="0.0.0",
         dask_port=8787,
@@ -124,29 +126,6 @@ if utils.is_ipython():
 
         tax_id = 1224
         tax_id = 1236
-        tax_id = 135622
-        tax_id = 2742
-        tax_id = 28211
-        tax_id = 8006
-        tax_id = 4751
-        tax_id = 469
-        tax_id = 28211
-        tax_id = 356  # BNP
-        tax_id = 286
-        tax_id = 526227
-        tax_id = 71240
-        tax_id = 68336
-        tax_id = 6072
-        tax_id = 7711
-        tax_id = 3193
-        tax_id = 58024
-        tax_id = 7898
-        tax_id = 2742  # Lok-75
-        tax_id = 22973  # KapK
-        tax_id = 9606  # SJ
-        tax_id = 6656  # SJ
-        tax_id = 68895  # BPN
-        tax_id = 673929  # KapK
         tax_id = 9979  # KapK
         tax_id = -1
 
@@ -171,222 +150,9 @@ if utils.is_ipython():
         use_memoization=False,
     )
 
-    # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
-    df = fit_results.df_fit_results
+    # # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
+    # df = fit_results.df_fit_results
 
-    # Third Party
-    import plotly.express as px
+    # df.query("shortname in ['KapK-12-1-24-Ext-1-Lib-1-Index2', 'KapK-12-1-39-Ext-19-Lib-19-Index1', 'Lok-75-Sample-1-Ext-58-Lib-58-Index1']")
 
-    def compute_range(df, x, range_x):
-        if range_x is None:
-            return df[x].min(), df[x].max()
-        elif isinstance(range_x, (list, tuple)):
-            if range_x[0] is None:
-                return df[x].min(), range_x[1]
-            elif range_x[1] is None:
-                return range_x[0], df[x].max()
-            else:
-                return range_x
-
-    def plotly(x, y, x_title, y_title, range_x=None, range_y=None, savefig=True):
-
-        range_x = compute_range(df, x, range_x)
-        range_y = compute_range(df, y, range_y)
-
-        fig = px.scatter(
-            df,
-            x=x,
-            y=y,
-            size="size",
-            color="shortname",
-            hover_name="shortname",
-            # size_max=marker_size_max,
-            # opacity=1,
-            color_discrete_map=fit_results.d_cmap,
-            custom_data=fit_results.custom_data_columns,
-            range_x=range_x,
-            range_y=range_y,
-            render_mode="webgl",
-            symbol="shortname",
-            symbol_map=fit_results.d_symbols,
-        )
-
-        fig.update_traces(
-            hovertemplate=fit_results.hovertemplate,
-            marker_line_width=0,
-            marker_sizeref=2.0
-            * fit_results.max_of_size
-            / (fit_results.marker_size_max ** 2),
-        )
-
-        fig.update_layout(
-            xaxis_title=x_title,
-            yaxis_title=y_title,
-            showlegend=False,
-            # legend_title="Files",
-        )
-
-        fig.for_each_trace(
-            lambda trace: dashboard.figures.set_opacity_for_trace(
-                trace,
-                method="sqrt",
-                scale=20 / df.shortname.nunique(),
-                opacity_min=0.3,
-                opacity_max=0.95,
-            )
-        )
-
-        if savefig:
-            fig_name = f"./data/out/plotlys/plotly__{x}__{y}.html"
-            utils.init_parent_folder(fig_name)
-            fig.write_html(fig_name)
-
-        return fig
-
-    savefig = False
-    # savefig = True
-
-    x = x
-
-    df["LR"] = np.clip(df["LR"], a_min=-10, a_max=None)
-
-    plotly(
-        x="LR",
-        y="D_max",
-        x_title="LR frequentist",
-        y_title="D_max frequentist",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="Bayesian_n_sigma",
-        y="Bayesian_D_max",
-        x_title="n_sigma Bayesian",
-        y_title="D_max Bayesian",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="D_max",
-        y="Bayesian_D_max",
-        x_title="D_max",
-        y_title="D_max Bayesian",
-        range_x=(0, 0.8),
-        range_y=(0, 0.8),
-        savefig=savefig,
-    )
-
-    plotly(
-        x="q",
-        y="Bayesian_q",
-        x_title="q",
-        y_title="q Bayesian",
-        range_x=(0, 1.0),
-        range_y=(0, 1.0),
-        savefig=savefig,
-    )
-
-    plotly(
-        x="phi",
-        y="Bayesian_phi",
-        x_title="phi",
-        y_title="phi Bayesian",
-        range_x=(2, 7_000),
-        range_y=(2, 7_000),
-        savefig=savefig,
-    )
-
-    plotly(
-        x="LR",
-        y="Bayesian_n_sigma",
-        x_title="LR",
-        y_title="n_sigma Bayesian",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="forward_D_max",
-        y="reverse_D_max",
-        x_title="Forward D_max",
-        y_title="Reverse D_max",
-        range_x=(0, 0.8),
-        range_y=(0, 0.8),
-        savefig=savefig,
-    )
-
-    plotly(
-        x="forward_LR",
-        y="reverse_LR",
-        x_title="Forward D_max",
-        y_title="Reverse D_max",
-        range_x=(-10, 120),
-        range_y=(-10, 120),
-        savefig=savefig,
-    )
-
-    plotly(
-        x="phi",
-        y="D_max_std",
-        x_title="phi",
-        y_title="D_max_std",
-        savefig=savefig,
-    )
-
-    df["phi_log10"] = np.log10(df["phi"])
-    plotly(
-        x="phi_log10",
-        y="D_max_std",
-        x_title="log10 phi",
-        y_title="D_max_std",
-        savefig=savefig,
-    )
-
-    df["D_max_significance"] = df["D_max"] / df["D_max_std"]
-    plotly(
-        x="phi_log10",
-        y="D_max_significance",
-        x_title="log10 phi",
-        y_title="D_max_significance",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="phi",
-        y="D_max_significance",
-        x_title="phi",
-        y_title="D_max_significance",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="D_max",
-        y="D_max_significance",
-        x_title="D_max",
-        y_title="D_max_significance",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="LR",
-        y="rho_Ac",
-        x_title="LR",
-        y_title="rho_Ac",
-        savefig=savefig,
-    )
-
-    df["rho_Ac_abs"] = np.abs(df["rho_Ac"])
-    plotly(
-        x="LR",
-        y="rho_Ac_abs",
-        x_title="LR",
-        y_title="rho_Ac_abs",
-        savefig=savefig,
-    )
-
-    plotly(
-        x="LR",
-        y="asymmetry",
-        x_title="LR",
-        y_title="asymmetry",
-        savefig=savefig,
-    )
+    # fit_results.customdata

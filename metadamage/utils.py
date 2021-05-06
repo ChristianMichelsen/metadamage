@@ -363,58 +363,6 @@ def metadata_is_similar(metadata_file, metadata_cfg, include=None):
     return True
 
 
-# def metadata_is_similar(cfg, key, include=None, exclude=None):
-#     """ Compares the metadata in the hdf5 file (cfg.filename_out) with that in cfg"""
-
-#     if include is not None and exclude is not None:
-#         logger.error("Cannot both include and exclude")
-#         raise AssertionError(f"Cannot both include and exclude")
-
-#     metadata_file = load_metadata_from_hdf5(filename=cfg.filename_out, key=key)
-#     metadata_cfg = cfg.to_dict()
-
-#     # # the metadata is not similar if it contains different keys
-#     # if set(metadata_file.keys()) != set(metadata_cfg.keys()):
-#     #     is_similar = False
-#     #     logger.warning("metadata contains different keys")
-#     #     return is_similar
-
-#     if isinstance(include, (list, tuple)) and exclude is None:
-#         logger.info("include is list or tuple and exclude is None")
-#         # include = ['max_fits', 'max_position']
-#         # exclude = None
-#         is_similar = all([metadata_file[key] == metadata_cfg[key] for key in include])
-#         return is_similar
-
-#     elif isinstance(exclude, (list, tuple)) and include is None:
-#         logger.info("exclude is list or tuple and include is None")
-#         all_keys = metadata_file.keys()
-#         similar = [
-#             metadata_file[key] == metadata_cfg[key]
-#             for key in all_keys
-#             if key not in exclude
-#         ]
-#         is_similar = all(similar)
-#         return is_similar
-
-#     elif include is None and exclude is None:
-#         # include = None
-#         # exclude = None
-#         logger.info("both include and exclude is is None")
-
-#         if set(metadata_file.keys()) != set(metadata_cfg.keys()):
-#             logger.warning("metadata contains different keys")
-#             return False
-
-#         all_keys = metadata_file.keys()
-#         is_similar = all({metadata_file[key] == metadata_cfg[key] for key in all_keys})
-#         return is_similar
-
-#     else:
-#         logger.warning("Did not expect to get here")
-#         raise AssertionError("Did not expect to get here")
-
-
 #%%
 
 

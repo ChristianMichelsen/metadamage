@@ -390,7 +390,7 @@ def get_fits(df_counts, cfg):
             "substitution_bases_reverse",
             "N_fits",
             "shortname",
-            "filename",
+            # "filename",
         ]
 
         metadata_cfg = cfg.to_dict()
