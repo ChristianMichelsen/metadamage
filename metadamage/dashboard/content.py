@@ -12,10 +12,6 @@ from metadamage import dashboard, utils
 
 #%%
 
-d_columns_latex, columns, columns_no_log = dashboard.utils.get_d_columns_latex()
-
-#%%
-
 
 def get_navbar():
 
@@ -57,6 +53,8 @@ def get_navbar():
 
 
 def get_content_main(start_configuration):
+
+    _, columns, columns_no_log = dashboard.utils.get_d_columns_latex()
 
     dropdown_x_axis = dcc.Dropdown(
         id="xaxis_column",
@@ -189,6 +187,8 @@ def get_content_main(start_configuration):
 
 
 def get_sidebar_left(fit_results, start_configuration):
+
+    d_columns_latex, columns, columns_no_log = dashboard.utils.get_d_columns_latex()
 
     filter_dropdown_file = dbc.FormGroup(
         [

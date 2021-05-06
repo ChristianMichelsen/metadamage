@@ -210,28 +210,28 @@ def get_app(out_dir_default=Path("./data/out/"), verbose=True):
         State("modal", "is_open"),
     )
     def update_main_graph(
-        dropdown_file_selection,
+        sidebar_left_dropdown_samples,
         sidebar_left_tax_id_input,
-        tax_id_button,
-        slider_values,
+        tax_id_plot_button,
+        sidebar_left_fit_results_dynamic_value,
         xaxis_column_name,
         yaxis_column_name,
         marker_transformation_variable,
         marker_transformation_function,
         marker_transformation_slider,
-        n_clicks_modal,
-        slider_ids,
+        modal_close_button,
+        sidebar_left_fit_results_dynamic_ids,
         sidebar_left_tax_id_input_descendants,
         sidebar_left_tax_id_subspecies,
-        modal_is_open,
+        modal,
     ):
 
         # if modal is open and the "close" button is clicked, close down modal
-        if n_clicks_modal and modal_is_open:
+        if modal_close_button and modal:
             return dash.no_update, False
 
         # if no files selected
-        if not dropdown_file_selection:
+        if not sidebar_left_dropdown_samples:
             raise PreventUpdate
 
         fit_results.set_marker_size(
@@ -240,10 +240,12 @@ def get_app(out_dir_default=Path("./data/out/"), verbose=True):
             marker_transformation_slider,
         )
 
-        d_filter = {"shortnames": dropdown_file_selection}
+        d_filter = {"shortnames": sidebar_left_dropdown_samples}
 
-        columns_no_log = [id["index"] for id in slider_ids]
-        for shortname, values in zip(columns_no_log, slider_values):
+        columns_no_log = [id["index"] for id in sidebar_left_fit_results_dynamic_ids]
+        for shortname, values in zip(
+            columns_no_log, sidebar_left_fit_results_dynamic_value
+        ):
             d_filter[shortname] = values
 
         dashboard.utils.apply_sidebar_left_tax_id(
@@ -280,23 +282,23 @@ def get_app(out_dir_default=Path("./data/out/"), verbose=True):
         Output("sidebar_left_dropdown_samples", "value"),
         Input("sidebar_left_dropdown_samples", "value"),
     )
-    def update_dropdown_samples_when_Select_all(dropdown_file_selection):
+    def update_dropdown_samples_when_Select_all(sidebar_left_dropdown_samples):
         if dashboard.utils.key_is_in_list_case_insensitive(
-            dropdown_file_selection,
+            sidebar_left_dropdown_samples,
             "Select all",
         ):
-            dropdown_file_selection = fit_results.shortnames
+            sidebar_left_dropdown_samples = fit_results.shortnames
         elif dashboard.utils.key_is_in_list_case_insensitive(
-            dropdown_file_selection,
+            sidebar_left_dropdown_samples,
             "Default selection",
         ):
-            dropdown_file_selection = dashboard.utils.get_shortnames_each(
+            sidebar_left_dropdown_samples = dashboard.utils.get_shortnames_each(
                 fit_results.shortnames
             )
 
-        dropdown_file_selection = list(sorted(dropdown_file_selection))
+        sidebar_left_dropdown_samples = list(sorted(sidebar_left_dropdown_samples))
 
-        return dropdown_file_selection
+        return sidebar_left_dropdown_samples
 
     #%%
 
