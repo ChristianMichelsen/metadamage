@@ -69,8 +69,8 @@ def group_to_numpyro_data(group, cfg):
 
 def add_tax_information(fit_result, group):
     fit_result["tax_id"] = group["tax_id"].iloc[0]
-    fit_result["tax_name"] = group["tax_name"].iloc[0]
-    fit_result["tax_rank"] = group["tax_rank"].iloc[0]
+    # fit_result["tax_name"] = group["tax_name"].iloc[0]
+    # fit_result["tax_rank"] = group["tax_rank"].iloc[0]
 
 
 def add_count_information(fit_result, group, data):
@@ -299,7 +299,8 @@ def make_df_fit_results_from_fit_results(fit_results, df_counts, cfg):
     df_fit_results = match_tax_id_order_in_df_fit_results(df_fit_results, df_counts)
     df_fit_results["shortname"] = cfg.shortname
 
-    categories = ["tax_id", "tax_name", "tax_rank", "shortname"]
+    # categories = ["tax_id", "tax_name", "tax_rank", "shortname"]
+    categories = ["tax_id", "shortname"]
     df_fit_results = utils.downcast_dataframe(
         df_fit_results, categories, fully_automatic=False
     )

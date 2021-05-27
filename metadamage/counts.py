@@ -19,6 +19,10 @@ from metadamage import io, utils
 from metadamage.progressbar import console, progress
 
 
+import gzip
+import pysam
+import struct
+
 logger = logging.getLogger(__name__)
 
 #%%
@@ -36,14 +40,15 @@ for ref in ACTG:
 
 columns = [
     "tax_id",
-    "tax_name",
-    "tax_rank",
+    # "tax_name",
+    # "tax_rank",
     "N_alignments",
     "strand",
     "position",
     *ref_obs_bases,
 ]
 
+sizeof_int = 4
 
 #%%
 
@@ -129,15 +134,15 @@ def make_reverse_position_negative(df):
     return df
 
 
-def delayed_list_unknown_length(lst):
-    @dask.delayed()
-    def delayed_list_tmp(lst):
-        out = []
-        for l in lst:
-            out.append(l)
-        return out
+# def delayed_list_unknown_length(lst):
+#     @dask.delayed()
+#     def delayed_list_tmp(lst):
+#         out = []
+#         for l in lst:
+#             out.append(l)
+#         return out
 
-    return delayed_list_tmp(lst)
+#     return delayed_list_tmp(lst)
 
 
 def remove_base_columns(df):
@@ -189,7 +194,7 @@ def compute_k_sum_total(group, cfg):
     return k_sum_total
 
 
-def add_k_sum_counts(df, cfg):
+def add_k_sum_counts_dask(df, cfg):
 
     meta = pd.Series(
         [],
@@ -204,13 +209,20 @@ def add_k_sum_counts(df, cfg):
     return df
 
 
+def add_k_sum_counts(df, cfg):
+    ds = df.groupby("tax_id").apply(compute_k_sum_total, cfg)
+    ds = ds.reset_index().rename(columns={0: "k_sum_total"})
+    df = pd.merge(df, ds, on=["tax_id"])
+    return df
+
+
 def compute_min_N_in_group(group, cfg):
     min_N_forward = group[group.position > 0][cfg.substitution_bases_forward[0]].min()
     min_N_reverse = group[group.position < 0][cfg.substitution_bases_reverse[0]].min()
     return min(min_N_forward, min_N_reverse)
 
 
-def add_min_N_in_group(df, cfg):
+def add_min_N_in_group_dask(df, cfg):
 
     meta = pd.Series(
         [],
@@ -225,6 +237,13 @@ def add_min_N_in_group(df, cfg):
     return df
 
 
+def add_min_N_in_group(df, cfg):
+    ds = df.groupby("tax_id").apply(compute_min_N_in_group, cfg)
+    ds = ds.reset_index().rename(columns={0: "min_N_in_group"})
+    df = dd.merge(df, ds, on=["tax_id"])
+    return df
+
+
 def filter_cut_based_on_cfg(df, cfg):
     query = f"(N_alignments >= {cfg.min_alignments}) "
     query += f"& (k_sum_total >= {cfg.min_k_sum})"
@@ -232,9 +251,47 @@ def filter_cut_based_on_cfg(df, cfg):
     return df.query(query)
 
 
+def load_bdamage_file(filename):
+
+    handle = gzip.open(filename, "rb")
+
+    magic = handle.read(4)
+    printlength = struct.unpack("<i", magic)[0]
+
+    results = []
+
+    do_run = True
+    while do_run:
+
+        ref_nreads = np.empty(2, dtype=int)
+        for i, _ in enumerate(ref_nreads):
+            line = handle.read(sizeof_int)
+            if len(line) == 0:
+                do_run = False
+                break
+            ref_nreads[i] = struct.unpack("<i", line)[0]
+
+        if not do_run:
+            break
+
+        tax_id, N_alignments = ref_nreads
+
+        for strand in ["5'", "3'"]:
+            for pos in range(printlength):
+                pos += 1
+                data = []
+                for _ in range(16):
+                    line = handle.read(sizeof_int)
+                    data.append(struct.unpack("<i", line)[0])
+                res = [tax_id, N_alignments, strand, pos] + data
+                results.append(res)
+
+    handle.close()
+    return results
+
+
 def compute_counts_with_dask(cfg, use_processes=True):
 
-    # Standard Library
     filename = cfg.filename
 
     # do not allow dask to use all the cores.
@@ -276,8 +333,8 @@ def compute_counts_with_dask(cfg, use_processes=True):
             .pipe(make_position_1_indexed)
             .pipe(make_reverse_position_negative)
             .pipe(replace_nans_with_zeroes)
-            .pipe(add_k_sum_counts, cfg=cfg)
-            .pipe(add_min_N_in_group, cfg=cfg)
+            .pipe(add_k_sum_counts_dask, cfg=cfg)
+            .pipe(add_min_N_in_group_dask, cfg=cfg)
             .pipe(filter_cut_based_on_cfg, cfg)
             # turns dask dataframe into pandas dataframe
             .compute()
@@ -294,6 +351,43 @@ def compute_counts_with_dask(cfg, use_processes=True):
 
     df["shortname"] = cfg.shortname
     categories = ["tax_id", "tax_name", "tax_rank", "strand", "shortname"]
+    df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
+    return df2
+
+
+def compute_counts_from_bdamage(cfg):
+
+    filename = cfg.filename
+
+    results = load_bdamage_file(filename)
+
+    df = (
+        pd.DataFrame(results, columns=columns)
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_forward[0])
+        .pipe(add_reference_counts, ref=cfg.substitution_bases_reverse[0])
+        # # error rates forward
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_forward[0],
+            obs=cfg.substitution_bases_forward[1],
+        )
+        # # error rates reverse
+        .pipe(
+            add_error_rates,
+            ref=cfg.substitution_bases_reverse[0],
+            obs=cfg.substitution_bases_reverse[1],
+        )
+        .pipe(make_reverse_position_negative)
+        .pipe(replace_nans_with_zeroes)
+        .pipe(add_k_sum_counts, cfg=cfg)
+        .pipe(add_min_N_in_group, cfg=cfg)
+        .pipe(filter_cut_based_on_cfg, cfg)
+        .pipe(sort_by_alignments)
+        .reset_index(drop=True)
+    )
+
+    df["shortname"] = cfg.shortname
+    categories = ["tax_id", "strand", "shortname"]
     df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
     return df2
 
@@ -325,7 +419,8 @@ def load_counts(cfg):
             return df_counts
 
     logger.info(f"Creating DataFrame, please wait.")
-    df_counts = compute_counts_with_dask(cfg, use_processes=True)
+    # df_counts = compute_counts_with_dask(cfg, use_processes=True)
+    df_counts = compute_counts_from_bdamage(cfg)
     parquet.save(df_counts, metadata=cfg.to_dict())
 
     cfg.set_number_of_fits(df_counts)

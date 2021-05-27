@@ -45,6 +45,8 @@ toml = "^0.10.2"
 iminuit = "^2.4.0"
 numba = { version = "^0.53.1", python = ">=3.8,<3.10" }
 dash-extensions = "^0.0.53"
+biopython = "^1.78"
+pysam = "^0.16.0"
 
 
 [tool.poetry.dev-dependencies]

@@ -93,32 +93,27 @@ class Config:
         self.filename = filename
         self.shortname = extract_name(filename)
 
-    @property
-    def filename_counts(self):
+    def _test_for_shortname(self, methodname):
         if self.shortname is None:
             raise AssertionError(
-                "Shortname has to be set before filename_counts is defined: "
+                f"Shortname has to be set before {methodname} is defined: "
                 "cfg.add_filename(filename) "
             )
+
+    @property
+    def filename_counts(self):
+        self._test_for_shortname("filename_counts")
         return self.out_dir / "counts" / f"{self.shortname}.parquet"
 
     @property
     def filename_fit_results(self):
-        if self.shortname is None:
-            raise AssertionError(
-                "Shortname has to be set before filename_fit_results is defined: "
-                "cfg.add_filename(filename) "
-            )
+        self._test_for_shortname("filename_fit_results")
         return self.out_dir / "fit_results" / f"{self.shortname}.parquet"
 
     @property
-    def filename_fit_predictions(self):
-        if self.shortname is None:
-            raise AssertionError(
-                "Shortname has to be set before filename_fit_predictions is defined: "
-                "cfg.add_filename(filename) "
-            )
-        return self.out_dir / "fit_predictions" / f"{self.shortname}.parquet"
+    def filename_LCA(self):
+        self._test_for_shortname("filename_LCA")
+        return Path(self.filename).parent / f"{self.shortname}.lca"
 
     def set_number_of_fits(self, df_counts):
         self.N_tax_ids = len(pd.unique(df_counts.tax_id))

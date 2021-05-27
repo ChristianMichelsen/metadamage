@@ -16,7 +16,7 @@ from pathlib import Path
 import numpyro
 
 # First Party
-from metadamage import cli_utils, counts, fits, plot, utils
+from metadamage import cli_utils, counts, fits, plot, utils, results
 from metadamage.progressbar import console, progress
 
 
@@ -113,6 +113,7 @@ if utils.is_ipython():
     filename = filenames[3]  # KapK
     filename = filenames[4]  # Lok-75
     filename = filenames[5]  # SJArg-1
+    filename = "./data/input/test.bdamage.gz"  # SJArg-1
     # filename = "data/input/n_sigma_test.txt"
 
     if False:
@@ -156,3 +157,9 @@ if utils.is_ipython():
     # df.query("shortname in ['KapK-12-1-24-Ext-1-Lib-1-Index2', 'KapK-12-1-39-Ext-19-Lib-19-Index1', 'Lok-75-Sample-1-Ext-58-Lib-58-Index1']")
 
     # fit_results.customdata
+
+    cfg.add_filename(filename)
+    df_counts = counts.load_counts(cfg)
+    df_fit_results = fits.get_fits(df_counts, cfg)
+
+    df_results_large, df_results = results.compute_results(cfg, df_counts, df_fit_results)
