@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def main(filenames, cfg):
 
-    utils.initial_print(filenames, cfg)
+    # utils.initial_print(filenames, cfg)
 
     N_files = len(filenames)
     bad_files = 0
@@ -36,12 +36,15 @@ def main(filenames, cfg):
     with progress:
 
         task_id_overall = progress.add_task(
-            f"Overall progress",
+            "Overall progress",
             total=N_files,
             progress_type="overall",
+            # progress_type="LCA",
         )
 
         for filename in filenames:
+
+            progress.advance(task_id_overall)
 
             if not utils.file_is_valid(filename):
                 bad_files += 1
@@ -65,12 +68,12 @@ def main(filenames, cfg):
 
             df_fit_results = fits.get_fits(df_counts, cfg)
 
-            # df_results_large, df_results_small = results.compute_results(
-            #     cfg, df_counts, df_fit_results
-            # )
+            df_results_large, df_results_small = results.get_results(
+                cfg,
+                df_counts,
+                df_fit_results,
+            )
 
-            progress.refresh()
-            progress.advance(task_id_overall)
             logger.debug("End of loop\n")
 
     # if all files were bad, raise error
@@ -113,8 +116,7 @@ if utils.is_ipython():
 
     filename = "./data/input/test.bdamage.gz"  # SJArg-1
     filename = "./data/input/KapK-12-1-39-Ext-19-Lib-19-Index1.col.sorted.sam.gz.bdamage.gz"  # SJArg-1
-    # filename = "data/input/n_sigma_test.txt"
-
+    filename = filenames[0]
 
     cfg.add_filename(filename)
     df_counts = counts.load_counts(cfg)

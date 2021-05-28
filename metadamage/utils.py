@@ -123,7 +123,7 @@ class Config:
     @property
     def filename_LCA(self):
         self._test_for_shortname("filename_LCA")
-        return self.filename.replace(".bdamage.gz", ".lca")
+        return Path(str(self.filename).replace(".bdamage.gz", ".lca"))
 
     def set_number_of_fits(self, df_counts):
         self.N_tax_ids = len(pd.unique(df_counts.tax_id))

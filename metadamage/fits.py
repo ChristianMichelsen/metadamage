@@ -112,7 +112,6 @@ def fit_single_group_without_timeout(
 
     add_count_information(fit_result, group, data)
 
-    # mcmc_PMD, mcmc_null = fits_Bayesian.init_mcmcs(cfg)
     if mcmc_PMD is not None and mcmc_null is not None:
         fits_Bayesian.make_fits(fit_result, data, mcmc_PMD, mcmc_null)
 
@@ -126,6 +125,7 @@ def get_fit_single_group_with_timeout(timeout=60):
 
 def compute_fits_seriel(df_counts, cfg):
 
+    # initializez not MCMC if cfg.bayesian is False
     mcmc_PMD, mcmc_null = fits_Bayesian.init_mcmcs(cfg)
 
     groupby = df_counts.groupby("tax_id", sort=False, observed=True)
@@ -141,33 +141,33 @@ def compute_fits_seriel(df_counts, cfg):
 
     logger.info(f"Fit: Initializing fit in seriel.")
 
-    with progress:
-        task_fit = progress.add_task(
-            "task_status_fitting",
-            progress_type="status",
-            status="Fitting ",
-            name="Fits: ",
-            total=len(groupby),
-        )
+    task_fit = progress.add_task(
+        "task_status_fitting",
+        progress_type="status",
+        status="Fitting",
+        name="Fits: ",
+        total=len(groupby),
+    )
 
-        for tax_id, group in groupby:
-            # break
+    for tax_id, group in groupby:
+        # break
 
-            try:
-                fit_result = fit_single_group(group, cfg, mcmc_PMD, mcmc_null)
-                d_fit_results[tax_id] = fit_result
+        try:
+            fit_result = fit_single_group(group, cfg, mcmc_PMD, mcmc_null)
+            d_fit_results[tax_id] = fit_result
 
-            except TimeoutError:
-                logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
+        except TimeoutError:
+            logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
 
-            progress.advance(task_fit)
-            fit_single_group = fit_single_group_subsequent_fits
+        progress.advance(task_fit)
+        fit_single_group = fit_single_group_subsequent_fits
 
     return d_fit_results
 
 
 def worker(queue_in, queue_out, cfg):
 
+    # initializez not MCMC if cfg.bayesian is False
     mcmc_PMD, mcmc_null = fits_Bayesian.init_mcmcs(cfg)
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
@@ -210,26 +210,25 @@ def compute_fits_parallel_with_progressbar(df, cfg):
     the_pool = Pool(N_cores, worker, (queue_in, queue_out, cfg))
 
     d_fit_results = {}
-    with progress:
-        task_fit = progress.add_task(
-            "task_status_fitting",
-            progress_type="status",
-            status="Fitting ",
-            name="Fits: ",
-            total=N_groupby,
-        )
+    task_fit = progress.add_task(
+        "task_status_fitting",
+        progress_type="status",
+        status="Fitting ",
+        name="Fits: ",
+        total=N_groupby,
+    )
 
-        for tax_id, group in groupby:
-            queue_in.put((tax_id, group))
+    for tax_id, group in groupby:
+        queue_in.put((tax_id, group))
 
-        # Get and print results
-        for _ in range(N_groupby):
-            tax_id, fit_result = queue_out.get()
-            if fit_result is not TimeoutError:
-                d_fit_results[tax_id] = fit_result
-            else:
-                logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
-            progress.advance(task_fit)
+    # Get and print results
+    for _ in range(N_groupby):
+        tax_id, fit_result = queue_out.get()
+        if fit_result is not TimeoutError:
+            d_fit_results[tax_id] = fit_result
+        else:
+            logger.warning(f"Fit: Timeout at tax_id {tax_id}. Skipping for now")
+        progress.advance(task_fit)
 
     for _ in range(N_groupby):
         queue_in.put(None)

@@ -7,8 +7,13 @@ import logging
 
 # First Party
 from metadamage import counts, fits_Bayesian, fits_frequentist, io, utils
+from metadamage.progressbar import progress
+
+#%%
 
 logger = logging.getLogger(__name__)
+
+#%%
 
 
 def split(strng, sep, pos):
@@ -32,11 +37,15 @@ def read_LCA_file(filename_LCA, use_only_these_taxids=None, use_tqdm=False):
 
     with open(filename_LCA, "r") as f:
 
-        it = enumerate(f)
-        if use_tqdm:
-            it = tqdm(it, total=N_lines, desc="Reading LCA file")
+        task_LCA = progress.add_task(
+            "task_LCA",
+            progress_type="LCA",
+            status="LCA    ",
+            total=N_lines + 1,
+        )
 
-        for irow, row in it:
+        for irow, row in enumerate(f):
+            progress.advance(task_LCA)
 
             if irow == 0:
                 continue
@@ -61,7 +70,7 @@ def read_LCA_file(filename_LCA, use_only_these_taxids=None, use_tqdm=False):
             )
             d_combined[irow] = combined
 
-    return d_combined
+    return d_combined, task_LCA
 
 
 def compute_results(cfg, df_counts, df_fit_results):
@@ -87,11 +96,15 @@ def compute_results(cfg, df_counts, df_fit_results):
     use_only_these_taxids = None
     use_only_these_taxids = set(df_fit_results.tax_id.unique())
 
+    logger.info(f"Results: Loading LCA.")
+
+    d_combined, task_LCA = read_LCA_file(
+        cfg.filename_LCA,
+        use_only_these_taxids=use_only_these_taxids,
+    )
+
     df = pd.DataFrame.from_dict(
-        read_LCA_file(
-            cfg.filename_LCA,
-            use_only_these_taxids=use_only_these_taxids,
-        ),
+        d_combined,
         orient="index",
         columns=columns,
     ).astype(dtypes)
@@ -240,6 +253,7 @@ def compute_results(cfg, df_counts, df_fit_results):
 
     df_small = df_small.astype(dtypes_small)
 
+    progress.advance(task_LCA)
     return df, df_small
 
 
@@ -279,4 +293,4 @@ def get_results(cfg, df_counts, df_fit_results):
     parquet_results_small.save(df_results_small, metadata=cfg.to_dict())
     parquet_results_large.save(df_results_large, metadata=cfg.to_dict())
 
-    return df_fit_results
+    return df_results_large, df_results_small

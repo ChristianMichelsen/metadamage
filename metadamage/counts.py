@@ -357,6 +357,14 @@ def compute_counts_with_dask(cfg, use_processes=True):
 
 def compute_counts_from_bdamage(cfg):
 
+    task_bDamage = progress.add_task(
+        "task_loading_bDamage",
+        progress_type="bDamage",
+        status="bDamage",
+        total=1,
+        # start=False,
+    )
+
     filename = cfg.filename
 
     results = load_bdamage_file(filename)
@@ -389,6 +397,9 @@ def compute_counts_from_bdamage(cfg):
     df["shortname"] = cfg.shortname
     categories = ["tax_id", "strand", "shortname"]
     df2 = utils.downcast_dataframe(df, categories, fully_automatic=False)
+
+    progress.advance(task_bDamage)
+
     return df2
 
 
