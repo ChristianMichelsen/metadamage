@@ -65,6 +65,10 @@ def main(filenames, cfg):
 
             df_fit_results = fits.get_fits(df_counts, cfg)
 
+            # df_results_large, df_results_small = results.compute_results(
+            #     cfg, df_counts, df_fit_results
+            # )
+
             progress.refresh()
             progress.advance(task_id_overall)
             logger.debug("End of loop\n")
@@ -104,17 +108,17 @@ if utils.is_ipython():
     path = Path().cwd().parent
     os.chdir(path)
 
-    filenames = sorted(Path("./data/input/").rglob("ugly/*.txt"))
+    filenames = sorted(Path("./data/").rglob("input/*.bdamage.gz"))
     cfg.add_filenames(filenames)
 
-    filename = filenames[0]  # BPN19-AR
-    filename = filenames[1]  # EC-Ext-14-
-    filename = filenames[2]  # EC-Ext-A27
-    filename = filenames[3]  # KapK
-    filename = filenames[4]  # Lok-75
-    filename = filenames[5]  # SJArg-1
     filename = "./data/input/test.bdamage.gz"  # SJArg-1
+    filename = "./data/input/KapK-12-1-39-Ext-19-Lib-19-Index1.col.sorted.sam.gz.bdamage.gz"  # SJArg-1
     # filename = "data/input/n_sigma_test.txt"
+
+
+    cfg.add_filename(filename)
+    df_counts = counts.load_counts(cfg)
+    df_fit_results = fits.get_fits(df_counts, cfg)
 
     if False:
         # if True:
@@ -138,18 +142,18 @@ if utils.is_ipython():
     # x = x
 
     # First Party
-    from metadamage import dashboard
+    # from metadamage import dashboard
 
-    dashboard.utils.set_custom_theme()
+    # dashboard.utils.set_custom_theme()
 
     # reload(dashboard)
 
-    fit_results = dashboard.fit_results.FitResults(
-        folder=Path("./data/out/"),
-        # verbose=True,
-        # very_verbose=False,
-        use_memoization=False,
-    )
+    # fit_results = dashboard.fit_results.FitResults(
+    #     folder=Path("./data/out/"),
+    #     # verbose=True,
+    #     # very_verbose=False,
+    #     use_memoization=False,
+    # )
 
     # # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
     # df = fit_results.df_fit_results
@@ -158,8 +162,9 @@ if utils.is_ipython():
 
     # fit_results.customdata
 
-    cfg.add_filename(filename)
-    df_counts = counts.load_counts(cfg)
-    df_fit_results = fits.get_fits(df_counts, cfg)
+    # cfg.add_filename(filename)
+    # df_counts = counts.load_counts(cfg)
+    # df_fit_results = fits.get_fits(df_counts, cfg)
 
-    df_results_large, df_results = results.compute_results(cfg, df_counts, df_fit_results)
+    # df_results_large.to_csv('large.csv')
+    # df_results_small.to_csv('small.csv')

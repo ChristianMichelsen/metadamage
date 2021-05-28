@@ -111,9 +111,19 @@ class Config:
         return self.out_dir / "fit_results" / f"{self.shortname}.parquet"
 
     @property
+    def filename_results_small(self):
+        self._test_for_shortname("filename_results")
+        return self.out_dir / "results" / f"{self.shortname}__small.parquet"
+
+    @property
+    def filename_results_large(self):
+        self._test_for_shortname("filename_results")
+        return self.out_dir / "results" / f"{self.shortname}__large.parquet"
+
+    @property
     def filename_LCA(self):
         self._test_for_shortname("filename_LCA")
-        return Path(self.filename).parent / f"{self.shortname}.lca"
+        return self.filename.replace(".bdamage.gz", ".lca")
 
     def set_number_of_fits(self, df_counts):
         self.N_tax_ids = len(pd.unique(df_counts.tax_id))
