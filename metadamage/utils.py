@@ -68,6 +68,9 @@ class Config:
 
     def __post_init__(self):
         self._set_N_cores()
+        self.intermediate_dir = self.out_dir.parent / "intermediate"
+        if not self.intermediate_dir.exists():
+            self.intermediate_dir.mkdir(parents=True)
 
     def _set_N_cores(self):
         available_cores = cpu_count(logical=True)
@@ -103,22 +106,22 @@ class Config:
     @property
     def filename_counts(self):
         self._test_for_shortname("filename_counts")
-        return self.out_dir / "counts" / f"{self.shortname}.parquet"
+        return self.intermediate_dir / "counts" / f"{self.shortname}.parquet"
 
     @property
     def filename_fit_results(self):
         self._test_for_shortname("filename_fit_results")
-        return self.out_dir / "fit_results" / f"{self.shortname}.parquet"
+        return self.intermediate_dir / "fit_results" / f"{self.shortname}.parquet"
 
     @property
-    def filename_results_small(self):
+    def filename_results(self):
         self._test_for_shortname("filename_results")
-        return self.out_dir / "results" / f"{self.shortname}__small.parquet"
+        return self.out_dir / "results" / f"{self.shortname}.parquet"
 
     @property
-    def filename_results_large(self):
-        self._test_for_shortname("filename_results")
-        return self.out_dir / "results" / f"{self.shortname}__large.parquet"
+    def filename_results_LCA(self):
+        self._test_for_shortname("filename_results_LCA")
+        return self.out_dir / "LCA" / f"{self.shortname}.parquet"
 
     @property
     def filename_LCA(self):

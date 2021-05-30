@@ -121,7 +121,7 @@ def cli_fit(
 
 @cli_app.command("dashboard")
 def cli_dashboard(
-    dir: Path = typer.Argument(out_dir_default),
+    results_dir: Path = typer.Argument(out_dir_default / "results"),
     debug: bool = typer.Option(False, "--debug"),
     dashboard_port: int = 8050,
     dashboard_host: str = "0.0.0.0",
@@ -151,16 +151,17 @@ def cli_dashboard(
     # First Party
     from metadamage import dashboard
 
-    counts_dir = dir / "counts/"
-    if not (counts_dir.exists() and counts_dir.is_dir()):
+    # counts_dir = dir / "counts/"
+    # if not (counts_dir.exists() and counts_dir.is_dir()):
+    if not results_dir.exists():
         typer.echo("Please choose a valid directory")
         raise typer.Abort()
 
-    verbose = True if debug else False
+    # verbose = True if debug else False
     if not debug:
         dashboard.utils.open_browser_in_background()
 
-    dashboard_app = dashboard.app.get_app(dir, verbose=verbose)
+    dashboard_app = dashboard.app.get_app(results_dir)
 
     dashboard_app.run_server(
         debug=debug,

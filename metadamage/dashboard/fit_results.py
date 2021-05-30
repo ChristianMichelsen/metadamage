@@ -20,16 +20,16 @@ import plotly.express as px
 from metadamage import dashboard, io
 
 
-cachedir = "memoization"
-memory = Memory(cachedir, verbose=0)
+# cachedir = "memoization"
+# memory = Memory(cachedir, verbose=0)
 
 # @memory.cache
 
 
-@memory.cache
-def load_parquet_file_memoized(pathname, date_string):
-    df = io.Parquet(pathname).load()
-    return df
+# @memory.cache
+# def load_parquet_file_memoized(pathname, date_string):
+#     df = io.Parquet(pathname).load()
+#     return df
 
 
 #%%
@@ -65,13 +65,13 @@ class FitResults:
         return io.Parquet(self.folder / "counts").load(shortname, columns=columns)
 
     def _load_parquet_file(self, key):
-        if self.use_memoization:
-            date_string = datetime.now().strftime("%Y-%d-%m")
-            df = load_parquet_file_memoized(self.folder / key, date_string)
-            return df
-        else:
-            df = io.Parquet(self.folder / key).load()
-            return df
+        # if self.use_memoization:
+        #     date_string = datetime.now().strftime("%Y-%d-%m")
+        #     df = load_parquet_file_memoized(self.folder / key, date_string)
+        #     return df
+        # else:
+        df = io.Parquet(self.folder / key).load()
+        return df
 
     def _load_df_fit_results(self):
         df = self._load_parquet_file("fit_results")

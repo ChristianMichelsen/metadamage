@@ -141,7 +141,8 @@ def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
     no_min = "Min"
     no_max = "Max"
 
-    df = fit_results.df_fit_results
+    # df = fit_results.df_fit_results
+    df = fit_results.df_results
 
     if is_log_transform_column(column):
         # if column in dashboard.utils.log_transform_columns:

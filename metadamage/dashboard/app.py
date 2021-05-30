@@ -14,16 +14,17 @@ from dash_extensions.snippets import send_data_frame
 import dash_html_components as html
 
 
-def get_app(out_dir_default=Path("./data/out/"), verbose=True):
+def get_app(results_dir=Path("./data/out/results")):
 
     # First Party
-    from metadamage import dashboard, taxonomy
+    from metadamage import dashboard, taxonomy, results
     from metadamage.utils import human_format
 
-    fit_results = dashboard.fit_results.FitResults(
-        folder=out_dir_default,
-        use_memoization=True,
-    )
+    # fit_results = dashboard.fit_results.FitResults(
+    #     folder=results_dir,
+    # )
+
+    fit_results = results.Results(results_dir=results_dir)
 
     #%%
 
@@ -517,7 +518,7 @@ def get_app(out_dir_default=Path("./data/out/"), verbose=True):
             df_fit_results_filtered = fit_results.filter(d_filter)
 
             return send_data_frame(
-                df_fit_results_filtered.loc[:, :"shortname"].to_csv,
+                df_fit_results_filtered.loc[:, :"LCA"].to_csv,
                 "filtered_results.csv",
                 index=False,
             )

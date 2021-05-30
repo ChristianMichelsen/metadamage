@@ -68,7 +68,7 @@ def main(filenames, cfg):
 
             df_fit_results = fits.get_fits(df_counts, cfg)
 
-            df_results_large, df_results_small = results.get_results(
+            df_results, df_results_LCA = results.get_results(
                 cfg,
                 df_counts,
                 df_fit_results,
@@ -79,6 +79,9 @@ def main(filenames, cfg):
     # if all files were bad, raise error
     if bad_files == N_files:
         raise Exception("All files were bad!")
+
+    result = results.Results(results_dir=Path("./data/out/results"))
+    print(result.df_results)
 
 
 if utils.is_ipython():
@@ -122,6 +125,12 @@ if utils.is_ipython():
     df_counts = counts.load_counts(cfg)
     df_fit_results = fits.get_fits(df_counts, cfg)
 
+    df_results, df_results_LCA = results.get_results(
+        cfg,
+        df_counts,
+        df_fit_results,
+    )
+
     if False:
         # if True:
         main(filenames, cfg)
@@ -143,30 +152,27 @@ if utils.is_ipython():
 
     # x = x
 
-    # First Party
+    # # First Party
     # from metadamage import dashboard
 
     # dashboard.utils.set_custom_theme()
 
-    # reload(dashboard)
+    # # reload(dashboard)
 
-    # fit_results = dashboard.fit_results.FitResults(
-    #     folder=Path("./data/out/"),
-    #     # verbose=True,
-    #     # very_verbose=False,
-    #     use_memoization=False,
-    # )
+    # x = x
 
-    # # fit_results.set_marker_size(marker_transformation="log10", marker_size_max=8)
-    # df = fit_results.df_fit_results
+    # # reload(results)
+    result = results.Results(results_dir=Path("./data/out/results"))
+    result.df_results
 
-    # df.query("shortname in ['KapK-12-1-24-Ext-1-Lib-1-Index2', 'KapK-12-1-39-Ext-19-Lib-19-Index1', 'Lok-75-Sample-1-Ext-58-Lib-58-Index1']")
 
-    # fit_results.customdata
 
-    # cfg.add_filename(filename)
-    # df_counts = counts.load_counts(cfg)
-    # df_fit_results = fits.get_fits(df_counts, cfg)
+    result.load_df_counts_shortname("EC-Ext-14-Lib-14-Index1")
 
-    # df_results_large.to_csv('large.csv')
-    # df_results_small.to_csv('small.csv')
+
+
+    columns = list(result.df_results.columns)
+
+    placeholder = "_XXX_"
+
+    contains_Bayesian = any(["Bayesian" in column for column in columns])
