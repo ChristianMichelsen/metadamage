@@ -213,7 +213,7 @@ def compute_fits_parallel_with_progressbar(df, cfg):
     task_fit = progress.add_task(
         "task_status_fitting",
         progress_type="status",
-        status="Fitting ",
+        status="Fitting",
         name="Fits: ",
         total=N_groupby,
     )

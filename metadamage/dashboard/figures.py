@@ -128,14 +128,16 @@ def plot_group(fit_results, group, fit=None, forward_reverse=""):
 
     custom_data_columns = [
         "direction",
+        "f",
         "k",
         "N",
     ]
 
     hovertemplate = (
         "<b>%{customdata[0]}</b><br>"
-        "k: %{customdata[1]:8d} <br>"
-        "N: %{customdata[2]:8d} <br>"
+        "f: %{customdata[1]:8.3f} <br>"
+        "k: %{customdata[2]:8d} <br>"
+        "N: %{customdata[3]:8d} <br>"
         "<extra></extra>"
     )
 
@@ -268,6 +270,7 @@ def update_raw_count_plots(fit_results, click_data, forward_reverse):
             fit_results,
             click_data,
         )
+
         group = fit_results.get_single_count_group(
             shortname,
             tax_id,

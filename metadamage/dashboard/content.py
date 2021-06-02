@@ -170,7 +170,7 @@ def get_content_main(start_configuration):
     marker_transformation_variable = dcc.Dropdown(
         id="marker_transformation_variable",
         options=[{"label": col, "value": col} for col in columns_no_log],
-        value="N_alignments",
+        value="N_reads",
         searchable=True,
         clearable=False,
     )

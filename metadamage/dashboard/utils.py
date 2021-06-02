@@ -48,7 +48,7 @@ def set_custom_theme():
 
 
 def is_log_transform_column(column):
-    log_transform_columns = ["N_alignments", "k_sum_", "N_sum_"]
+    log_transform_columns = ["N_reads", "N_alignments", "k_sum_", "N_sum_"]
     return any([log_col in column for log_col in log_transform_columns])
 
 
@@ -136,7 +136,7 @@ def _insert_mark_values(mark_values):
     return mark_labels
 
 
-def get_range_slider_keywords(fit_results, column="N_alignments", N_steps=100):
+def get_range_slider_keywords(fit_results, column="N_reads", N_steps=100):
 
     no_min = "Min"
     no_max = "Max"
@@ -575,6 +575,7 @@ def get_d_columns_latex():
         "A_std": r"$\sigma_A$",
         "c_std": r"$\sigma_c$",
         #
+        "N_reads": r"$N_\text{reads}$",
         "N_alignments": r"$N_\text{alignments}$",
         "k_sum_total": r"$\sum_i k_i$",
         "N_sum_total": r"$\sum_i N_i$",
@@ -582,6 +583,7 @@ def get_d_columns_latex():
         #
         "log_LR": r"$\log_{10}(1+\lambda_\text{LR})$",
         "log_phi": r"$\log_{10}(1+\phi)$",
+        "log_N_reads": r"$\log_{10}(1+N_\text{reads})$",
         "log_N_alignments": r"$\log_{10}(1+N_\text{alignments})$",
         "log_k_sum_total": r"$\log_{10}(1+\sum_i k_i)$",
         "log_N_sum_total": r"$\log_{10}(1+\sum_i N_i)$",

@@ -68,7 +68,7 @@ class Config:
 
     def __post_init__(self):
         self._set_N_cores()
-        self.intermediate_dir = self.out_dir.parent / "intermediate"
+        self.intermediate_dir = self.out_dir.parent / ".intermediate"
         if not self.intermediate_dir.exists():
             self.intermediate_dir.mkdir(parents=True)
 
@@ -454,51 +454,51 @@ def is_macbook():
 #%%
 
 
-def get_sorted_and_cutted_df(df, df_results, cfg):
+# def get_sorted_and_cutted_df(df, df_results, cfg):
 
-    min_damage = cfg.min_damage if cfg.min_damage else -np.inf
-    min_sigma = cfg.min_sigma if cfg.min_sigma else -np.inf
-    min_alignments = cfg.min_alignments if cfg.min_alignments else -np.inf
+#     min_damage = cfg.min_damage if cfg.min_damage else -np.inf
+#     min_sigma = cfg.min_sigma if cfg.min_sigma else -np.inf
+#     min_alignments = cfg.min_alignments if cfg.min_alignments else -np.inf
 
-    query = (
-        f"D_max >= {min_damage} "
-        + f"and n_sigma >= {min_sigma} "
-        + f"and N_alignments >= {min_alignments}"
-    )
+#     query = (
+#         f"D_max >= {min_damage} "
+#         + f"and n_sigma >= {min_sigma} "
+#         + f"and N_alignments >= {min_alignments}"
+#     )
 
-    # cut away fits and TaxIDs which does not satisfy cut criteria
-    df_results_cutted = df_results.query(query)
-    if len(df_results_cutted) == 0:
-        logger.warning(
-            f"{cfg.shortname} did not have any fits that matched the requirements. "
-            f"Skipping for now"
-        )
-        return None
+#     # cut away fits and TaxIDs which does not satisfy cut criteria
+#     df_results_cutted = df_results.query(query)
+#     if len(df_results_cutted) == 0:
+#         logger.warning(
+#             f"{cfg.shortname} did not have any fits that matched the requirements. "
+#             f"Skipping for now"
+#         )
+#         return None
 
-    d_sort_by = {
-        "alignments": "N_alignments",
-        "damage": "D_max",
-        "sigma": "n_sigma",
-    }
-    sort_by = d_sort_by[cfg.sort_by.lower()]
+#     d_sort_by = {
+#         "alignments": "N_alignments",
+#         "damage": "D_max",
+#         "sigma": "n_sigma",
+#     }
+#     sort_by = d_sort_by[cfg.sort_by.lower()]
 
-    # sort the TaxIDs
-    df_results_cutted_ordered = df_results_cutted.sort_values(sort_by, ascending=False)
+#     # sort the TaxIDs
+#     df_results_cutted_ordered = df_results_cutted.sort_values(sort_by, ascending=False)
 
-    tax_ids = df_results_cutted_ordered.index
+#     tax_ids = df_results_cutted_ordered.index
 
-    # get the number_of_plots in the top
-    tax_ids_top = tax_ids[: cfg.number_of_plots]
+#     # get the number_of_plots in the top
+#     tax_ids_top = tax_ids[: cfg.number_of_plots]
 
-    # the actual dataframe, unrelated to the fits
-    df_plot = df.query("tax_id in @tax_ids_top")
-    # the actual dataframe, unrelated to the fits, now sorted
-    # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
-    df_plot_sorted = pd.concat(
-        [df_plot.query(f"tax_id == {tax_id}") for tax_id in tax_ids_top]
-    )
+#     # the actual dataframe, unrelated to the fits
+#     df_plot = df.query("tax_id in @tax_ids_top")
+#     # the actual dataframe, unrelated to the fits, now sorted
+#     # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
+#     df_plot_sorted = pd.concat(
+#         [df_plot.query(f"tax_id == {tax_id}") for tax_id in tax_ids_top]
+#     )
 
-    return df_plot_sorted
+#     return df_plot_sorted
 
 
 #%%

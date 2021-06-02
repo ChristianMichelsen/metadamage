@@ -20,10 +20,6 @@ def get_app(results_dir=Path("./data/out/results")):
     from metadamage import dashboard, taxonomy, results
     from metadamage.utils import human_format
 
-    # fit_results = dashboard.fit_results.FitResults(
-    #     folder=results_dir,
-    # )
-
     fit_results = results.Results(results_dir=results_dir)
 
     #%%
@@ -53,7 +49,7 @@ def get_app(results_dir=Path("./data/out/results")):
 
     # (1) No sidebars, (2) Only left filter sidebar,
     # (3) Only right plot sidebar, (4) Both sidebars
-    start_configuration_id = 1
+    start_configuration_id = 3
 
     configurations = dashboard.utils.get_configurations(
         sidebar_left_width=30,

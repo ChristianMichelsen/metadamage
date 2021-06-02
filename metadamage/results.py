@@ -76,24 +76,6 @@ def read_LCA_file(filename_LCA, use_only_these_taxids=None, use_tqdm=False):
 
 def compute_results(cfg, df_counts, df_fit_results):
 
-    columns = [
-        "read_id",
-        "tax_id",
-        "tax_name",
-        "tax_rank",
-        "seq_length_read",
-        "alignments_read",
-        "GC_read",
-        "LCA",
-    ]
-
-    dtypes = {
-        "tax_id": "uint32",
-        "seq_length_read": "uint32",
-        "alignments_read": "uint64",
-        "GC_read": "float",
-    }
-
     use_only_these_taxids = None
     use_only_these_taxids = set(df_fit_results.tax_id.unique())
 
@@ -104,11 +86,29 @@ def compute_results(cfg, df_counts, df_fit_results):
         use_only_these_taxids=use_only_these_taxids,
     )
 
+    columns_lca = [
+        "read_id",
+        "tax_id",
+        "tax_name",
+        "tax_rank",
+        "seq_length_read",
+        "alignments_read",
+        "GC_read",
+        "LCA",
+    ]
+
+    dtypes_lca = {
+        "tax_id": "uint32",
+        "seq_length_read": "uint32",
+        "alignments_read": "uint64",
+        "GC_read": "float",
+    }
+
     df_LCA = pd.DataFrame.from_dict(
         d_combined,
         orient="index",
-        columns=columns,
-    ).astype(dtypes)
+        columns=columns_lca,
+    ).astype(dtypes_lca)
 
     df_grouped = df_LCA.groupby("tax_id")
 
@@ -148,30 +148,57 @@ def compute_results(cfg, df_counts, df_fit_results):
     df_LCA = pd.merge(df_LCA, df_fit_results, on=["tax_id"])
 
     max_pos = df_counts.position.max()
-    CT_cols = [f"CT+{i}" for i in range(1, max_pos + 1)]
-    GA_cols = [f"GA-{i}" for i in range(1, max_pos + 1)]
 
-    # merge the CT transitions into the dataframe
-    df_LCA = pd.merge(
-        df_LCA,
-        (
-            df_counts.query("position > 0")
-            .pivot(index="tax_id", columns="position", values="f_CT")
-            .rename(columns={i + 1: col for i, col in enumerate(CT_cols)})
-        ),
-        on=["tax_id"],
-    )
+    # base_columns = set()
+    base_columns = []
 
-    df_LCA = pd.merge(
-        df_LCA,
-        (
-            df_counts.query("position < 0")
-            .pivot(index="tax_id", columns="position", values="f_GA")
-            .sort_index(axis=1, ascending=False)
-            .rename(columns={-(i + 1): col for i, col in enumerate(GA_cols)})
-        ),
-        on=["tax_id"],
-    )
+    for cols in [("C", "CT"), ("G", "GA")]:
+
+        for col in cols:
+
+            if col[0] == "C":
+                col_names = [f"{col}+{i}" for i in range(1, max_pos + 1)]
+                query = "position > 0"
+                columns = {i + 1: col for i, col in enumerate(col_names)}
+                ascending = True
+            elif col[0] == "G":
+                col_names = [f"{col}-{i}" for i in range(1, max_pos + 1)]
+                query = "position < 0"
+                columns = {-(i + 1): col for i, col in enumerate(col_names)}
+                ascending = False
+            else:
+                raise AssertionError(f"col[0] has to be either C og G")
+
+            # merge the CT transitions into the dataframe
+            df_LCA = pd.merge(
+                df_LCA,
+                (
+                    df_counts.query(query)
+                    .pivot(index="tax_id", columns="position", values=col)
+                    .sort_index(axis=1, ascending=ascending)
+                    .rename(columns=columns)
+                ),
+                on=["tax_id"],
+            )
+
+            # base_columns.update(col_names)
+            base_columns += col_names
+
+        for pos in range(1, max_pos + 1):
+            if cols[0] == "C":
+                f_col = f"f_CT+{pos}"
+                k_col = f"CT+{pos}"
+                N_col = f"C+{pos}"
+            elif cols[0] == "G":
+                f_col = f"f_GA-{pos}"
+                k_col = f"GA-{pos}"
+                N_col = f"G-{pos}"
+            else:
+                raise AssertionError(f"cols[0] has to be either C og G")
+
+            df_LCA.loc[:, f_col] = df_LCA[k_col] / df_LCA[N_col]
+            # base_columns.add(f_col)
+            base_columns += [f_col]
 
     df_LCA["shortname"] = cfg.shortname
 
@@ -221,7 +248,10 @@ def compute_results(cfg, df_counts, df_fit_results):
         "gc_75%",
         "gc_99%",
     ]
-    columns_order += CT_cols + GA_cols + ["LCA"]
+
+    base_cols = [col for col in df_LCA.columns if col]
+
+    columns_order += base_columns + ["LCA"]
     df_LCA = df_LCA[columns_order]
 
     df = make_df_from_LCA(df_LCA)
@@ -316,6 +346,42 @@ def clip_df(df, column):
     if column in df.columns:
         df["_" + column] = df[column]  # save original data _column
         df[column] = np.clip(df[column], a_min=0, a_max=None)
+
+
+def pd_wide_to_long_forward_reverse(df_wide, stub_names, sep, direction):
+    df_long = pd.wide_to_long(
+        df_wide,
+        stubnames=stub_names,
+        i="tax_id",
+        j="z",
+        sep=sep,
+    )[stub_names]
+    df_long.columns = ["k", "N", "f"]
+    df_long["direction"] = direction
+    return df_long.reset_index()
+
+
+def wide_to_long_df(df_wide):
+
+    df_long_forward = pd_wide_to_long_forward_reverse(
+        df_wide,
+        stub_names=["CT", "C", "f_CT"],
+        sep="+",
+        direction="Forward",
+    )
+
+    df_long_reverse = pd_wide_to_long_forward_reverse(
+        df_wide,
+        stub_names=["GA", "G", "f_GA"],
+        sep="-",
+        direction="Reverse",
+    )
+
+    df_long = pd.concat([df_long_forward, df_long_reverse])
+
+    df_long.loc[:, ["k", "N"]] = df_long.loc[:, ["k", "N"]].astype(int)
+
+    return df_long
 
 
 class Results:
@@ -589,25 +655,10 @@ class Results:
         except Exception as e:
             raise e
 
-    def load_df_counts_shortname(self, shortname, columns=None):
-        intermediate_dir = self.results_dir.parent.parent / "intermediate" / "counts"
-        return io.Parquet(intermediate_dir).load(shortname, columns=columns)
-
     def get_single_count_group(self, shortname, tax_id, forward_reverse=""):
-        # query = f"shortname == '{shortname}' & tax_id == {tax_id}"
-        # group = self.df_results.query(query)
-        df_counts_group = self.load_df_counts_shortname(shortname)
-        group = df_counts_group.query(f"tax_id == {tax_id}").copy()
-        reverse = group.position < 0
-        group.loc[:, "z"] = np.abs(group["position"])
-        group.loc[:, "f"] = group["f_CT"]
-        group.loc[reverse, "f"] = group.loc[reverse, "f_GA"]
-        group.loc[:, "direction"] = "Forward"
-        group.loc[reverse, "direction"] = "Reverse"
-        group.loc[:, "k"] = group["CT"]
-        group.loc[reverse, "k"] = group.loc[reverse, "GA"]
-        group.loc[:, "N"] = group["C"]
-        group.loc[reverse, "N"] = group.loc[reverse, "G"]
+        query = f"shortname == '{shortname}' & tax_id == {tax_id}"
+        group_wide = self.df_results.query(query)
+        group = wide_to_long_df(group_wide)
 
         if forward_reverse.lower() == "forward":
             return group.query(f"direction=='Forward'")

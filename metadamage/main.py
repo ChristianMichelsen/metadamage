@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 def main(filenames, cfg):
 
-    # utils.initial_print(filenames, cfg)
+    utils.initial_print(filenames, cfg)
 
     N_files = len(filenames)
     bad_files = 0
@@ -121,9 +121,13 @@ if utils.is_ipython():
     filename = "./data/input/KapK-12-1-39-Ext-19-Lib-19-Index1.col.sorted.sam.gz.bdamage.gz"  # SJArg-1
     filename = filenames[0]
 
+    x = x
+
     cfg.add_filename(filename)
     df_counts = counts.load_counts(cfg)
     df_fit_results = fits.get_fits(df_counts, cfg)
+
+    x = x
 
     df_results, df_results_LCA = results.get_results(
         cfg,
@@ -162,17 +166,20 @@ if utils.is_ipython():
     # x = x
 
     # # reload(results)
-    result = results.Results(results_dir=Path("./data/out/results"))
-    result.df_results
+    fit_results = results.Results(results_dir=Path("./data/out/results"))
+    fit_results.df_results
 
+    shortname = "EC-Ext-14-Lib-14-Index1"
+    tax_id = 9606
 
+    group = fit_results.get_single_count_group(
+        shortname,
+        tax_id,
+        forward_reverse="",
+    )
 
-    result.load_df_counts_shortname("EC-Ext-14-Lib-14-Index1")
-
-
-
-    columns = list(result.df_results.columns)
-
-    placeholder = "_XXX_"
-
-    contains_Bayesian = any(["Bayesian" in column for column in columns])
+    fit = fit_results.get_single_fit_prediction(
+        shortname,
+        tax_id,
+        forward_reverse="",
+    )
