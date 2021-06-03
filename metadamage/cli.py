@@ -88,8 +88,10 @@ def cli_fit(
     """
 
     # First Party
-    from metadamage import utils
-    from metadamage.main import main
+    import metadamage as meta
+
+    # from metadamage import utils
+    # from metadamage.main import main
 
     d_cfg = {
         "out_dir": out_dir,
@@ -98,7 +100,7 @@ def cli_fit(
         "max_cores": max_cores,
         # "max_position": max_position,
         #
-        "min_alignments": min_alignments,
+        # "min_alignments": min_alignments,
         "min_k_sum": min_k_sum,
         "min_N_at_each_pos": min_N_at_each_pos,
         #
@@ -114,9 +116,12 @@ def cli_fit(
         "version": "0.0.0",
     }
 
-    cfg = utils.Config(**d_cfg)
+    cfg = meta.utils.Config(**d_cfg)
+
+    filenames = meta.utils.remove_bad_files(filenames)
+
     cfg.add_filenames(filenames)
-    main(filenames, cfg)
+    meta.main.main(cfg, filenames)
 
 
 @cli_app.command("dashboard")

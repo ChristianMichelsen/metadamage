@@ -142,7 +142,7 @@ class HDF5:
 #     #     all_df.append(df_tmp)
 
 #     all_df = IO_HDF5().load_multiple_keys(filename=filename_hdf5, keys=keys_hdf5)
-#     df_counts1 = pd.concat(all_df, axis="index", ignore_index=True)
+#     df_mismatches1 = pd.concat(all_df, axis="index", ignore_index=True)
 
 #     def concatenate(dfs, **kwargs):
 #         """Concatenate while preserving categorical columns.
@@ -162,30 +162,30 @@ class HDF5:
 #                 df[col] = pd.Categorical(df[col].values, categories=uc.categories)
 #         return pd.concat(dfs, **kwargs)
 
-#     df_counts2 = concatenate(all_df, axis="index", ignore_index=True)
+#     df_mismatches2 = concatenate(all_df, axis="index", ignore_index=True)
 
-#     df_counts1.memory_usage(deep=True) / 1e6
-#     df_counts1.memory_usage(deep=True).sum() / 1e6
-#     df_counts2.memory_usage(deep=True) / 1e6
-#     df_counts2.memory_usage(deep=True).sum() / 1e6
+#     df_mismatches1.memory_usage(deep=True) / 1e6
+#     df_mismatches1.memory_usage(deep=True).sum() / 1e6
+#     df_mismatches2.memory_usage(deep=True) / 1e6
+#     df_mismatches2.memory_usage(deep=True).sum() / 1e6
 
 #     IO_HDF5().save(
-#         df=df_counts2,
+#         df=df_mismatches2,
 #         filename=filename_hdf5,
 #         key="counts_combined",
 #     )
 
-#     df_counts_hdf5, metadata_hdf5 = IO_HDF5().load(
+#     df_mismatches_hdf5, metadata_hdf5 = IO_HDF5().load(
 #         filename=filename_hdf5, key="counts_combined"
 #     )
 
-#     df_counts_hdf5.memory_usage(deep=True) / 1e6
-#     df_counts_hdf5.memory_usage(deep=True).sum() / 1e6
+#     df_mismatches_hdf5.memory_usage(deep=True) / 1e6
+#     df_mismatches_hdf5.memory_usage(deep=True).sum() / 1e6
 
-#     df_counts_parquet = IO_Parquet().load("./data/out/parquet_test")
-#     df_counts_parquet.memory_usage(deep=True) / 1e6
-#     df_counts_parquet.memory_usage(deep=True).sum() / 1e6
-#     df_counts_parquet.dtypes
+#     df_mismatches_parquet = IO_Parquet().load("./data/out/parquet_test")
+#     df_mismatches_parquet.memory_usage(deep=True) / 1e6
+#     df_mismatches_parquet.memory_usage(deep=True).sum() / 1e6
+#     df_mismatches_parquet.dtypes
 
 #     # %timeit IO_HDF5().load(filename=filename_hdf5, key="counts_combined")
 #     # %timeit IO_Parquet().load("./data/out/parquet_test")
@@ -212,7 +212,7 @@ class HDF5:
 
 #     pd.read_parquet(filename).dtypes
 
-#     df_counts_parquet, metadata_parquet = IO_Parquet().load(
+#     df_mismatches_parquet, metadata_parquet = IO_Parquet().load(
 #         "./data/out/parquet_test/Lok-75-Sample-4b-Ext-A26-Lib26A-Index1.parquet"
 #     )
 
@@ -225,10 +225,10 @@ class HDF5:
 #         metadata=cfg.to_dict(),
 #     )
 
-#     df_counts_parquet, metadata_parquet = IO_Parquet().load(
+#     df_mismatches_parquet, metadata_parquet = IO_Parquet().load(
 #         "./data/out/KapK-198A-Ext-55-Lib-55-Index1.parquet"
 #     )
-#     df_counts_parquet.dtypes
+#     df_mismatches_parquet.dtypes
 
 #     # %timeit IO_HDF5().load(filename=filename_hdf5, key="counts_combined")
 
@@ -245,7 +245,7 @@ class HDF5:
 #     ).dtypes
 
 #     filename_parquet = "./data/out/parquet_test.parquet"
-#     df_counts, metadata = IO_Parquet().load(filename_parquet, shortname=None)
+#     df_mismatches, metadata = IO_Parquet().load(filename_parquet, shortname=None)
 
 #     df3 = pd.read_parquet(
 #         path="./data/out/parquet_test.parquet/",
@@ -260,7 +260,7 @@ class HDF5:
 
 #     IO_Parquet().save(
 #         filename="./data/out/test",
-#         df=df_counts_hdf5,
+#         df=df_mismatches_hdf5,
 #         metadata=cfg.to_dict(),
 #         # partition_cols="shortname",
 #     )
@@ -269,7 +269,7 @@ class HDF5:
 #         print(x)
 #         return "-".join(x) + "1.parquet"
 
-#     table = pa.Table.from_pandas(df_counts_hdf5)
+#     table = pa.Table.from_pandas(df_mismatches_hdf5)
 #     table2 = IO_Parquet()._update_table_metadata(table, metadata=cfg.to_dict())
 #     pq.write_to_dataset(
 #         table2,

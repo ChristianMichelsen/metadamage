@@ -16,8 +16,7 @@ import plotly.graph_objects as go
 import plotly.io as pio
 
 # First Party
-from metadamage import taxonomy
-from metadamage.utils import human_format
+import metadamage as meta
 
 
 def set_custom_theme():
@@ -132,7 +131,7 @@ def _insert_mark_values(mark_values):
         # close enough to an int for my use case
         if abs(mark_val - round(mark_val)) < 1e-3:
             mark_val = int(mark_val)
-        mark_labels[mark_val] = human_format(mark_val)
+        mark_labels[mark_val] = meta.utils.human_format(mark_val)
     return mark_labels
 
 
@@ -164,7 +163,7 @@ def get_range_slider_keywords(fit_results, column="N_reads", N_steps=100):
                 [marks_steps[0]] + [x for x in marks_steps[1:-1:2]] + [marks_steps[-1]]
             )
 
-        f = lambda x: human_format(log_transform_slider(x))
+        f = lambda x: meta.utils.human_format(log_transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
         marks[marks_steps[0]] = {"label": no_min, "style": {"color": "#a3ada9"}}
@@ -274,7 +273,7 @@ def apply_tax_id_descendants_filter(d_filter, tax_name, sidebar_left_tax_id_subs
     if tax_name is None:
         return None
 
-    tax_ids = taxonomy.extract_descendant_tax_ids(
+    tax_ids = meta.taxonomy.extract_descendant_tax_ids(
         tax_name,
         include_subspecies=include_subspecies(sidebar_left_tax_id_subspecies),
     )
@@ -556,7 +555,7 @@ def get_graph_kwargs_no_buttons():
 
 def get_d_columns_latex():
     d_columns_latex = {
-        "LR": r"$\lambda_\text{LR}$",
+        "lambda_LR": r"$\lambda_\text{LR}$",
         "D_max": r"$D_\text{max}$",
         "q": r"$q$",
         "phi": r"$\phi$",
@@ -581,14 +580,14 @@ def get_d_columns_latex():
         "N_sum_total": r"$\sum_i N_i$",
         "N_min": r"$\text{min} N_i$",
         #
-        "log_LR": r"$\log_{10}(1+\lambda_\text{LR})$",
+        "log_lambda_LR": r"$\log_{10}(1+\lambda_\text{LR})$",
         "log_phi": r"$\log_{10}(1+\phi)$",
         "log_N_reads": r"$\log_{10}(1+N_\text{reads})$",
         "log_N_alignments": r"$\log_{10}(1+N_\text{alignments})$",
         "log_k_sum_total": r"$\log_{10}(1+\sum_i k_i)$",
         "log_N_sum_total": r"$\log_{10}(1+\sum_i N_i)$",
         #
-        "forward_LR": r"$ \lambda_\text{LR} \,\, \text{(forward)}$",
+        "forward_lambda_LR": r"$ \lambda_\text{LR} \,\, \text{(forward)}$",
         "forward_D_max": r"$ D\text{max} \,\, \text{(forward)}$",
         "forward_q": r"$ q \,\, \text{(forward)}$",
         "forward_phi": r"$ \phi \,\, \text{(forward)}$",
@@ -608,7 +607,7 @@ def get_d_columns_latex():
         "N_z1_forward": r"$N_{z=1} \,\, \text{(forward)}$",
         "N_sum_forward": r"$\sum_i N_i \,\, \text{(forward)}$",
         #
-        "reverse_LR": r"$ \lambda_\text{LR} \,\, \text{(reverse)}$",
+        "reverse_lambda_LR": r"$ \lambda_\text{LR} \,\, \text{(reverse)}$",
         "reverse_D_max": r"$ D\text{max} \,\, \text{(reverse)}$",
         "reverse_q": r"$ q \,\, \text{(reverse)}$",
         "reverse_phi": r"$ \phi \,\, \text{(reverse)}$",

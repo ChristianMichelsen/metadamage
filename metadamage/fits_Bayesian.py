@@ -16,12 +16,12 @@ from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import fits_utils
+from metadamage import fit_utils
 
 
 #%%
 
-priors = fits_utils.get_priors()
+priors = fit_utils.get_priors()
 q_prior = priors["q"]  # mean = 0.2, concentration = 5
 A_prior = priors["A"]  # mean = 0.2, concentration = 5
 c_prior = priors["c"]  # mean = 0.1, concentration = 10

@@ -12,12 +12,12 @@ from iminuit import Minuit
 from numba import njit
 
 # First Party
-from metadamage import fits_utils
+from metadamage import fit_utils
 
 
 #%%
 
-priors = fits_utils.get_priors()
+priors = fit_utils.get_priors()
 q_prior = priors["q"]  # mean = 0.2, concentration = 5
 A_prior = priors["A"]  # mean = 0.2, concentration = 5
 c_prior = priors["c"]  # mean = 0.1, concentration = 10
@@ -35,16 +35,16 @@ def log_likelihood_PMD(q, A, c, phi, z, k, N):
     Dz = A * (1 - q) ** (np.abs(z) - 1) + c
     alpha = Dz * phi
     beta = (1 - Dz) * phi
-    return -fits_utils.log_betabinom_PMD(k=k, N=N, alpha=alpha, beta=beta).sum()
+    return -fit_utils.log_betabinom_PMD(k=k, N=N, alpha=alpha, beta=beta).sum()
     # return -sp_betabinom.logpmf(k=k, n=n, a=alpha, b=beta).sum()
 
 
 @njit
 def log_prior_PMD(q, A, c, phi):
-    lp = fits_utils.log_beta(q, *q_prior)
-    lp += fits_utils.log_beta(A, *A_prior)
-    lp += fits_utils.log_beta(c, *c_prior)
-    lp += fits_utils.log_exponential(phi, *phi_prior)
+    lp = fit_utils.log_beta(q, *q_prior)
+    lp += fit_utils.log_beta(A, *A_prior)
+    lp += fit_utils.log_beta(c, *c_prior)
+    lp += fit_utils.log_exponential(phi, *phi_prior)
     return -lp
 
 
@@ -146,7 +146,7 @@ class FrequentistPMD:
         if not self.m.valid:
             self.i = 0
             while True:
-                p0 = fits_utils.sample_from_param_grid(self.param_grid)
+                p0 = fit_utils.sample_from_param_grid(self.param_grid)
                 for key, val in p0.items():
                     self.m.values[key] = val
                 self.m.migrad()
@@ -244,7 +244,7 @@ class FrequentistPMD:
 def f_frequentist_null(c, phi, k, N):
     alpha = c * phi
     beta = (1 - c) * phi
-    return -fits_utils.log_betabinom_null(k=k, N=N, alpha=alpha, beta=beta).sum()
+    return -fit_utils.log_betabinom_null(k=k, N=N, alpha=alpha, beta=beta).sum()
 
 
 class FrequentistNull:
@@ -299,8 +299,8 @@ class Frequentist:
     def __init__(self, data, method="posterior"):
         self.PMD = FrequentistPMD(data, method=method).fit()
         self.null = FrequentistNull(data).fit()
-        p = fits_utils.compute_likelihood_ratio(self.PMD, self.null)
-        self.LR, self.LR_P, self.LR_n_sigma = p
+        p = fit_utils.compute_likelihood_ratio(self.PMD, self.null)
+        self.lambda_LR, self.lambda_LR_P, self.lambda_LR_n_sigma = p
 
         self.valid = self.PMD.valid
 
@@ -318,7 +318,7 @@ class Frequentist:
     def __str__(self):
         s = f"A = {self.A:.3f}, q = {self.q:.3f}, c = {self.c:.5f}, phi = {self.phi:.1f} \n"
         s += f"D_max = {self.D_max:.3f} +/- {self.D_max_std:.3f}, rho_Ac = {self.rho_Ac:.3f} \n"
-        s += f"LR = {self.LR:.3f}, LR as prob = {self.LR_P:.4%}, LR as n_sigma = {self.LR_n_sigma:.3f} \n"
+        s += f"lambda_LR = {self.lambda_LR:.3f}, lambda_LR as prob = {self.lambda_LR_P:.4%}, lambda_LR as n_sigma = {self.lambda_LR_n_sigma:.3f} \n"
         s += f"valid = {self.valid}"
         return s
 
@@ -470,7 +470,7 @@ def make_fits(fit_result, data):
     # frequentist_reverse.plot()
 
     vars_to_keep = [
-        "LR",
+        "lambda_LR",
         "D_max",
         "D_max_std",
         "q",
@@ -482,8 +482,8 @@ def make_fits(fit_result, data):
         "c",
         "c_std",
         "rho_Ac",
-        "LR_P",
-        "LR_n_sigma",
+        "lambda_LR_P",
+        "lambda_LR_n_sigma",
         "valid",
     ]
 

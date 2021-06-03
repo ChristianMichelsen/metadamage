@@ -5,6 +5,7 @@ __pycache__/
 
 #
 ._.DS_Store
+main_test.py
 ._environment.yaml
 ._main.py
 /old/

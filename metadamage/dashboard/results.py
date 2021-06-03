@@ -1,157 +1,95 @@
-# Scientific Library
 import numpy as np
 import pandas as pd
+import logging
 from scipy.stats import betabinom as sp_betabinom
-
-# Standard Library
-from datetime import datetime
-from functools import partial
 from pathlib import Path
-
-# Third Party
-from about_time import about_time
-
-# import dashboard
-import dill
-from joblib import Memory
+from metadamage import dashboard
 import plotly.express as px
-
-# First Party
-from metadamage import dashboard, io
+from metadamage import io
 
 
-# cachedir = "memoization"
-# memory = Memory(cachedir, verbose=0)
-
-# @memory.cache
-
-
-# @memory.cache
-# def load_parquet_file_memoized(pathname, date_string):
-#     df = io.Parquet(pathname).load()
-#     return df
+def clip_df(df, column):
+    if column in df.columns:
+        df["_" + column] = df[column]  # save original data _column
+        df[column] = np.clip(df[column], a_min=0, a_max=None)
 
 
-#%%
+def pd_wide_to_long_forward_reverse(group_wide, sep, direction):
+    stub_names = ["k", "N", "f"]
+    group_long = pd.wide_to_long(
+        group_wide,
+        stubnames=stub_names,
+        i="tax_id",
+        j="z",
+        sep=sep,
+    )[stub_names]
+    group_long["direction"] = direction
+    return group_long.reset_index()
 
 
-class FitResults:
-    def __init__(self, folder, verbose=False, very_verbose=False, use_memoization=True):
-        self.folder = Path(folder)
-        self.verbose = verbose
-        self.use_memoization = use_memoization
+def wide_to_long_df(group_wide):
 
-        times = {}
+    group_long_forward = pd_wide_to_long_forward_reverse(
+        group_wide,
+        sep="+",
+        direction="Forward",
+    )
 
-        with about_time() as times["df_fit_results"]:
-            self._load_df_fit_results()
+    group_long_reverse = pd_wide_to_long_forward_reverse(
+        group_wide,
+        sep="-",
+        direction="Reverse",
+    )
 
-        # with about_time() as times["ranges"]:
-        #     self._compute_ranges()
+    group_long = pd.concat([group_long_forward, group_long_reverse])
 
-        with about_time() as times["cmap"]:
-            self._set_cmap()
+    # group_long.loc[:, ["k", "N"]] = group_long.loc[:, ["k", "N"]].astype(int)
 
-        with about_time() as times["hover"]:
-            self._set_hover_info()
+    return group_long
 
-        if very_verbose:
-            for key, val in times.items():
-                print(f"\t {key}: {val.duration_human}")
 
-    #%%
+class Results:
+    def __init__(self, results_dir="./data/out/"):
+        self.results_dir = Path(results_dir)
+        self._load_df_results()
+        self._set_cmap()
+        self._set_hover_info()
 
-    def load_df_counts_shortname(self, shortname, columns=None):
-        return io.Parquet(self.folder / "counts").load(shortname, columns=columns)
-
-    def _load_parquet_file(self, key):
-        # if self.use_memoization:
-        #     date_string = datetime.now().strftime("%Y-%d-%m")
-        #     df = load_parquet_file_memoized(self.folder / key, date_string)
-        #     return df
-        # else:
-        df = io.Parquet(self.folder / key).load()
+    def _load_parquet_file(self, results_dir):
+        df = io.Parquet(results_dir).load()
         return df
 
-    def _load_df_fit_results(self):
-        df = self._load_parquet_file("fit_results")
+    def _load_df_results(self):
+        df = self._load_parquet_file(self.results_dir)
 
-        df["_LR"] = df["LR"]
-        df["LR"] = np.clip(df["LR"], a_min=0, a_max=None)
-
-        df["_forward_LR"] = df["forward_LR"]
-        df["forward_LR"] = np.clip(df["forward_LR"], a_min=0, a_max=None)
-
-        df["_reverse_LR"] = df["reverse_LR"]
-        df["reverse_LR"] = np.clip(df["reverse_LR"], a_min=0, a_max=None)
+        for column in ["lambda_LR", "forward_lambda_LR", "reverse_lambda_LR"]:
+            clip_df(df, column)
 
         df["D_max_significance"] = df["D_max"] / df["D_max_std"]
         df["rho_Ac_abs"] = np.abs(df["rho_Ac"])
 
-        log_columns = ["LR", "phi", "N_alignments", "k_sum_total", "N_sum_total"]
+        log_columns = [
+            "N_reads",
+            # "N_alignments",
+            "lambda_LR",
+            "phi",
+            "k_sum_total",
+            "N_sum_total",
+        ]
         for column in log_columns:
             log_column = "log_" + column
             df.loc[:, log_column] = np.log10(1 + df[column])
 
-        self.df_fit_results = df
+        self.df = df
 
-        self.all_tax_ids = set(self.df_fit_results.tax_id.unique())
-        self.all_tax_names = set(self.df_fit_results.tax_name.unique())
-        self.all_tax_ranks = set(self.df_fit_results.tax_rank.unique())
-        self.shortnames = list(self.df_fit_results.shortname.unique())
-        self.columns = list(self.df_fit_results.columns)
-        self.set_marker_size(variable="N_alignments", function="sqrt", slider=30)
+        self.all_tax_ids = set(self.df.tax_id.unique())
+        self.all_tax_names = set(self.df.tax_name.unique())
+        self.all_tax_ranks = set(self.df.tax_rank.unique())
+        self.shortnames = list(self.df.shortname.unique())
+        self.columns = list(self.df.columns)
+        self.set_marker_size(variable="N_reads", function="sqrt", slider=30)
 
-    # def _get_range_of_column(self, column, spacing):
-    #     array = self.df_fit_results[column]
-    #     array = array[np.isfinite(array) & array.notnull()]
-    #     range_min = array.min()
-    #     range_max = array.max()
-    #     delta = range_max - range_min
-    #     ranges = [range_min - delta / spacing, range_max + delta / spacing]
-    #     return ranges
-
-    # def _compute_ranges(self, spacing=20):
-    #     ranges = {}
-    #     for column in self.columns:
-    #         try:
-    #             ranges[column] = self._get_range_of_column(column, spacing=spacing)
-    #         except TypeError:  # skip categorical columns
-    #             pass
-
-    #     for column, range_ in ranges.items():
-    #         if not ("_forward" in column or "_reverse" in column):
-    #             column_forward = f"{column}_forward"
-    #             column_reverse = f"{column}_reverse"
-    #             if column_forward in ranges.keys() and column_reverse in ranges.keys():
-    #                 range_forward = ranges[column_forward]
-    #                 range_reverse = ranges[column_reverse]
-
-    #                 if column == "LR":
-    #                     paddding = 1
-    #                 elif column == "D_max":
-    #                     paddding = 0.1
-    #                 # elif column == "noise":
-    #                 # paddding = 1
-
-    #                 if range_forward[0] < range_[0] - paddding:
-    #                     range_forward[0] = range_[0] - paddding
-    #                 if range_forward[1] > range_[1] + paddding:
-    #                     range_forward[1] = range_[1] + paddding
-
-    #                 if range_reverse[0] < range_[0] - paddding:
-    #                     range_reverse[0] = range_[0] - paddding
-    #                 if range_reverse[1] > range_[1] + paddding:
-    #                     range_reverse[1] = range_[1] + paddding
-
-    #                 ranges[column_forward] = range_forward
-    #                 ranges[column_reverse] = range_reverse
-
-    #     self.ranges = ranges
-
-    def set_marker_size(self, variable="N_alignments", function="sqrt", slider=30):
-
-        df = self.df_fit_results
+    def set_marker_size(self, variable="N_reads", function="sqrt", slider=30):
 
         d_functions = {
             "constant": np.ones_like,
@@ -160,9 +98,9 @@ class FitResults:
             "log10": np.log10,
         }
 
-        df.loc[:, "size"] = d_functions[function](df[variable])
+        self.df.loc[:, "size"] = d_functions[function](self.df[variable])
 
-        self.max_of_size = np.max(df["size"])
+        self.max_of_size = np.max(self.df["size"])
         self.marker_size = slider
 
     def filter(self, filters):
@@ -206,7 +144,7 @@ class FitResults:
         query = query[:-2]
         # print(query)
 
-        return self.df_fit_results.query(query)
+        return self.df.query(query)
 
     def _set_cmap(self):
         # https://plotly.com/python/discrete-color/#color-sequences-in-plotly-express
@@ -214,7 +152,7 @@ class FitResults:
         cmap = px.colors.qualitative.D3
         N_cmap = len(cmap)
 
-        groupby = self.df_fit_results.groupby("shortname", sort=False)
+        groupby = self.df.groupby("shortname", sort=False)
 
         symbol_counter = 0
         d_cmap = {}
@@ -235,7 +173,7 @@ class FitResults:
 
     def _set_hover_info(self):
 
-        columns = list(self.df_fit_results.columns)
+        columns = list(self.df.columns)
 
         placeholder = "_XXX_"
 
@@ -249,7 +187,7 @@ class FitResults:
                 "tax_rank",
                 "tax_id",
                 # Frequentist fits
-                "LR",
+                "lambda_LR",
                 "D_max",
                 "D_max_std",
                 "q",
@@ -265,7 +203,8 @@ class FitResults:
                 "Bayesian_q",
                 "Bayesian_phi",
                 # Counts
-                "N_alignments",
+                "N_reads",
+                # "N_alignments",
                 "N_sum_total",
                 "k_sum_total",
             ]
@@ -289,7 +228,8 @@ class FitResults:
                 "    q:        %{customdata[_XXX_]:9.2f} <br>"
                 "    phi:      %{customdata[_XXX_]:9.3s} <br><br>"
                 "<b>Counts</b>: <br>"
-                "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
+                "    N reads:     %{customdata[_XXX_]:6.3s} <br>"
+                # "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
                 "    N sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "    k sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "<extra></extra>"
@@ -303,7 +243,7 @@ class FitResults:
                 "tax_rank",
                 "tax_id",
                 # Frequentist fits
-                "LR",
+                "lambda_LR",
                 "D_max",
                 "D_max_std",
                 "q",
@@ -311,8 +251,10 @@ class FitResults:
                 "phi",
                 "phi_std",
                 "asymmetry",
+                "rho_Ac",
                 # Counts
-                "N_alignments",
+                "N_reads",
+                # "N_alignments",
                 "N_sum_total",
                 "k_sum_total",
             ]
@@ -331,7 +273,8 @@ class FitResults:
                 "    asymmetry:%{customdata[_XXX_]:9.3f} <br>"
                 "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Counts</b>: <br>"
-                "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
+                "    N reads:     %{customdata[_XXX_]:6.3s} <br>"
+                # "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
                 "    N sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "    k sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "<extra></extra>"
@@ -352,18 +295,11 @@ class FitResults:
             if i >= len(self.hovertemplate):
                 break
 
-        self.customdata = self.df_fit_results[self.custom_data_columns]
+        self.customdata = self.df[self.custom_data_columns]
 
         self.hovertemplate_fit = (
             "Fit: <br>D(z) = %{y:.3f} ± %{error_y.array:.3f}<br>" "<extra></extra>"
         )
-
-    # def _get_col_row_from_iteration(self, i, N_cols):
-    #     col = i % N_cols
-    #     row = (i - col) // N_cols
-    #     col += 1
-    #     row += 1
-    #     return col, row
 
     def parse_click_data(self, click_data, column):
         try:
@@ -375,18 +311,9 @@ class FitResults:
             raise e
 
     def get_single_count_group(self, shortname, tax_id, forward_reverse=""):
-        df_counts_group = self.load_df_counts_shortname(shortname)
-        group = df_counts_group.query(f"tax_id == {tax_id}").copy()
-        reverse = group.position < 0
-        group.loc[:, "z"] = np.abs(group["position"])
-        group.loc[:, "f"] = group["f_CT"]
-        group.loc[reverse, "f"] = group.loc[reverse, "f_GA"]
-        group.loc[:, "direction"] = "Forward"
-        group.loc[reverse, "direction"] = "Reverse"
-        group.loc[:, "k"] = group["CT"]
-        group.loc[reverse, "k"] = group.loc[reverse, "GA"]
-        group.loc[:, "N"] = group["C"]
-        group.loc[reverse, "N"] = group.loc[reverse, "G"]
+        query = f"shortname == '{shortname}' & tax_id == {tax_id}"
+        group_wide = self.df.query(query)
+        group = wide_to_long_df(group_wide)
 
         if forward_reverse.lower() == "forward":
             return group.query(f"direction=='Forward'")
@@ -397,9 +324,9 @@ class FitResults:
 
     def get_single_fit_prediction(self, shortname, tax_id, forward_reverse=""):
         query = f"shortname == '{shortname}' & tax_id == {tax_id}"
-        ds = self.df_fit_results.query(query)
+        ds = self.df.query(query)
         if len(ds) != 1:
-            raise AssertionError(f"Sometrhing wrong here, got: {ds}")
+            raise AssertionError(f"Something wrong here, got: {ds}")
 
         group = self.get_single_count_group(shortname, tax_id, forward_reverse)
 
@@ -431,4 +358,5 @@ class FitResults:
         return d_out
 
 
-# %
+def load(results_dir=Path("./data/out/results")):
+    return Results(results_dir)

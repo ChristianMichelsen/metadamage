@@ -25,7 +25,8 @@ from timeout_decorator import TimeoutError
 from tqdm.auto import tqdm
 
 # First Party
-from metadamage import counts, fits_Bayesian, fits_frequentist, io, utils
+# from metadamage import meta.fits_Bayesian, meta.fits_frequentist, meta.io, meta.utils
+import metadamage as meta
 from metadamage.progressbar import progress
 
 
@@ -40,7 +41,11 @@ timeout_subsequent_fits = 60  # 1 minute
 #%%
 
 
-def group_to_numpyro_data(group, cfg):
+def get_groupby(df_mismatches):
+    return df_mismatches.groupby("tax_id", sort=False, observed=True)
+
+
+def group_to_numpyro_data(cfg, group):
 
     forward = cfg.substitution_bases_forward
     forward_ref = forward[0]
@@ -67,15 +72,7 @@ def group_to_numpyro_data(group, cfg):
 #%%
 
 
-def add_tax_information(fit_result, group):
-    fit_result["tax_id"] = group["tax_id"].iloc[0]
-    # fit_result["tax_name"] = group["tax_name"].iloc[0]
-    # fit_result["tax_rank"] = group["tax_rank"].iloc[0]
-
-
 def add_count_information(fit_result, group, data):
-    fit_result["N_alignments"] = group.N_alignments.iloc[0]
-
     fit_result["N_z1_forward"] = data["N"][0]
     fit_result["N_z1_reverse"] = data["N"][15]
 
@@ -94,26 +91,26 @@ def add_count_information(fit_result, group, data):
 
 
 def fit_single_group_without_timeout(
-    group,
     cfg,
+    group,
     mcmc_PMD=None,
     mcmc_null=None,
 ):
 
     fit_result = {}
 
-    data = group_to_numpyro_data(group, cfg)
+    data = group_to_numpyro_data(cfg, group)
 
-    add_tax_information(fit_result, group)
+    # add_tax_information(fit_result, group)
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
-        f, f_forward, f_reverse = fits_frequentist.make_fits(fit_result, data)
+        f, f_forward, f_reverse = meta.fits_frequentist.make_fits(fit_result, data)
 
     add_count_information(fit_result, group, data)
 
     if mcmc_PMD is not None and mcmc_null is not None:
-        fits_Bayesian.make_fits(fit_result, data, mcmc_PMD, mcmc_null)
+        meta.fits_Bayesian.make_fits(fit_result, data, mcmc_PMD, mcmc_null)
 
     return fit_result
 
@@ -123,12 +120,12 @@ def get_fit_single_group_with_timeout(timeout=60):
     return timeout_decorator.timeout(timeout)(fit_single_group_without_timeout)
 
 
-def compute_fits_seriel(df_counts, cfg):
+def compute_fits_seriel(cfg, df_mismatches):
 
     # initializez not MCMC if cfg.bayesian is False
-    mcmc_PMD, mcmc_null = fits_Bayesian.init_mcmcs(cfg)
+    mcmc_PMD, mcmc_null = meta.fits_Bayesian.init_mcmcs(cfg)
 
-    groupby = df_counts.groupby("tax_id", sort=False, observed=True)
+    groupby = get_groupby(df_mismatches)
 
     d_fit_results = {}
 
@@ -153,7 +150,7 @@ def compute_fits_seriel(df_counts, cfg):
         # break
 
         try:
-            fit_result = fit_single_group(group, cfg, mcmc_PMD, mcmc_null)
+            fit_result = fit_single_group(cfg, group, mcmc_PMD, mcmc_null)
             d_fit_results[tax_id] = fit_result
 
         except TimeoutError:
@@ -165,10 +162,10 @@ def compute_fits_seriel(df_counts, cfg):
     return d_fit_results
 
 
-def worker(queue_in, queue_out, cfg):
+def worker(cfg, queue_in, queue_out):
 
     # initializez not MCMC if cfg.bayesian is False
-    mcmc_PMD, mcmc_null = fits_Bayesian.init_mcmcs(cfg)
+    mcmc_PMD, mcmc_null = meta.fits_Bayesian.init_mcmcs(cfg)
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
     fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(
@@ -186,7 +183,7 @@ def worker(queue_in, queue_out, cfg):
         tax_id, group = tax_id_group
 
         try:
-            fit_result = fit_single_group(group, cfg, mcmc_PMD, mcmc_null)
+            fit_result = fit_single_group(cfg, group, mcmc_PMD, mcmc_null)
             queue_out.put((tax_id, fit_result))
 
         except TimeoutError:
@@ -195,11 +192,11 @@ def worker(queue_in, queue_out, cfg):
         fit_single_group = fit_single_group_subsequent_fits
 
 
-def compute_fits_parallel_with_progressbar(df, cfg):
+def compute_fits_parallel_with_progressbar(cfg, df_mismatches):
 
     # logger.info(f"Fit: Initializing fit in parallel with progressbar")
 
-    groupby = df.groupby("tax_id", sort=False, observed=True)
+    groupby = get_groupby(df_mismatches)
     N_groupby = len(groupby)
 
     N_cores = cfg.N_cores if cfg.N_cores < N_groupby else N_groupby
@@ -207,7 +204,7 @@ def compute_fits_parallel_with_progressbar(df, cfg):
     manager = Manager()
     queue_in = manager.Queue()
     queue_out = manager.Queue()
-    the_pool = Pool(N_cores, worker, (queue_in, queue_out, cfg))
+    the_pool = Pool(N_cores, worker, (cfg, queue_in, queue_out))
 
     d_fit_results = {}
     task_fit = progress.add_task(
@@ -233,16 +230,6 @@ def compute_fits_parallel_with_progressbar(df, cfg):
     for _ in range(N_groupby):
         queue_in.put(None)
 
-    # prevent adding anything more to the queue and wait for queue to empty
-    # queue_in.close()
-    # queue_in.join_thread()
-
-    # # join the queue until we're finished processing results
-    # queue_out.join()
-    # # not closing the Queues caused me untold heartache and suffering
-    # queue_in.close()
-    # queue_out.close()
-
     # prevent adding anything more to the process pool and wait for all processes to finish
     the_pool.close()
     the_pool.join()
@@ -253,54 +240,28 @@ def compute_fits_parallel_with_progressbar(df, cfg):
 #%%
 
 
-# def make_df_fit_predictions_from_d_fits(d_fits, cfg):
-
-#     z = np.arange(15) + 1
-#     position = np.concatenate([z, -z])
-
-#     # d_fit_predictions = {}
-#     d_fit_predictions = []
-#     for key, d_val in d_fits.items():
-
-#         data = {
-#             "tax_id": key,
-#             "position": position,
-#             "mean": d_val["mean"],
-#             "std": d_val["std"],
-#             # "median": median,
-#             # "hdpi_lower": hpdi[0, :],
-#             # "hdpi_upper": hpdi[1, :],
-#         }
-
-#         df_tmp = pd.DataFrame(data=data)
-#         # d_fit_predictions[key] = df_tmp
-#         d_fit_predictions.append(df_tmp)
-
-#     df_fit_predictions = pd.concat(d_fit_predictions, axis="index", ignore_index=True)
-#     df_fit_predictions["shortname"] = cfg.shortname
-
-#     categories = ["tax_id", "shortname"]
-#     df_fit_predictions = utils.downcast_dataframe(
-#         df_fit_predictions, categories, fully_automatic=False
-#     )
-
-#     return df_fit_predictions
-
-
-def match_tax_id_order_in_df_fit_results(df_fit_results, df):
-    tax_ids_all = pd.unique(df.tax_id)
+def match_tax_id_order_in_df_fit_results(df_fit_results, df_mismatches):
+    tax_ids_all = pd.unique(df_mismatches.tax_id)
     ordered = [tax_id for tax_id in tax_ids_all if tax_id in df_fit_results.index]
     return df_fit_results.loc[ordered]
 
 
-def make_df_fit_results_from_fit_results(fit_results, df_counts, cfg):
-    df_fit_results = pd.DataFrame.from_dict(fit_results, orient="index")
-    df_fit_results = match_tax_id_order_in_df_fit_results(df_fit_results, df_counts)
+def move_column_inplace(df, col, pos=0):
+    col = df.pop(col)
+    df.insert(pos, col.name, col)
+
+
+def make_df_fit_results_from_fit_results(cfg, d_fit_results, df_mismatches):
+    df_fit_results = pd.DataFrame.from_dict(d_fit_results, orient="index")
+    df_fit_results["tax_id"] = df_fit_results.index
+    # move_column_inplace(df_fit_results, "tax_id", pos=0)
+
+    df_fit_results = match_tax_id_order_in_df_fit_results(df_fit_results, df_mismatches)
     df_fit_results["shortname"] = cfg.shortname
 
-    # categories = ["tax_id", "tax_name", "tax_rank", "shortname"]
-    categories = ["tax_id", "shortname"]
-    df_fit_results = utils.downcast_dataframe(
+    # categories = ["tax_id", "shortname"]
+    categories = []
+    df_fit_results = meta.utils.downcast_dataframe(
         df_fit_results, categories, fully_automatic=False
     )
 
@@ -318,73 +279,158 @@ def get_chunks(lst, n):
         yield lst[i : i + n]
 
 
-def compute_fits_parallel_with_progressbar_chunks(df, cfg, chunk_max=1000):
+def compute_fits_parallel_with_progressbar_chunks(cfg, df_mismatches, chunk_max=1000):
     logger.info(
         f"Fit: Initializing fit in parallel with progressbar "
         f"in chunks of size {chunk_max}."
     )
 
     d_fits_all_chunks = {}
-    tax_ids_unique = np.array(pd.unique(df.tax_id))
+    tax_ids_unique = np.array(pd.unique(df_mismatches.tax_id))
     chunks = get_chunks(tax_ids_unique, chunk_max)
     for chunk in chunks:
         d_fits_chunk = compute_fits_parallel_with_progressbar(
-            df.query("tax_id in @chunk"), cfg
+            cfg,
+            df_mismatches.query("tax_id in @chunk"),
         )
         d_fits_all_chunks.update(d_fits_chunk)
     return d_fits_all_chunks
 
 
-def compute_fits(df_counts, cfg):
+import joblib
+from collections import defaultdict
+
+
+def compute_duplicates(df_mismatches):
+
+    groupby = get_groupby(df_mismatches)
+
+    duplicate_entries = defaultdict(list)
+    for group in groupby:
+        key = joblib.hash(group[1][meta.utils.ref_obs_bases].values)
+        duplicate_entries[key].append(group[0])
+    duplicate_entries = dict(duplicate_entries)
+
+    unique = [tax_ids[0] for tax_ids in duplicate_entries.values()]
+    duplicates = {tax_ids[0]: tax_ids[1:] for tax_ids in duplicate_entries.values()}
+
+    return unique, duplicates
+
+
+def de_duplicate_fit_results(d_fit_results, duplicates):
+    for tax_id_unique, tax_ids_non_unique in duplicates.items():
+        for tax_id_non_unique in tax_ids_non_unique:
+            d_fit_results[tax_id_non_unique] = d_fit_results[tax_id_unique]
+
+
+def compute_fits(cfg, df_mismatches):
+
+    # find unique tax_ids (when compairing the mismatch matrices)
+    # such that only those are fitted
+    unique, duplicates = compute_duplicates(df_mismatches)
+
+    df_mismatches_unique = df_mismatches.query("tax_id in @unique")
 
     if cfg.N_cores == 1:  #  or len(groupby) < 10:
-        d_fit_results = compute_fits_seriel(df_counts, cfg)
+        d_fit_results = compute_fits_seriel(cfg, df_mismatches_unique)
 
     else:
 
         if not cfg.bayesian:
-            d_fit_results = compute_fits_parallel_with_progressbar(df_counts, cfg)
+            d_fit_results = compute_fits_parallel_with_progressbar(
+                cfg,
+                df_mismatches_unique,
+            )
 
         else:
             d_fit_results = compute_fits_parallel_with_progressbar_chunks(
-                df_counts, cfg, chunk_max=1000
+                cfg,
+                df_mismatches_unique,
+                chunk_max=1000,
             )
 
-    df_fit_results = make_df_fit_results_from_fit_results(d_fit_results, df_counts, cfg)
+    de_duplicate_fit_results(d_fit_results, duplicates)
+
+    df_fit_results = make_df_fit_results_from_fit_results(
+        cfg,
+        d_fit_results,
+        df_mismatches,
+    )
+
+    df_stats = read_stats(cfg)
+
+    df_fit_results = pd.merge(df_fit_results, df_stats, on="tax_id")
+
+    cols_ordered = [
+        "tax_id",
+        "tax_name",
+        "tax_rank",
+        "N_reads",
+        # "N_alignments",
+        "lambda_LR",
+        "D_max",
+        "mean_L",
+        "std_L",
+        "mean_GC",
+        "std_GC",
+        *df_fit_results.loc[:, "D_max_std":"shortname"].columns.drop("tax_id"),
+    ]
+
+    df_fit_results = df_fit_results[cols_ordered]
+
     return df_fit_results
+
+
+def read_stats(cfg):
+    columns = [
+        "tax_id",
+        "tax_name",
+        "tax_rank",
+        "N_reads",
+        "mean_L",
+        "var_L",
+        "mean_GC",
+        "var_GC",
+    ]
+    df_stats = pd.read_csv(cfg.filename_mismatches_stats, sep="\t", names=columns)
+    df_stats["std_L"] = np.sqrt(df_stats["var_L"])
+    df_stats["std_GC"] = np.sqrt(df_stats["var_GC"])
+    return df_stats
 
 
 #%%
 
 
-def extract_top_max_fits(df_counts, max_fits):
-    top_max_fits = (
-        df_counts.groupby("tax_id", observed=True)["N_alignments"]
-        .sum()
-        .nlargest(max_fits)
-        .index
-    )
-    df_counts_top_N = df_counts.query("tax_id in @top_max_fits")
-    return df_counts_top_N
+# def extract_top_max_fits(df_mismatches, max_fits):
+#     top_max_fits = (
+#         df_mismatches.groupby("tax_id", observed=True)["N_alignments"]
+#         .sum()
+#         .nlargest(max_fits)
+#         .index
+#     )
+#     df_mismatches_top_N = df_mismatches.query("tax_id in @top_max_fits")
+#     return df_mismatches_top_N
 
 
-def get_top_max_fits(df_counts, N_fits):
-    if N_fits is not None and N_fits > 0:
-        return df_counts.pipe(extract_top_max_fits, N_fits)
-    else:
-        return df_counts
+# def get_top_max_fits(df_mismatches, N_fits):
+#     if N_fits is not None and N_fits > 0:
+#         return df_mismatches.pipe(extract_top_max_fits, N_fits)
+#     else:
+#         return df_mismatches
 
 
-def get_fits(df_counts, cfg):
+def load(cfg, df_mismatches):
 
-    parquet_fit_results = io.Parquet(cfg.filename_fit_results)
-    # parquet_fit_predictions = io.Parquet(cfg.filename_fit_predictions)
+    """
+    Computes fits for df_mismatches. If fits are already computed, just load them.
+    """
+
+    parquet_fit_results = meta.io.Parquet(cfg.filename_fit_results)
 
     if parquet_fit_results.exists(cfg.forced):
-        #  and parquet_fit_predictions.exists(cfg.forced)
 
         include = [
-            "min_alignments",
+            # "min_alignments",
             "min_k_sum",
             "substitution_bases_forward",
             "substitution_bases_reverse",
@@ -396,29 +442,24 @@ def get_fits(df_counts, cfg):
         metadata_cfg = cfg.to_dict()
 
         metadata_file_fit_results = parquet_fit_results.load_metadata()
-        # metadata_file_fit_predictions = parquet_fit_predictions.load_metadata()
 
-        if utils.metadata_is_similar(
+        if meta.utils.metadata_is_similar(
             metadata_file_fit_results, metadata_cfg, include=include
         ):
-            # and utils.metadata_is_similar(metadata_file_fit_predictions, ...)
 
             logger.info(f"Fit: Loading fits from parquet-file.")
             df_fit_results = parquet_fit_results.load()
-            # df_fit_predictions = parquet_fit_predictions.load()
-            return df_fit_results  # , df_fit_predictions
+            return df_fit_results
 
     logger.info(f"Fit: Generating fits and saving to file.")
 
-    df_counts_top_N = get_top_max_fits(df_counts, cfg.N_fits)
+    # df_mismatches_top_N = get_top_max_fits(cfg, df_mismatches.N_fits)
 
-    # df = df_counts = df_counts_top_N
-    df_fit_results = compute_fits(df_counts_top_N, cfg)  # df_fit_predictions
+    df_fit_results = compute_fits(cfg, df_mismatches)
 
     parquet_fit_results.save(df_fit_results, metadata=cfg.to_dict())
-    # parquet_fit_predictions.save(df_fit_predictions, metadata=cfg.to_dict())
 
-    return df_fit_results  # , df_fit_predictions
+    return df_fit_results
 
 
 #%%

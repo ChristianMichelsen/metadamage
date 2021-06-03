@@ -47,7 +47,7 @@ class Config:
     max_cores: int
     # max_position: Optional[int]
     #
-    min_alignments: int
+    # min_alignments: int
     min_k_sum: int
     min_N_at_each_pos: int
     #
@@ -68,7 +68,7 @@ class Config:
 
     def __post_init__(self):
         self._set_N_cores()
-        self.intermediate_dir = self.out_dir.parent / ".intermediate"
+        self.intermediate_dir = self.out_dir / ".intermediate"
         if not self.intermediate_dir.exists():
             self.intermediate_dir.mkdir(parents=True)
 
@@ -93,7 +93,7 @@ class Config:
         self.N_filenames = len(filenames)
 
     def add_filename(self, filename):
-        self.filename = filename
+        self.filename = Path(filename)
         self.shortname = extract_name(filename)
 
     def _test_for_shortname(self, methodname):
@@ -104,32 +104,40 @@ class Config:
             )
 
     @property
-    def filename_counts(self):
-        self._test_for_shortname("filename_counts")
-        return self.intermediate_dir / "counts" / f"{self.shortname}.parquet"
+    def filename_mismatch(self):
+        return self.filename
+
+    @property
+    def filename_mismatches_stats(self):
+        return Path(str(self.filename) + ".stats")
+
+    @property
+    def filename_mismatches_parquet(self):
+        self._test_for_shortname("filename_mismatches_parquet")
+        return self.intermediate_dir / f"{self.shortname}.mismatches.parquet"
 
     @property
     def filename_fit_results(self):
         self._test_for_shortname("filename_fit_results")
-        return self.intermediate_dir / "fit_results" / f"{self.shortname}.parquet"
+        return self.intermediate_dir / f"{self.shortname}.fit_results.parquet"
 
     @property
     def filename_results(self):
         self._test_for_shortname("filename_results")
-        return self.out_dir / "results" / f"{self.shortname}.parquet"
+        return self.out_dir / "results" / f"{self.shortname}.results.parquet"
 
     @property
-    def filename_results_LCA(self):
-        self._test_for_shortname("filename_results_LCA")
-        return self.out_dir / "LCA" / f"{self.shortname}.parquet"
+    def filename_results_read(self):
+        self._test_for_shortname("filename_results_read")
+        return self.out_dir / "reads" / f"{self.shortname}.results.read.parquet"
 
     @property
     def filename_LCA(self):
         self._test_for_shortname("filename_LCA")
-        return Path(str(self.filename).replace(".bdamage.gz", ".lca"))
+        return Path(str(self.filename).replace(".mismatch", ".lca"))
 
-    def set_number_of_fits(self, df_counts):
-        self.N_tax_ids = len(pd.unique(df_counts.tax_id))
+    def set_number_of_fits(self, df_mismatches):
+        self.N_tax_ids = len(pd.unique(df_mismatches.tax_id))
 
         if self.max_fits is not None and self.max_fits > 0:
             self.N_fits = min(self.max_fits, self.N_tax_ids)
@@ -173,7 +181,7 @@ class Config:
         if self.N_cores:
             my_table.add_row("Number of cores to use", str(self.N_cores))
 
-        my_table.add_row("Minimum number of alignments", str(self.min_alignments))
+        # my_table.add_row("Minimum number of alignments", str(self.min_alignments))
         my_table.add_row("Minimum k sum", str(self.min_k_sum))
         my_table.add_row("Minimum N at each position", str(self.min_N_at_each_pos))
 
@@ -196,6 +204,34 @@ class Config:
 
 
 #%%
+
+
+ACTG = ["A", "C", "G", "T"]
+
+ref_obs_bases = []
+for ref in ACTG:
+    for obs in ACTG:
+        ref_obs_bases.append(f"{ref}{obs}")
+
+mismatch_suffix = "lead.mismatch"
+
+
+def is_mismatch_file(s):
+    return str(s).endswith(mismatch_suffix)
+
+
+def remove_bad_files(filenames):
+    """Keeps only files that ends with lead.mismatch.
+    Returns as Paths
+    """
+    filenames_good = []
+    for filename in filenames:
+        # break
+        if filename.is_dir():
+            filenames_good += list(filename.glob(f"*.{mismatch_suffix}"))
+        elif filename.is_file() and is_mismatch_file(filename):
+            filenames_good.append(filename)
+    return sorted(filenames_good)
 
 
 def find_style_file():
@@ -504,8 +540,8 @@ def is_macbook():
 #%%
 
 
-def is_df_counts_accepted(df_counts, cfg):
-    if len(df_counts) > 0:
+def is_df_mismatches_accepted(cfg, df_mismatches):
+    if len(df_mismatches) > 0:
         return True
 
     logger.warning(
@@ -518,7 +554,7 @@ def is_df_counts_accepted(df_counts, cfg):
 #%%
 
 
-def initial_print(filenames, cfg):
+def initial_print(cfg, filenames):
 
     console.print("")
     console.rule("[bold red]Initialization")

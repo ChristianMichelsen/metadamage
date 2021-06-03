@@ -8,8 +8,8 @@ from dash_extensions import Download
 import dash_html_components as html
 
 # First Party
-from metadamage import dashboard, utils
-
+import metadamage as meta
+from metadamage import dashboard
 
 #%%
 
@@ -120,7 +120,7 @@ def get_content_main(start_configuration):
     dropdown_x_axis = dcc.Dropdown(
         id="xaxis_column",
         options=[{"label": i, "value": i} for i in columns],
-        value="LR",
+        value="lambda_LR",
     )
 
     dropdown_y_axis = dcc.Dropdown(
@@ -630,8 +630,8 @@ def get_slider_name(column, low_high):
         low = dashboard.utils.log_transform_slider(low)
         high = dashboard.utils.log_transform_slider(high)
 
-    low = utils.human_format(low)
-    high = utils.human_format(high)
+    low = meta.utils.human_format(low)
+    high = meta.utils.human_format(high)
 
     return f"{column}: [{low}, {high}]"
 

@@ -17,10 +17,10 @@ import dash_html_components as html
 def get_app(results_dir=Path("./data/out/results")):
 
     # First Party
-    from metadamage import dashboard, taxonomy, results
-    from metadamage.utils import human_format
+    import metadamage as meta
+    from metadamage import dashboard
 
-    fit_results = results.Results(results_dir=results_dir)
+    fit_results = dashboard.results.load(results_dir)
 
     #%%
 
@@ -174,7 +174,7 @@ def get_app(results_dir=Path("./data/out/results")):
                 f"Tax Rank: {ds['tax_rank']}", html.Br(),
                 f"Tax ID: {ds['tax_id']}", html.Br(), html.Br(),
 
-                f"LR: {ds['LR']:.2f}",html.Br(),
+                f"lambda_LR: {ds['lambda_LR']:.2f}",html.Br(),
                 f"D_max: {ds['D_max']:.3f} ± {ds['D_max_std']:.3f}", html.Br(),
                 f"q: {ds['q']:.3f} ± {ds['q_std']:.3f}", html.Br(),
                 f"phi: {ds['phi']:.1f} ± {ds['phi_std']:.1f}", html.Br(),
@@ -363,14 +363,16 @@ def get_app(results_dir=Path("./data/out/results")):
             return f"No specific Tax IDs selected, defaults to ALL."
             # raise PreventUpdate
 
-        tax_ids = taxonomy.extract_descendant_tax_ids(
+        tax_ids = meta.taxonomy.extract_descendant_tax_ids(
             tax_name,
             include_subspecies=dashboard.utils.include_subspecies(subspecies),
         )
         N_tax_ids = len(tax_ids)
         if N_tax_ids == 0:
             return f"Couldn't find any Tax IDs for {tax_name} in NCBI"
-        return f"Found {human_format(N_tax_ids)} Tax IDs for {tax_name} in NCBI"
+        return (
+            f"Found {meta.utils.human_format(N_tax_ids)} Tax IDs for {tax_name} in NCBI"
+        )
 
     #%%
 
