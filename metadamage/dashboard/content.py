@@ -201,14 +201,14 @@ def get_content_main(start_configuration):
 #%%
 
 
-def get_sidebar_left(fit_results, start_configuration):
+def get_sidebar_left(results, start_configuration):
 
     d_columns_latex, columns, columns_no_log = dashboard.utils.get_d_columns_latex()
 
     filter_dropdown_file = dbc.FormGroup(
         [
             dashboard.utils.get_dropdown_file_selection(
-                fit_results=fit_results,
+                results=results,
                 id="sidebar_left_dropdown_samples",
                 shortnames_to_show="each",  # one for each first letter in shortname
             ),
@@ -246,9 +246,9 @@ def get_sidebar_left(fit_results, start_configuration):
                                 {"label": tax, "value": tax}
                                 for tax in itertools.chain.from_iterable(
                                     [
-                                        fit_results.all_tax_ranks,
-                                        fit_results.all_tax_names,
-                                        fit_results.all_tax_ids,
+                                        results.all_tax_ranks,
+                                        results.all_tax_names,
+                                        results.all_tax_ids,
                                     ]
                                 )
                             ],
@@ -331,7 +331,7 @@ def get_sidebar_left(fit_results, start_configuration):
         [
             dbc.Button(
                 "Fits",
-                id="sidebar_left_fit_results_btn",
+                id="sidebar_left_results_btn",
                 color="secondary",
                 block=True,
                 outline=True,
@@ -346,7 +346,7 @@ def get_sidebar_left(fit_results, start_configuration):
                     ),
                     dbc.Col(
                         dcc.Dropdown(
-                            id="sidebar_left_fit_results",
+                            id="sidebar_left_results",
                             options=[
                                 {"label": shortname, "value": shortname}
                                 for shortname in columns_no_log
@@ -359,12 +359,12 @@ def get_sidebar_left(fit_results, start_configuration):
                         width=12,
                     ),
                     dbc.Col(
-                        id="sidebar_left_fit_results_container",
+                        id="sidebar_left_results_container",
                         children=[],
                         width=12,
                     ),
                 ],
-                id="sidebar_left_fit_results_collapsed",
+                id="sidebar_left_results_collapsed",
                 is_open=False,
             ),
         ]
@@ -395,11 +395,11 @@ def get_sidebar_left(fit_results, start_configuration):
 
 def get_sidebar_right(start_configuration):
 
-    sidebar_right_fit_results = html.Div(
+    sidebar_right_results = html.Div(
         [
             dbc.Button(
                 "Fit Results",
-                id="sidebar_right_btn_toggle_fit_results",
+                id="sidebar_right_btn_toggle_results",
                 color="secondary",
                 block=True,
                 outline=True,
@@ -407,10 +407,10 @@ def get_sidebar_right(start_configuration):
             ),
             dbc.Collapse(
                 html.Div(
-                    "sidebar_right_datatable_fit_results",
-                    id="sidebar_right_datatable_fit_results",
+                    "sidebar_right_datatable_results",
+                    id="sidebar_right_datatable_results",
                 ),
-                id="sidebar_right_collapsed_toggle_fit_results",
+                id="sidebar_right_collapsed_toggle_results",
                 is_open=False,
             ),
         ]
@@ -485,7 +485,7 @@ def get_sidebar_right(start_configuration):
             # html.Hr(),
             sidebar_right_collapsed_toggle_combined,
             html.Hr(),
-            sidebar_right_fit_results,
+            sidebar_right_results,
             html.Hr(),
             sidebar_right_collapsed_toggle_forward_reverse,
         ],
@@ -499,11 +499,11 @@ def get_sidebar_right(start_configuration):
 #%%
 
 
-def get_app_layout(fit_results, start_configuration):
+def get_app_layout(results, start_configuration):
 
     navbar = get_navbar()
     content_main = get_content_main(start_configuration)
-    sidebar_left = get_sidebar_left(fit_results, start_configuration)
+    sidebar_left = get_sidebar_left(results, start_configuration)
     sidebar_right = get_sidebar_right(start_configuration)
 
     return html.Div(
@@ -590,10 +590,10 @@ def get_slider_name(column, low_high):
     return f"{column}: [{low}, {high}]"
 
 
-def make_new_slider(fit_results, column, id_type, N_steps=100):
+def make_new_slider(results, column, id_type, N_steps=100):
 
     d_range_slider = dashboard.utils.get_range_slider_keywords(
-        fit_results,
+        results,
         column=column,
         N_steps=N_steps,
     )
@@ -605,7 +605,7 @@ def make_new_slider(fit_results, column, id_type, N_steps=100):
                 html.P(
                     get_slider_name(column, d_range_slider),
                     id={
-                        "type": "sidebar_left_fit_results_dynamic_name",
+                        "type": "sidebar_left_results_dynamic_name",
                         "index": column,
                     },
                 ),
@@ -615,7 +615,7 @@ def make_new_slider(fit_results, column, id_type, N_steps=100):
                 dbc.Col(
                     dcc.RangeSlider(
                         id={
-                            "type": "sidebar_left_fit_results_dynamic",
+                            "type": "sidebar_left_results_dynamic",
                             "index": column,
                         },
                         **d_range_slider,

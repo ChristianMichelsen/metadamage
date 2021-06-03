@@ -83,11 +83,11 @@ def get_shortnames_each(all_shortnames):
     return values
 
 
-def get_dropdown_file_selection(fit_results, id, shortnames_to_show="all"):
+def get_dropdown_file_selection(results, id, shortnames_to_show="all"):
 
     special_shortnames = ["Select all", "Default selection"]
     N_special_shortnames = len(special_shortnames)
-    all_shortnames = special_shortnames + fit_results.shortnames
+    all_shortnames = special_shortnames + results.shortnames
 
     if shortnames_to_show is None:
         values = all_shortnames
@@ -101,7 +101,7 @@ def get_dropdown_file_selection(fit_results, id, shortnames_to_show="all"):
             values = all_shortnames
 
         elif shortnames_to_show == "each":
-            values = get_shortnames_each(fit_results.shortnames)
+            values = get_shortnames_each(results.shortnames)
 
     values = list(sorted(values))
 
@@ -135,13 +135,13 @@ def _insert_mark_values(mark_values):
     return mark_labels
 
 
-def get_range_slider_keywords(fit_results, column="N_reads", N_steps=100):
+def get_range_slider_keywords(results, column="N_reads", N_steps=100):
 
     no_min = "Min"
     no_max = "Max"
 
-    # df = fit_results.df_fit_results
-    df = fit_results.df_results
+    # df = results.df_results
+    df = results.df_results
 
     if is_log_transform_column(column):
         # if column in dashboard.utils.log_transform_columns:
@@ -229,10 +229,10 @@ def get_range_slider_keywords(fit_results, column="N_reads", N_steps=100):
 #%%
 
 
-def get_shortname_tax_id_from_click_data(fit_results, click_data):
+def get_shortname_tax_id_from_click_data(results, click_data):
     try:
-        shortname = fit_results.parse_click_data(click_data, column="shortname")
-        tax_id = fit_results.parse_click_data(click_data, column="tax_id")
+        shortname = results.parse_click_data(click_data, column="shortname")
+        tax_id = results.parse_click_data(click_data, column="tax_id")
     except KeyError:
         raise PreventUpdate
     return shortname, tax_id
@@ -254,16 +254,16 @@ def append_to_list_if_exists(d, key, value):
         d[key] = [value]
 
 
-def apply_sidebar_left_tax_id(fit_results, d_filter, sidebar_left_tax_id_input):
+def apply_sidebar_left_tax_id(results, d_filter, sidebar_left_tax_id_input):
     if sidebar_left_tax_id_input is None or len(sidebar_left_tax_id_input) == 0:
         return None
 
     for tax in sidebar_left_tax_id_input:
-        if tax in fit_results.all_tax_ids:
+        if tax in results.all_tax_ids:
             append_to_list_if_exists(d_filter, "tax_ids", tax)
-        elif tax in fit_results.all_tax_names:
+        elif tax in results.all_tax_names:
             append_to_list_if_exists(d_filter, "tax_names", tax)
-        elif tax in fit_results.all_tax_ranks:
+        elif tax in results.all_tax_ranks:
             append_to_list_if_exists(d_filter, "tax_ranks", tax)
         else:
             raise AssertionError(f"Tax {tax} could not be found. ")

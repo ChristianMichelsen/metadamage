@@ -193,7 +193,7 @@ def cli_convert(
     or for other directories than default:
 
     \b
-        $ metadamage convert --dir-parquet ./data/out/fit_results --dir-csv ./data/out/csv/fit_results
+        $ metadamage convert --dir-parquet ./data/out/results --dir-csv ./data/out/csv/results
 
     For help, run:
 

@@ -73,7 +73,7 @@ def set_opacity_for_trace(
 #%%
 
 
-def make_figure(fit_results, df, xaxis_column_name, yaxis_column_name, d_columns_latex):
+def make_figure(results, df, xaxis_column_name, yaxis_column_name, d_columns_latex):
 
     fig = px.scatter(
         df,
@@ -82,20 +82,20 @@ def make_figure(fit_results, df, xaxis_column_name, yaxis_column_name, d_columns
         size="size",
         color="shortname",
         hover_name="shortname",
-        color_discrete_map=fit_results.d_cmap,
-        custom_data=fit_results.custom_data_columns,
+        color_discrete_map=results.d_cmap,
+        custom_data=results.custom_data_columns,
         render_mode="webgl",
         symbol="shortname",
-        symbol_map=fit_results.d_symbols,
+        symbol_map=results.d_symbols,
     )
 
     # 2. * max(array of size values) / (desired maximum marker size ** 2)
 
     fig.update_traces(
-        hovertemplate=fit_results.hovertemplate,
+        hovertemplate=results.hovertemplate,
         marker_line_width=0,
         marker_sizemode="area",
-        marker_sizeref=2.0 * fit_results.max_of_size / (fit_results.marker_size ** 2),
+        marker_sizeref=2.0 * results.max_of_size / (results.marker_size ** 2),
     )
 
     fig.update_layout(
@@ -124,7 +124,7 @@ def make_figure(fit_results, df, xaxis_column_name, yaxis_column_name, d_columns
 #%%
 
 
-def plot_group(fit_results, group, fit=None, forward_reverse=""):
+def plot_group(results, group, fit=None, forward_reverse=""):
 
     custom_data_columns = [
         "direction",
@@ -146,7 +146,7 @@ def plot_group(fit_results, group, fit=None, forward_reverse=""):
         x="z",
         y="f",
         color="direction",
-        color_discrete_map=fit_results.d_cmap_fit,
+        color_discrete_map=results.d_cmap_fit,
         hover_name="direction",
         custom_data=custom_data_columns,
     )
@@ -209,7 +209,7 @@ def plot_group(fit_results, group, fit=None, forward_reverse=""):
     if fit is None:
         return fig
 
-    green_color = fit_results.d_cmap_fit["Fit"]
+    green_color = results.d_cmap_fit["Fit"]
     green_color_transparent = dashboard.utils.hex_to_rgb(green_color, opacity=0.1)
 
     # fit with errorbars
@@ -226,7 +226,7 @@ def plot_group(fit_results, group, fit=None, forward_reverse=""):
             mode="markers",
             name="Fit",
             marker_color=green_color,
-            hovertemplate=fit_results.hovertemplate_fit,
+            hovertemplate=results.hovertemplate_fit,
         )
     )
 
@@ -263,25 +263,25 @@ def plot_group(fit_results, group, fit=None, forward_reverse=""):
 #%%
 
 
-def update_raw_count_plots(fit_results, click_data, forward_reverse):
+def update_raw_count_plots(results, click_data, forward_reverse):
     if click_data is not None:
 
         shortname, tax_id = dashboard.utils.get_shortname_tax_id_from_click_data(
-            fit_results,
+            results,
             click_data,
         )
 
-        group = fit_results.get_single_count_group(
+        group = results.get_single_count_group(
             shortname,
             tax_id,
             forward_reverse,
         )
-        fit = fit_results.get_single_fit_prediction(
+        fit = results.get_single_fit_prediction(
             shortname,
             tax_id,
             forward_reverse,
         )
-        fig = dashboard.figures.plot_group(fit_results, group, fit, forward_reverse)
+        fig = dashboard.figures.plot_group(results, group, fit, forward_reverse)
         return fig
     else:
         raise PreventUpdate

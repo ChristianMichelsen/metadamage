@@ -20,7 +20,7 @@ def get_app(results_dir=Path("./data/out/results")):
     import metadamage as meta
     from metadamage import dashboard
 
-    fit_results = dashboard.results.load(results_dir)
+    results = dashboard.results.load(results_dir)
 
     #%%
 
@@ -62,7 +62,7 @@ def get_app(results_dir=Path("./data/out/results")):
 
     #%%
 
-    app.layout = dashboard.content.get_app_layout(fit_results, start_configuration)
+    app.layout = dashboard.content.get_app_layout(results, start_configuration)
 
     #%%
 
@@ -93,12 +93,12 @@ def get_app(results_dir=Path("./data/out/results")):
         return is_open, False
 
     @app.callback(
-        Output("sidebar_right_collapsed_toggle_fit_results", "is_open"),
-        Output("sidebar_right_btn_toggle_fit_results", "outline"),
-        Input("sidebar_right_btn_toggle_fit_results", "n_clicks"),
-        State("sidebar_right_collapsed_toggle_fit_results", "is_open"),
+        Output("sidebar_right_collapsed_toggle_results", "is_open"),
+        Output("sidebar_right_btn_toggle_results", "outline"),
+        Input("sidebar_right_btn_toggle_results", "n_clicks"),
+        State("sidebar_right_collapsed_toggle_results", "is_open"),
     )
-    def toggle_sidebar_right_fit_results(n, is_open):
+    def toggle_sidebar_right_results(n, is_open):
         if n:
             return not is_open, is_open
         return is_open, True
@@ -122,7 +122,7 @@ def get_app(results_dir=Path("./data/out/results")):
     )
     def update_sidebar_right_plot_combined(click_data):
         return dashboard.figures.update_raw_count_plots(
-            fit_results,
+            results,
             click_data,
             forward_reverse="",
         )
@@ -133,7 +133,7 @@ def get_app(results_dir=Path("./data/out/results")):
     )
     def update_sidebar_right_plot_forward(click_data):
         return dashboard.figures.update_raw_count_plots(
-            fit_results,
+            results,
             click_data,
             forward_reverse="Forward",
         )
@@ -144,22 +144,22 @@ def get_app(results_dir=Path("./data/out/results")):
     )
     def update_sidebar_right_plot_reverse(click_data):
         return dashboard.figures.update_raw_count_plots(
-            fit_results,
+            results,
             click_data,
             forward_reverse="Reverse",
         )
 
     @app.callback(
-        Output("sidebar_right_datatable_fit_results", "children"),
+        Output("sidebar_right_datatable_results", "children"),
         Input("main_graph", "clickData"),
     )
-    def update_sidebar_right_datatable_fit_results(click_data):
+    def update_sidebar_right_datatable_results(click_data):
         if click_data:
             shortname, tax_id = dashboard.utils.get_shortname_tax_id_from_click_data(
-                fit_results, click_data
+                results, click_data
             )
 
-            df_fit = fit_results.filter({"shortname": shortname, "tax_id": tax_id})
+            df_fit = results.filter({"shortname": shortname, "tax_id": tax_id})
             if len(df_fit) != 1:
                 raise AssertionError(f"Should only be length 1")
 
@@ -195,14 +195,14 @@ def get_app(results_dir=Path("./data/out/results")):
         Input("sidebar_left_dropdown_samples", "value"),
         Input("sidebar_left_tax_id_input", "value"),
         Input("tax_id_plot_button", "n_clicks"),
-        Input({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "value"),
+        Input({"type": "sidebar_left_results_dynamic", "index": ALL}, "value"),
         Input("xaxis_column", "value"),
         Input("yaxis_column", "value"),
         Input("marker_transformation_variable", "value"),
         Input("marker_transformation_function", "value"),
         Input("marker_transformation_slider", "value"),
         Input("modal_close_button", "n_clicks"),
-        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
+        State({"type": "sidebar_left_results_dynamic", "index": ALL}, "id"),
         State("sidebar_left_tax_id_input_descendants", "value"),
         State("sidebar_left_tax_id_subspecies", "value"),
         State("modal", "is_open"),
@@ -211,14 +211,14 @@ def get_app(results_dir=Path("./data/out/results")):
         sidebar_left_dropdown_samples,
         sidebar_left_tax_id_input,
         tax_id_plot_button,
-        sidebar_left_fit_results_dynamic_value,
+        sidebar_left_results_dynamic_value,
         xaxis_column_name,
         yaxis_column_name,
         marker_transformation_variable,
         marker_transformation_function,
         marker_transformation_slider,
         modal_close_button,
-        sidebar_left_fit_results_dynamic_ids,
+        sidebar_left_results_dynamic_ids,
         sidebar_left_tax_id_input_descendants,
         sidebar_left_tax_id_subspecies,
         modal,
@@ -232,7 +232,7 @@ def get_app(results_dir=Path("./data/out/results")):
         if not sidebar_left_dropdown_samples:
             raise PreventUpdate
 
-        fit_results.set_marker_size(
+        results.set_marker_size(
             marker_transformation_variable,
             marker_transformation_function,
             marker_transformation_slider,
@@ -240,14 +240,14 @@ def get_app(results_dir=Path("./data/out/results")):
 
         d_filter = {"shortnames": sidebar_left_dropdown_samples}
 
-        columns_no_log = [id["index"] for id in sidebar_left_fit_results_dynamic_ids]
+        columns_no_log = [id["index"] for id in sidebar_left_results_dynamic_ids]
         for shortname, values in zip(
-            columns_no_log, sidebar_left_fit_results_dynamic_value
+            columns_no_log, sidebar_left_results_dynamic_value
         ):
             d_filter[shortname] = values
 
         dashboard.utils.apply_sidebar_left_tax_id(
-            fit_results,
+            results,
             d_filter,
             sidebar_left_tax_id_input,
         )
@@ -258,15 +258,15 @@ def get_app(results_dir=Path("./data/out/results")):
             sidebar_left_tax_id_subspecies,
         )
 
-        df_fit_results_filtered = fit_results.filter(d_filter)
+        df_results_filtered = results.filter(d_filter)
 
         # raise modal warning if no results due to too restrictive filtering
-        if len(df_fit_results_filtered) == 0:
+        if len(df_results_filtered) == 0:
             return dash.no_update, True
 
         fig = dashboard.figures.make_figure(
-            fit_results,
-            df=df_fit_results_filtered,
+            results,
+            df=df_results_filtered,
             xaxis_column_name=xaxis_column_name,
             yaxis_column_name=yaxis_column_name,
             d_columns_latex=d_columns_latex,
@@ -285,13 +285,13 @@ def get_app(results_dir=Path("./data/out/results")):
             sidebar_left_dropdown_samples,
             "Select all",
         ):
-            sidebar_left_dropdown_samples = fit_results.shortnames
+            sidebar_left_dropdown_samples = results.shortnames
         elif dashboard.utils.key_is_in_list_case_insensitive(
             sidebar_left_dropdown_samples,
             "Default selection",
         ):
             sidebar_left_dropdown_samples = dashboard.utils.get_shortnames_each(
-                fit_results.shortnames
+                results.shortnames
             )
 
         sidebar_left_dropdown_samples = list(sorted(sidebar_left_dropdown_samples))
@@ -301,10 +301,10 @@ def get_app(results_dir=Path("./data/out/results")):
     #%%
 
     @app.callback(
-        Output("sidebar_left_fit_results_container", "children"),
-        Input("sidebar_left_fit_results", "value"),
-        State("sidebar_left_fit_results_container", "children"),
-        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
+        Output("sidebar_left_results_container", "children"),
+        Input("sidebar_left_results", "value"),
+        State("sidebar_left_results_container", "children"),
+        State({"type": "sidebar_left_results_dynamic", "index": ALL}, "id"),
         prevent_initial_call=True,
     )
     def update_sidebar_left_fit_result_sliders(dropdown_names, children, current_ids):
@@ -319,7 +319,7 @@ def get_app(results_dir=Path("./data/out/results")):
                 current_names, dropdown_names
             )
             new_element = dashboard.content.make_new_slider(
-                fit_results, column, id_type=id_type
+                results, column, id_type=id_type
             )
             children.append(new_element)
 
@@ -336,17 +336,17 @@ def get_app(results_dir=Path("./data/out/results")):
 
     @app.callback(
         Output(
-            {"type": "sidebar_left_fit_results_dynamic_name", "index": MATCH},
+            {"type": "sidebar_left_results_dynamic_name", "index": MATCH},
             "children",
         ),
-        Input({"type": "sidebar_left_fit_results_dynamic", "index": MATCH}, "value"),
-        State({"type": "sidebar_left_fit_results_dynamic", "index": MATCH}, "id"),
+        Input({"type": "sidebar_left_results_dynamic", "index": MATCH}, "value"),
+        State({"type": "sidebar_left_results_dynamic", "index": MATCH}, "id"),
         prevent_initial_call=True,
     )
     def update_sidebar_left_fit_result_slider_names(
-        dynamic_slider_values, sidebar_left_fit_results_dynamic_name
+        dynamic_slider_values, sidebar_left_results_dynamic_name
     ):
-        column = sidebar_left_fit_results_dynamic_name["index"]
+        column = sidebar_left_results_dynamic_name["index"]
         name = dashboard.content.get_slider_name(column, dynamic_slider_values)
         return name
 
@@ -401,12 +401,12 @@ def get_app(results_dir=Path("./data/out/results")):
         return is_open, True
 
     @app.callback(
-        Output("sidebar_left_fit_results_collapsed", "is_open"),
-        Output("sidebar_left_fit_results_btn", "outline"),
-        Input("sidebar_left_fit_results_btn", "n_clicks"),
-        State("sidebar_left_fit_results_collapsed", "is_open"),
+        Output("sidebar_left_results_collapsed", "is_open"),
+        Output("sidebar_left_results_btn", "outline"),
+        Input("sidebar_left_results_btn", "n_clicks"),
+        State("sidebar_left_results_collapsed", "is_open"),
     )
-    def toggle_sidebar_left_fit_results(n, is_open):
+    def toggle_sidebar_left_results(n, is_open):
         if n:
             return not is_open, is_open
         return is_open, True
@@ -474,8 +474,8 @@ def get_app(results_dir=Path("./data/out/results")):
         Input("navbar_btn_export", "n_clicks"),
         State("sidebar_left_dropdown_samples", "value"),
         State("sidebar_left_tax_id_input", "value"),
-        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "value"),
-        State({"type": "sidebar_left_fit_results_dynamic", "index": ALL}, "id"),
+        State({"type": "sidebar_left_results_dynamic", "index": ALL}, "value"),
+        State({"type": "sidebar_left_results_dynamic", "index": ALL}, "id"),
         State("sidebar_left_tax_id_input_descendants", "value"),
         State("sidebar_left_tax_id_subspecies", "value"),
     )
@@ -483,8 +483,8 @@ def get_app(results_dir=Path("./data/out/results")):
         navbar_btn_export,
         sidebar_left_dropdown_samples,
         sidebar_left_tax_id_input,
-        sidebar_left_fit_results_dynamic_value,
-        sidebar_left_fit_results_dynamic_ids,
+        sidebar_left_results_dynamic_value,
+        sidebar_left_results_dynamic_ids,
         sidebar_left_tax_id_input_descendants,
         sidebar_left_tax_id_subspecies,
     ):
@@ -494,15 +494,15 @@ def get_app(results_dir=Path("./data/out/results")):
             d_filter = {"shortnames": sidebar_left_dropdown_samples}
 
             columns_no_log = [
-                id["index"] for id in sidebar_left_fit_results_dynamic_ids
+                id["index"] for id in sidebar_left_results_dynamic_ids
             ]
             for shortname, values in zip(
-                columns_no_log, sidebar_left_fit_results_dynamic_value
+                columns_no_log, sidebar_left_results_dynamic_value
             ):
                 d_filter[shortname] = values
 
             dashboard.utils.apply_sidebar_left_tax_id(
-                fit_results,
+                results,
                 d_filter,
                 sidebar_left_tax_id_input,
             )
@@ -513,10 +513,10 @@ def get_app(results_dir=Path("./data/out/results")):
                 sidebar_left_tax_id_subspecies,
             )
 
-            df_fit_results_filtered = fit_results.filter(d_filter)
+            df_results_filtered = results.filter(d_filter)
 
             return send_data_frame(
-                df_fit_results_filtered.loc[:, :"LCA"].to_csv,
+                df_results_filtered.loc[:, :"LCA"].to_csv,
                 "filtered_results.csv",
                 index=False,
             )
