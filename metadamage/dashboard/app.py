@@ -465,7 +465,7 @@ def get_app(results_dir=Path("./data/out/results")):
 
         # base configuration
         else:
-            return *start_configuration, True, True
+            return *start_configuration, True, False
 
     #%%
 

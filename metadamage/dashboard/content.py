@@ -14,69 +14,23 @@ from metadamage import dashboard
 #%%
 
 
-# def get_navbar():
-
-#     navbar = dbc.NavbarSimple(
-#         [
-#             dbc.Button(
-#                 "Filters",
-#                 outline=True,
-#                 color="light",
-#                 className="mr-1",
-#                 id="sidebar_left_toggle_btn",
-#             ),
-#             dbc.Button(
-#                 "Counts",
-#                 outline=True,
-#                 color="light",
-#                 className="mr-1",
-#                 id="sidebar_right_toggle_btn",
-#             ),
-#             dbc.Button(
-#                 "Styling",
-#                 outline=True,
-#                 color="light",
-#                 className="mr-1",
-#                 id="navbar_btn_toggle_styling",
-#                 # style={"margin-right": "100px"},
-#             ),
-#             dbc.Button(
-#                 "Export",
-#                 outline=True,
-#                 color="light",
-#                 className="mr-1",
-#                 id="navbar_btn_export",
-#                 # style={"margin-left": "100px"},
-#             ),
-#             Download(id="export"),
-#         ],
-#         brand="mDamage",
-#         brand_href="https://github.com/ChristianMichelsen/metadamage",
-#         color="dark",
-#         dark=True,
-#         fluid=True,
-#     )
-
-#     return navbar
-
-
 def get_navbar():
 
     navbar = dbc.NavbarSimple(
         [
+            dbc.Button(
+                "Mismatch",
+                outline=False,
+                color="light",
+                className="mr-1",
+                id="sidebar_right_toggle_btn",
+            ),
             dbc.Button(
                 "Filters",
                 outline=True,
                 color="light",
                 className="mr-1",
                 id="sidebar_left_toggle_btn",
-            ),
-            dbc.Button(
-                "Counts",
-                outline=True,
-                color="light",
-                className="mr-1",
-                id="sidebar_right_toggle_btn",
             ),
             dbc.Button(
                 "Styling",
