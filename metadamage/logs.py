@@ -1,13 +1,10 @@
-# Standard Library
 from datetime import datetime
 import logging
 from multiprocessing import current_process
 from pathlib import Path
 
-# Third Party
 from rich.logging import RichHandler
 
-# First Party
 from metadamage.progressbar import console
 
 

@@ -1,7 +1,5 @@
-# Standard Library
 from pathlib import Path
 
-# Third Party
 from ete3 import NCBITaxa
 from joblib import Memory
 

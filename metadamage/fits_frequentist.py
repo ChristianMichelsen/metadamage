@@ -1,5 +1,6 @@
-# Scientific Library
+from iminuit import Minuit
 import matplotlib.pyplot as plt
+from numba import njit
 import numpy as np
 from scipy.stats import (
     beta as sp_beta,
@@ -7,11 +8,6 @@ from scipy.stats import (
     expon as sp_exponential,
 )
 
-# Third Party
-from iminuit import Minuit
-from numba import njit
-
-# First Party
 from metadamage import fit_utils
 
 

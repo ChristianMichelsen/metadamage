@@ -1,15 +1,13 @@
-# Standard Library
 import itertools
 
-# Third Party
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 from dash_extensions import Download
 import dash_html_components as html
 
-# First Party
 import metadamage as meta
 from metadamage import dashboard
+
 
 #%%
 

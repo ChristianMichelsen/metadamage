@@ -1,16 +1,14 @@
-# First Party
-from metadamage.logs import Log
 from metadamage import (
-    utils,
-    mismatches,
     fits,
-    LCA,
-    io,
     fits_Bayesian,
     fits_frequentist,
+    io,
+    LCA,
     main,
+    mismatches,
+    utils,
 )
+from metadamage.logs import Log
 
 
-# logs.setup(__name__)
 Log(__name__).setup()

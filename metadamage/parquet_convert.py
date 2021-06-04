@@ -1,8 +1,6 @@
-# Standard Library
 from concurrent import futures
 from pathlib import Path
 
-# Third Party
 import pyarrow.parquet as pq
 from tqdm.auto import tqdm
 

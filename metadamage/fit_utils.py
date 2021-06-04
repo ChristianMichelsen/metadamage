@@ -1,15 +1,11 @@
-# Scientific Library
+import math
+
+from iminuit import describe
 import matplotlib.pyplot as plt
+from numba import njit
 import numpy as np
 from scipy.special import erf, erfinv
 from scipy.stats import beta as sp_beta, chi2 as sp_chi2
-
-# Standard Library
-import math
-
-# Third Party
-from iminuit import describe
-from numba import njit
 
 
 def get_priors():

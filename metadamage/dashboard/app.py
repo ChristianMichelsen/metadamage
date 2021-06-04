@@ -1,17 +1,13 @@
-# Scientific Library
-import numpy as np
-import pandas as pd
-
-# Standard Library
 from pathlib import Path
 
-# Third Party
 import dash
 from dash.dependencies import ALL, Input, MATCH, Output, State
 from dash.exceptions import PreventUpdate
 import dash_bootstrap_components as dbc
 from dash_extensions.snippets import send_data_frame
 import dash_html_components as html
+import numpy as np
+import pandas as pd
 
 
 def get_app(results_dir=Path("./data/out/results")):
@@ -493,9 +489,7 @@ def get_app(results_dir=Path("./data/out/results")):
 
             d_filter = {"shortnames": sidebar_left_dropdown_samples}
 
-            columns_no_log = [
-                id["index"] for id in sidebar_left_results_dynamic_ids
-            ]
+            columns_no_log = [id["index"] for id in sidebar_left_results_dynamic_ids]
             for shortname, values in zip(
                 columns_no_log, sidebar_left_results_dynamic_value
             ):

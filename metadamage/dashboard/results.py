@@ -1,11 +1,12 @@
+import logging
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
-import logging
-from scipy.stats import betabinom as sp_betabinom
-from pathlib import Path
-from metadamage import dashboard
 import plotly.express as px
-from metadamage import io
+from scipy.stats import betabinom as sp_betabinom
+
+from metadamage import dashboard, io
 
 
 def clip_df(df, column):
@@ -70,7 +71,7 @@ class Results:
 
         log_columns = [
             "N_reads",
-            # "N_alignments",
+            "N_alignments",
             "lambda_LR",
             "phi",
             "k_sum_total",
@@ -204,7 +205,7 @@ class Results:
                 "Bayesian_phi",
                 # Counts
                 "N_reads",
-                # "N_alignments",
+                "N_alignments",
                 "N_sum_total",
                 "k_sum_total",
             ]
@@ -229,7 +230,7 @@ class Results:
                 "    phi:      %{customdata[_XXX_]:9.3s} <br><br>"
                 "<b>Counts</b>: <br>"
                 "    N reads:     %{customdata[_XXX_]:6.3s} <br>"
-                # "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
+                "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
                 "    N sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "    k sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "<extra></extra>"
@@ -254,7 +255,7 @@ class Results:
                 "rho_Ac",
                 # Counts
                 "N_reads",
-                # "N_alignments",
+                "N_alignments",
                 "N_sum_total",
                 "k_sum_total",
             ]
@@ -274,7 +275,7 @@ class Results:
                 "    rho_Ac:   %{customdata[_XXX_]:9.3f} <br><br>"
                 "<b>Counts</b>: <br>"
                 "    N reads:     %{customdata[_XXX_]:6.3s} <br>"
-                # "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
+                "    N alignments:%{customdata[_XXX_]:6.3s} <br>"
                 "    N sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "    k sum total: %{customdata[_XXX_]:6.3s} <br>"
                 "<extra></extra>"

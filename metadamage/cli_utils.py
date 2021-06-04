@@ -1,8 +1,6 @@
-# Standard Library
 from enum import Enum
 from typing import Iterable
 
-# Third Party
 import click
 from click import Context
 from click_help_colors import HelpColorsCommand, HelpColorsGroup

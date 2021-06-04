@@ -1,36 +1,20 @@
-# Scientific Library
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-# from jax.scipy.special import logsumexp
-from scipy.special import logsumexp
-
-# Standard Library
+from collections import defaultdict
 import logging
 from multiprocessing import current_process, Manager, Pool, Process, Queue
 import time
 import warnings
 
-# Third Party
-import jax
-import jax.numpy as jnp
-from jax.random import PRNGKey as Key
-from joblib import delayed, Parallel
-import numpyro
-from numpyro import distributions as dist
-from numpyro.infer import log_likelihood, MCMC, NUTS, Predictive
+import joblib
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import timeout_decorator
 from timeout_decorator import TimeoutError
-from tqdm.auto import tqdm
 
-# First Party
-# from metadamage import meta.fits_Bayesian, meta.fits_frequentist, meta.io, meta.utils
 import metadamage as meta
 from metadamage.progressbar import progress
 
 
-numpyro.enable_x64()
 logger = logging.getLogger(__name__)
 
 #%%
@@ -47,9 +31,9 @@ def get_groupby(df_mismatches):
 
 def group_to_numpyro_data(cfg, group):
 
-    forward = cfg.substitution_bases_forward
+    forward = "CT"
     forward_ref = forward[0]
-    reverse = cfg.substitution_bases_reverse
+    reverse = "GA"
     reverse_ref = reverse[0]
 
     z = np.array(group.iloc[:15]["position"], dtype=int)
@@ -297,10 +281,6 @@ def compute_fits_parallel_with_progressbar_chunks(cfg, df_mismatches, chunk_max=
     return d_fits_all_chunks
 
 
-import joblib
-from collections import defaultdict
-
-
 def compute_duplicates(df_mismatches):
 
     groupby = get_groupby(df_mismatches)
@@ -366,7 +346,7 @@ def compute_fits(cfg, df_mismatches):
         "tax_name",
         "tax_rank",
         "N_reads",
-        # "N_alignments",
+        "N_alignments",
         "lambda_LR",
         "D_max",
         "mean_L",
@@ -382,17 +362,23 @@ def compute_fits(cfg, df_mismatches):
 
 
 def read_stats(cfg):
-    columns = [
-        "tax_id",
-        "tax_name",
-        "tax_rank",
-        "N_reads",
-        "mean_L",
-        "var_L",
-        "mean_GC",
-        "var_GC",
-    ]
-    df_stats = pd.read_csv(cfg.filename_mismatches_stats, sep="\t", names=columns)
+
+    d_rename = {
+        "#taxid": "tax_id",
+        "name": "tax_name",
+        "rank": "tax_rank",
+        "nalign": "N_alignments",
+        "nreads": "N_reads",
+        "mean_rlen": "mean_L",
+        "var_rlen": "var_L",
+        "mean_gc": "mean_GC",
+        "var_gc": "var_GC",
+    }
+    # fmt: off
+    df_stats = (pd.read_csv(cfg.filename_mismatches_stats, sep="\t")
+                  .rename(columns=d_rename)
+                )
+    # fmt: on
     df_stats["std_L"] = np.sqrt(df_stats["var_L"])
     df_stats["std_GC"] = np.sqrt(df_stats["var_GC"])
     return df_stats
@@ -429,22 +415,14 @@ def load(cfg, df_mismatches):
 
     if parquet_fit_results.exists(cfg.forced):
 
-        include = [
-            # "min_alignments",
-            "min_k_sum",
-            "substitution_bases_forward",
-            "substitution_bases_reverse",
-            "N_fits",
-            "shortname",
-            # "filename",
-        ]
-
         metadata_cfg = cfg.to_dict()
 
         metadata_file_fit_results = parquet_fit_results.load_metadata()
 
         if meta.utils.metadata_is_similar(
-            metadata_file_fit_results, metadata_cfg, include=include
+            metadata_file_fit_results,
+            metadata_cfg,
+            # include=include,
         ):
 
             logger.info(f"Fit: Loading fits from parquet-file.")
@@ -460,42 +438,3 @@ def load(cfg, df_mismatches):
     parquet_fit_results.save(df_fit_results, metadata=cfg.to_dict())
 
     return df_fit_results
-
-
-#%%
-
-
-# import arviz as az
-
-# data_no_k = filter_out_k(data)
-
-# def get_InferenceData(mcmc, model):
-
-#     posterior_samples = mcmc.get_samples()
-#     posterior_predictive = Predictive(model, posterior_samples)(Key(1), **data_no_k)
-#     prior = Predictive(model, num_samples=500)(Key(2), **data_no_k)
-
-#     numpyro_data = az.from_numpyro(
-#         mcmc,
-#         prior=prior,
-#         posterior_predictive=posterior_predictive,
-#         # coords={"school": np.arange(eight_school_data["J"])},
-#         # dims={"theta": ["school"]},
-#     )
-
-#     return numpyro_data
-
-# data_PMD = get_InferenceData(mcmc_PMD, model_PMD)
-# data_null = get_InferenceData(mcmc_null, model_null)
-
-# var_names = ["A", "D_max", "q", "c", "phi"]
-
-# az.plot_trace(data_PMD, var_names=var_names)
-# az.plot_dist_comparison(data_PMD, var_names=var_names)
-# az.plot_posterior(data_PMD, var_names=var_names)
-
-# model_compare = az.compare({"PMD": data_PMD, "Null": data_null}, ic="waic", scale='deviance')
-
-# model_compare[['rank', 'waic', 'd_waic', 'dse']]
-
-# az.plot_compare(model_compare, insample_dev=False)

@@ -1,21 +1,14 @@
-# Scientific Library
-import numpy as np
-
-# Standard Library
 from collections import namedtuple
 from threading import Timer
 import webbrowser
 
-# Third Party
 from PIL import ImageColor
 from dash.exceptions import PreventUpdate
-
-#%%
 import dash_core_components as dcc
+import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 
-# First Party
 import metadamage as meta
 
 

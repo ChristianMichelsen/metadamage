@@ -1,12 +1,4 @@
-# Scientific Library
-import numpy as np
-import pandas as pd
-from scipy import stats
-from scipy.stats import norm as sp_norm
-from scipy.stats.distributions import chi2 as sp_chi2
-
-# Standard Library
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict
 from importlib.metadata import version
 import importlib.resources as importlib_resources
 import logging
@@ -15,18 +7,21 @@ import platform
 import shutil
 from typing import List, Optional, Union
 
-# Third Party
 from PyPDF2 import PdfFileReader
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
 import dill
 from joblib import Parallel
+import numpy as np
+import pandas as pd
 from psutil import cpu_count
 from rich import box
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
+from scipy import stats
+from scipy.stats import norm as sp_norm
+from scipy.stats.distributions import chi2 as sp_chi2
 import toml
 
-# First Party
 from metadamage.progressbar import console, progress
 
 
@@ -39,69 +34,109 @@ logger = logging.getLogger(__name__)
 #%%
 
 
-@dataclass
+def get_number_of_cores_to_use(max_cores):
+
+    available_cores = cpu_count(logical=True)
+
+    if max_cores > available_cores:
+        N_cores = available_cores - 1
+        logger.info(
+            f"'max_cores' is set to a value larger than the maximum available"
+            f"so clipping to {N_cores} (available-1) cores"
+        )
+
+    elif max_cores < 0:
+        N_cores = max(1, available_cores - abs(max_cores))
+        logger.info(
+            f"'max-cores' is set to a negative value"
+            f"so using {N_cores} (available-max_cores) cores"
+        )
+
+    else:
+        N_cores = max_cores
+
+    return N_cores
+
+
+#%%
+
+
+class Configs:
+    def __init__(
+        self,
+        filenames,
+        out_dir=Path("./data/out/"),
+        max_cores=1,
+        bayesian=False,
+        forced=False,
+    ):
+        self.filenames = remove_bad_files(filenames)
+        self.out_dir = Path(out_dir)
+        self.max_cores = int(max_cores)
+        self.bayesian = bayesian
+        self.forced = forced
+        self.N_files = len(self.filenames)
+        self.N_cores = get_number_of_cores_to_use(max_cores)
+        self.intermediate_dir = out_dir / ".intermediate"
+
+    def __iter__(self):
+        for filename in self.filenames:
+            cfg = Config(self, filename)
+            yield cfg
+
+    def __repr__(self):
+        s = f"Configs(filenames = {self.filenames}, out_dir = {self.out_dir})"
+        return s
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        yield f""
+        my_table = Table(title="[b]Configuration:[/b]", box=box.MINIMAL_HEAVY_HEAD)
+        my_table.add_column("Attribute", justify="left", style="cyan")
+        my_table.add_column("Value", justify="center", style="magenta")
+
+        my_table.add_row("Output directory", str(self.out_dir))
+        my_table.add_row("Number of files", str(self.N_files))
+
+        my_table.add_row("Number of cores to use", str(self.N_cores))
+
+        my_table.add_row("Bayesian", str(self.bayesian))
+        my_table.add_row("Forced", str(self.forced))
+
+        yield my_table
+
+
 class Config:
-    out_dir: Path
-    #
-    max_fits: Optional[int]
-    max_cores: int
-    # max_position: Optional[int]
-    #
-    # min_alignments: int
-    min_k_sum: int
-    min_N_at_each_pos: int
-    #
-    substitution_bases_forward: str
-    substitution_bases_reverse: str
-    #
-    bayesian: bool
-    forced: bool
-    version: str
-    dask_port: int
-    #
-    filename: Optional[Path] = None
-    shortname: Optional[str] = None
+    def __init__(self, cfgs, filename):
 
-    N_filenames: Optional[int] = None
-    N_fits: Optional[int] = None
-    N_cores: int = field(init=False)
+        self.__dict__.update(
+            {key: val for key, val in cfgs.__dict__.items() if key != "filenames"}
+        )
 
-    def __post_init__(self):
-        self._set_N_cores()
-        self.intermediate_dir = self.out_dir / ".intermediate"
-        if not self.intermediate_dir.exists():
-            self.intermediate_dir.mkdir(parents=True)
-
-    def _set_N_cores(self):
-        available_cores = cpu_count(logical=True)
-        if self.max_cores > available_cores:
-            self.N_cores = available_cores - 1
-            logger.info(
-                f"'max_cores' is set to a value larger than the maximum available"
-                f"so clipping to {self.N_cores} (available-1) cores"
-            )
-        elif self.max_cores < 0:
-            self.N_cores = available_cores - abs(self.max_cores)
-            logger.info(
-                f"'max-cores' is set to a negative value"
-                f"so using {self.N_cores} (available-max_cores) cores"
-            )
-        else:
-            self.N_cores = self.max_cores
-
-    def add_filenames(self, filenames):
-        self.N_filenames = len(filenames)
-
-    def add_filename(self, filename):
-        self.filename = Path(filename)
         self.shortname = extract_name(filename)
+        self.filename = Path(filename)
+        self.out_dir = Path(self.out_dir)
+        self.intermediate_dir = Path(self.intermediate_dir)
 
-    def _test_for_shortname(self, methodname):
-        if self.shortname is None:
-            raise AssertionError(
-                f"Shortname has to be set before {methodname} is defined: "
-                "cfg.add_filename(filename) "
-            )
+    def __repr__(self):
+        s = f"Config(filename = {self.filename})"
+        return s
+
+    def to_dict(self):
+        # d_out = asdict(self)
+        d_out = dict(self.__dict__)
+        for key, val in d_out.items():
+            if isinstance(val, Path):
+                d_out[key] = str(val)
+        return d_out
+
+    def set_number_of_fits(self, df_mismatches):
+        self.N_fits = len(pd.unique(df_mismatches.tax_id))
+
+    @property
+    def file_is_valid(self):
+        return file_is_valid(self.filename)
 
     @property
     def filename_mismatch(self):
@@ -113,94 +148,27 @@ class Config:
 
     @property
     def filename_mismatches_parquet(self):
-        self._test_for_shortname("filename_mismatches_parquet")
+        if not self.intermediate_dir.exists():
+            self.intermediate_dir.mkdir(parents=True)
         return self.intermediate_dir / f"{self.shortname}.mismatches.parquet"
 
     @property
     def filename_fit_results(self):
-        self._test_for_shortname("filename_fit_results")
+        if not self.intermediate_dir.exists():
+            self.intermediate_dir.mkdir(parents=True)
         return self.intermediate_dir / f"{self.shortname}.fit_results.parquet"
 
     @property
     def filename_results(self):
-        self._test_for_shortname("filename_results")
         return self.out_dir / "results" / f"{self.shortname}.results.parquet"
 
     @property
     def filename_results_read(self):
-        self._test_for_shortname("filename_results_read")
         return self.out_dir / "reads" / f"{self.shortname}.results.read.parquet"
 
     @property
     def filename_LCA(self):
-        self._test_for_shortname("filename_LCA")
         return Path(str(self.filename).replace(".mismatch", ".lca"))
-
-    def set_number_of_fits(self, df_mismatches):
-        self.N_tax_ids = len(pd.unique(df_mismatches.tax_id))
-
-        if self.max_fits is not None and self.max_fits > 0:
-            self.N_fits = min(self.max_fits, self.N_tax_ids)
-
-        # use all TaxIDs available
-        else:
-            self.N_fits = self.N_tax_ids
-        logger.info(f"Setting number_of_fits to {self.N_fits}")
-
-    def to_dict(self):
-        d_out = asdict(self)
-        for key, val in d_out.items():
-            if isinstance(val, Path):
-                d_out[key] = str(val)
-        return d_out
-
-    # def save_dict(self, dict_name):
-    #     d_out = self.to_dict()
-    #     with open(dict_name, "w") as f:
-    #         toml.dump(d_out, f)
-
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        yield f""
-        my_table = Table(title="[b]Configuration:[/b]", box=box.MINIMAL_HEAVY_HEAD)
-        # my_table = Table(title="Configuration:")
-        my_table.add_column("Attribute", justify="left", style="cyan")
-        my_table.add_column("Value", justify="center", style="magenta")
-
-        if self.N_filenames:
-            my_table.add_row("Number of files", str(self.N_filenames))
-
-        my_table.add_row("Output directory", str(self.out_dir))
-
-        my_table.add_row("Maximum number of fits pr. file", str(self.max_fits))
-        if self.N_fits:
-            my_table.add_row("Number of fits  pr. file", str(self.N_fits))
-
-        my_table.add_row("Maximum number of cores to use", str(self.max_cores))
-        if self.N_cores:
-            my_table.add_row("Number of cores to use", str(self.N_cores))
-
-        # my_table.add_row("Minimum number of alignments", str(self.min_alignments))
-        my_table.add_row("Minimum k sum", str(self.min_k_sum))
-        my_table.add_row("Minimum N at each position", str(self.min_N_at_each_pos))
-
-        my_table.add_row(
-            "Substitution bases forward", str(self.substitution_bases_forward)
-        )
-        my_table.add_row(
-            "Substitution bases reverse", str(self.substitution_bases_reverse)
-        )
-
-        my_table.add_row("Bayesian", str(self.bayesian))
-        my_table.add_row("Forced", str(self.forced))
-        my_table.add_row("Version", self.version)
-
-        if self.filename:
-            my_table.add_row("Filename", str(self.filename))
-            my_table.add_row("Shortname", str(self.shortname))
-
-        yield my_table
 
 
 #%%
@@ -213,7 +181,7 @@ for ref in ACTG:
     for obs in ACTG:
         ref_obs_bases.append(f"{ref}{obs}")
 
-mismatch_suffix = "lead.mismatch"
+mismatch_suffix = ".mismatch"
 
 
 def is_mismatch_file(s):
@@ -221,14 +189,14 @@ def is_mismatch_file(s):
 
 
 def remove_bad_files(filenames):
-    """Keeps only files that ends with lead.mismatch.
+    """Keeps only files that ends with .mismatch.
     Returns as Paths
     """
     filenames_good = []
     for filename in filenames:
         # break
         if filename.is_dir():
-            filenames_good += list(filename.glob(f"*.{mismatch_suffix}"))
+            filenames_good += list(filename.glob(f"*{mismatch_suffix}"))
         elif filename.is_file() and is_mismatch_file(filename):
             filenames_good.append(filename)
     return sorted(filenames_good)
@@ -282,7 +250,7 @@ def init_parent_folder(filename):
 
 
 def is_forward(df):
-    return df["strand"] == "5'"
+    return df["direction"] == "5'"
 
 
 def get_forward(df):
@@ -308,49 +276,6 @@ def save_dill(filename, x):
     init_parent_folder(filename)
     with open(filename, "wb") as file:
         dill.dump(x, file)
-
-
-# def save_to_hdf5(filename, key, value):
-#     with pd.HDFStore(filename, mode="a") as store:
-#         store.put(key, value, data_columns=True, format="Table")
-
-
-# def save_metadata_to_hdf5(filename, key, value, metadata):
-#     with pd.HDFStore(filename, mode="a") as store:
-#         store.get_storer(key).attrs.metadata = metadata
-
-
-# def load_from_hdf5(filename, key):
-
-#     if isinstance(key, str):
-#         with pd.HDFStore(filename, mode="r") as store:
-#             df = store.get(key)
-#         return df
-
-#     elif isinstance(key, (list, tuple)):
-#         keys = key
-#         out = []
-#         with pd.HDFStore(filename, mode="r") as store:
-#             for key in keys:
-#                 out.append(store.get(key))
-#         return out
-
-
-# def load_metadata_from_hdf5(filename, key):
-#     with pd.HDFStore(filename, mode="r") as store:
-#         metadata = store.get_storer(key).attrs.metadata
-#     return metadata
-
-
-# def get_hdf5_keys(filename, ignore_subgroups=False):
-#     with pd.HDFStore(filename, mode="r") as store:
-#         keys = store.keys()
-
-#     if ignore_subgroups:
-#         keys = list(set([key.split("/")[1] for key in keys]))
-#         return keys
-#     else:
-#         raise AssertionError(f"ignore_subgroups=False not implemented yet.")
 
 
 #%%
@@ -462,84 +387,6 @@ def is_macbook():
 #%%
 
 
-# def get_percentile_as_lim(x, percentile_max=99):
-#     # percentile_max = 99.5
-#     percentile_min = 100 - percentile_max
-
-#     if x.min() == 0:
-#         return (0, np.percentile(x, percentile_max))
-#     else:
-#         return (np.percentile(x, percentile_min), np.percentile(x, percentile_max))
-
-
-#%%
-
-
-# def get_N_cores(cfg):
-
-#     if cfg.N_cores > 0:
-#         N_cores = cfg.N_cores
-#     else:
-#         N_cores = cpu_count(logical=True)
-#         N_cores = N_cores - abs(cfg.N_cores)
-#         if N_cores < 1:
-#             N_cores = 1
-#     return N_cores
-
-
-#%%
-
-
-# def get_sorted_and_cutted_df(df, df_results, cfg):
-
-#     min_damage = cfg.min_damage if cfg.min_damage else -np.inf
-#     min_sigma = cfg.min_sigma if cfg.min_sigma else -np.inf
-#     min_alignments = cfg.min_alignments if cfg.min_alignments else -np.inf
-
-#     query = (
-#         f"D_max >= {min_damage} "
-#         + f"and n_sigma >= {min_sigma} "
-#         + f"and N_alignments >= {min_alignments}"
-#     )
-
-#     # cut away fits and TaxIDs which does not satisfy cut criteria
-#     df_results_cutted = df_results.query(query)
-#     if len(df_results_cutted) == 0:
-#         logger.warning(
-#             f"{cfg.shortname} did not have any fits that matched the requirements. "
-#             f"Skipping for now"
-#         )
-#         return None
-
-#     d_sort_by = {
-#         "alignments": "N_alignments",
-#         "damage": "D_max",
-#         "sigma": "n_sigma",
-#     }
-#     sort_by = d_sort_by[cfg.sort_by.lower()]
-
-#     # sort the TaxIDs
-#     df_results_cutted_ordered = df_results_cutted.sort_values(sort_by, ascending=False)
-
-#     tax_ids = df_results_cutted_ordered.index
-
-#     # get the number_of_plots in the top
-#     tax_ids_top = tax_ids[: cfg.number_of_plots]
-
-#     # the actual dataframe, unrelated to the fits
-#     df_plot = df.query("tax_id in @tax_ids_top")
-#     # the actual dataframe, unrelated to the fits, now sorted
-#     # df_plot_sorted = df_plot.sort_values(sort_by, ascending=False)
-#     df_plot_sorted = pd.concat(
-#         [df_plot.query(f"tax_id == {tax_id}") for tax_id in tax_ids_top]
-#     )
-
-#     return df_plot_sorted
-
-
-#%%
-
-
 def is_df_mismatches_accepted(cfg, df_mismatches):
     if len(df_mismatches) > 0:
         return True
@@ -554,7 +401,7 @@ def is_df_mismatches_accepted(cfg, df_mismatches):
 #%%
 
 
-def initial_print(cfg, filenames):
+def initial_print(cfgs):
 
     console.print("")
     console.rule("[bold red]Initialization")
@@ -562,7 +409,7 @@ def initial_print(cfg, filenames):
     #     f"\nRunning [bold green underline]metadamage[/bold green underline] "
     #     f"on {len(filenames)} file(s) using the following configuration: \n"
     # )
-    console.print(cfg)
+    console.print(cfgs)
     # console.print("")
 
     console.rule("[bold red]Main")

@@ -1,11 +1,8 @@
-# Standard Library
 from pathlib import Path
 from typing import List, Optional
 
-# Third Party
 import typer
 
-# First Party
 from metadamage import cli_utils
 
 
@@ -43,28 +40,11 @@ def callback(
 
 @cli_app.command("fit")
 def cli_fit(
-    # Paths: input filename(s) and output directory
     filenames: List[Path] = typer.Argument(...),
     out_dir: Path = typer.Option(out_dir_default),
-    # Fit options
-    max_fits: Optional[int] = typer.Option(None, help="[default: None (All fits)]"),
     max_cores: int = 1,
-    # Filters
-    min_alignments: int = 10,
-    min_k_sum: int = 10,
-    min_N_at_each_pos: int = 1,
-    # Subsitution Bases
-    substitution_bases_forward: cli_utils.SubstitutionBases = typer.Option(
-        cli_utils.SubstitutionBases.CT
-    ),
-    substitution_bases_reverse: cli_utils.SubstitutionBases = typer.Option(
-        cli_utils.SubstitutionBases.GA
-    ),
-    # boolean flags
     bayesian: bool = typer.Option(False, "--bayesian"),
     forced: bool = typer.Option(False, "--forced"),
-    # Other
-    dask_port: int = 8787,
 ):
     """Fit ancient damage.
 
@@ -90,38 +70,15 @@ def cli_fit(
     # First Party
     import metadamage as meta
 
-    # from metadamage import utils
-    # from metadamage.main import main
+    cfgs = meta.utils.Configs(
+        filenames=filenames,
+        out_dir=out_dir,
+        max_cores=max_cores,
+        bayesian=bayesian,
+        forced=forced,
+    )
 
-    d_cfg = {
-        "out_dir": out_dir,
-        #
-        "max_fits": max_fits,
-        "max_cores": max_cores,
-        # "max_position": max_position,
-        #
-        # "min_alignments": min_alignments,
-        "min_k_sum": min_k_sum,
-        "min_N_at_each_pos": min_N_at_each_pos,
-        #
-        # note: convert Enum to actual value
-        "substitution_bases_forward": substitution_bases_forward.value,
-        "substitution_bases_reverse": substitution_bases_reverse.value,
-        #
-        "bayesian": bayesian,
-        "forced": forced,
-        #
-        "dask_port": dask_port,
-        #
-        "version": "0.0.0",
-    }
-
-    cfg = meta.utils.Config(**d_cfg)
-
-    filenames = meta.utils.remove_bad_files(filenames)
-
-    cfg.add_filenames(filenames)
-    meta.main.main(cfg, filenames)
+    meta.main.main(cfgs)
 
 
 @cli_app.command("dashboard")

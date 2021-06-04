@@ -1,4 +1,3 @@
-# First Party
 from metadamage.cli import cli_main
 
 

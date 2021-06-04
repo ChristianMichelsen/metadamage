@@ -1,9 +1,3 @@
-# Scientific Library
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-
-# Standard Library
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
@@ -12,13 +6,14 @@ import logging
 import os
 from pathlib import Path
 
-# Third Party
+import matplotlib.pyplot as plt
+import numpy as np
 import numpyro
+import pandas as pd
 
-# First Party
-# from metadamage import fits, utils, mismatches
 import metadamage as meta
 from metadamage.progressbar import console, progress
+
 
 numpyro.enable_x64()
 logger = logging.getLogger(__name__)
@@ -26,30 +21,27 @@ logger = logging.getLogger(__name__)
 #%%
 
 
-def main(cfg, filenames):
+def main(cfgs):
 
-    meta.utils.initial_print(cfg, filenames)
+    meta.utils.initial_print(cfgs)
 
-    N_files = len(filenames)
     bad_files = 0
 
     with progress:
 
         task_id_overall = progress.add_task(
             "Overall progress",
-            total=N_files,
+            total=cfgs.N_files,
             progress_type="overall",
         )
 
-        for filename in filenames:
+        for cfg in cfgs:
 
             progress.advance(task_id_overall)
 
-            if not meta.utils.file_is_valid(filename):
+            if not cfg.file_is_valid:
                 bad_files += 1
                 continue
-
-            cfg.add_filename(filename)
 
             progress.add_task(
                 "task_name",
@@ -73,5 +65,5 @@ def main(cfg, filenames):
             logger.debug("End of loop\n")
 
     # if all files were bad, raise error
-    if bad_files == N_files:
+    if bad_files == cfgs.N_files:
         raise Exception("All files were bad!")

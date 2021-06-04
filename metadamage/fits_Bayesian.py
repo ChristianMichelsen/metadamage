@@ -1,25 +1,20 @@
-# Scientific Library
-import numpy as np
-import pandas as pd
-from scipy.special import logsumexp
-
-# Third Party
 import jax
 import jax.numpy as jnp
 from jax.random import PRNGKey as Key
 from joblib import delayed, Parallel
+import numpy as np
 import numpyro
 from numpyro import distributions as dist
 from numpyro.infer import log_likelihood, MCMC, NUTS, Predictive
-import timeout_decorator
-from timeout_decorator import TimeoutError
-from tqdm.auto import tqdm
+import pandas as pd
+from scipy.special import logsumexp
 
-# First Party
 from metadamage import fit_utils
 
 
 #%%
+
+numpyro.enable_x64()
 
 priors = fit_utils.get_priors()
 q_prior = priors["q"]  # mean = 0.2, concentration = 5

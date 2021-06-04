@@ -1,15 +1,11 @@
-# Scientific Library
+from dash.exceptions import PreventUpdate
 import numpy as np
 import pandas as pd
-
-# Third Party
-from dash.exceptions import PreventUpdate
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-# First Party
 from metadamage import dashboard
 
 

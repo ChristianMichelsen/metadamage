@@ -1,18 +1,13 @@
-# Scientific Library
-from pandas import HDFStore
-
-# Standard Library
 import json
 from pathlib import Path
 import warnings
 
-# Third Party
+from pandas import HDFStore
 import pyarrow as pa
 import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from tqdm.auto import tqdm
 
-# First Party
 from metadamage import utils
 
 

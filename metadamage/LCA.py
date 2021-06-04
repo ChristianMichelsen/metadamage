@@ -1,16 +1,14 @@
-import numpy as np
-import pandas as pd
-from tqdm.auto import tqdm
 from copy import deepcopy
 import logging
+
+import numpy as np
+import pandas as pd
 from scipy.stats import betabinom as sp_betabinom
+from tqdm.auto import tqdm
 
-
-# First Party
 import metadamage as meta
-
-# from metadamage import meta.io, meta.utils
 from metadamage.progressbar import progress
+
 
 #%%
 
@@ -136,7 +134,7 @@ def summarize_reads(df_LCA_read, df_mismatches_wide):
         "shortname": "str",
         "LCA": "str",
         "N_reads": "int",
-        # "N_alignments": "int",
+        "N_alignments": "int",
         **{col: "int" for col in mismatch_counts_columns},
     }
 
@@ -201,7 +199,7 @@ def compute_results(cfg, df_mismatches, df_fit_results):
         "read_GC",
         "shortname",
         "N_reads",
-        # "N_alignments",
+        "N_alignments",
         #
         "lambda_LR",
         "D_max",
@@ -236,21 +234,14 @@ def load(cfg, df_mismatches, df_fit_results):
         cfg.forced
     ):
 
-        include = [
-            # "min_alignments",
-            "min_k_sum",
-            "substitution_bases_forward",
-            "substitution_bases_reverse",
-            "N_fits",
-            "shortname",
-        ]
-
         metadata_cfg = cfg.to_dict()
 
         metadata_file_fit_results = parquet_results_LCA_reads.load_metadata()
 
         if meta.utils.metadata_is_similar(
-            metadata_file_fit_results, metadata_cfg, include=include
+            metadata_file_fit_results,
+            metadata_cfg,
+            # include=include,
         ):
 
             logger.info(f"Fit: Loading fits from parquet-file.")
