@@ -11,8 +11,8 @@ import numpy as np
 import numpyro
 import pandas as pd
 
-import metadamage as meta
-from metadamage.progressbar import console, progress
+import clitest.meta_fit as meta
+from clitest.meta_fit.progressbar import console, progress
 
 
 numpyro.enable_x64()

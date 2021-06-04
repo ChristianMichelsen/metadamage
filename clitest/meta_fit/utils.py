@@ -7,10 +7,9 @@ import platform
 import shutil
 from typing import List, Optional, Union
 
-from PyPDF2 import PdfFileReader
 from click_help_colors import HelpColorsCommand, HelpColorsGroup
-import dill
-from joblib import Parallel
+
+# import dill
 import numpy as np
 import pandas as pd
 from psutil import cpu_count
@@ -22,7 +21,7 @@ from scipy.stats import norm as sp_norm
 from scipy.stats.distributions import chi2 as sp_chi2
 import toml
 
-from metadamage.progressbar import console, progress
+from clitest.meta_fit.progressbar import console, progress
 
 
 #%%
@@ -267,15 +266,15 @@ def get_specific_tax_id(df, tax_id):
     return df.query("tax_id == @tax_id")
 
 
-def load_dill(filename):
-    with open(filename, "rb") as file:
-        return dill.load(file)
+# def load_dill(filename):
+#     with open(filename, "rb") as file:
+#         return dill.load(file)
 
 
-def save_dill(filename, x):
-    init_parent_folder(filename)
-    with open(filename, "wb") as file:
-        dill.dump(x, file)
+# def save_dill(filename, x):
+#     init_parent_folder(filename)
+#     with open(filename, "wb") as file:
+#         dill.dump(x, file)
 
 
 #%%
@@ -368,6 +367,8 @@ def file_exists(filename, forced=False):
 
 
 def is_pdf_valid(filename, forced=False, N_pages=None):
+    from PyPDF2 import PdfFileReader
+
     try:
         if file_exists(filename, forced=forced):
             pdf_reader = PdfFileReader(filename)

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from rich.logging import RichHandler
 
-from metadamage.progressbar import console
+from clitest.meta_fit.progressbar import console
 
 
 class Log:

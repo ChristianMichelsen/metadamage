@@ -1,83 +1,46 @@
 [tool.poetry]
-name = "metadamage"
-version = "0.0.0"
-description = "Metagenomics Ancient Damage: metadamage"
+name = "clitest"
+version = "0.1.0"
+description = ""
 authors = ["Christian Michelsen <christianmichelsen@gmail.com>"]
-license = "MIT"
-keywords = ['metadamage', 'metagenomics', 'ancient damage', 'DNA damage']
-repository = "https://github.com/ChristianMichelsen/metadamage"
-readme = "README.md"
-include = ["metadamage/style.mplstyle", 'pyproject.toml']
-exclude = ["logs/log*"]
-
 
 [tool.poetry.dependencies]
 python = "^3.8"
-pip = "^20.3.3"
-numpyro = "^0.4.1"
-pandas = "^1.2.0"
-matplotlib = "^3.3.3"
-fsspec = "^0.8.5"
-dill = "^0.3.3"
-PyPDF2 = "^1.26.0"
-joblib = "^1.0.0"
-pyarrow = "^2.0.0"
-rich = "^9.8.1"
 typer = {extras = ["all"], version = "^0.3.2"}
 click-help-colors = "^0.9"
-poetry-dynamic-versioning = "^0.12.1"
-about-time = "^3.1.1"
-memory-profiler = "^0.58.0"
+dash = "^1.20.0"
+dash-bootstrap-components = "^0.12.2"
+dash-extensions = "^0.0.55"
+numpy = "^1.20.3"
+pandas = "^1.2.4"
+matplotlib = "^3.4.2"
+pyarrow = "^4.0.1"
+rich = "^10.2.2"
 plotly = "^4.14.3"
-dash = "^1.19.0"
-notebook = ">=5.3"
-ipywidgets = ">=7.5"
-jupyterlab = "^3.0.7"
-dash-bootstrap-components = "^0.11.3"
-lazy-object-proxy = "1.4.3"
-ete3 = "^3.1.2"
-partd = "^1.1.0"
-timeout-decorator = "^0.5.0"
-dask = {version = "^2021.3.0", extras = ["complete"]}
-tornado = "^6.1"
-tables = "^3.6.1"
-toml = "^0.10.2"
-iminuit = "^2.4.0"
-numba = { version = "^0.53.1", python = ">=3.8,<3.10" }
-dash-extensions = "^0.0.53"
-biopython = "^1.78"
-pysam = "^0.16.0"
 pre-commit = "^2.13.0"
+scipy = {version = "^1.6.3", python = ">=3.8,<3.10"}
+ete3 = "^3.1.2"
+joblib = "^1.0.1"
+timeout-decorator = "^0.5.0"
+numpyro = "^0.6.0"
+iminuit = "^2.6.1"
+numba = {version = "^0.53.1", python = ">=3.8,<3.10"}
+psutil = "^5.8.0"
 
 
 [tool.poetry.dev-dependencies]
-pytest = "^4.6"
-flake8 = "^3.8.4"
-ipykernel = "^5.4.3"
-black = {version = "^20.8b1", allow-prereleases = true}
-pylint = "^2.6.0"
-pytest-cov = "^2.11.0"
-isort = "^5.7.0"
-coverage = "^5.3.1"
-about-time = "^3.1.1"
-poethepoet = "^0.9.0"
-bokeh = "^2.2.3"
-memory-profiler = "^0.58.0"
-tables = "^3.6.1"
-h5py = "^3.1.0"
-arviz = "^0.11.0"
-tuna = "^0.5.5"
-
-[tool.poetry.scripts]
-metadamage = "metadamage.cli:cli_main"
-
-[tool.poetry-dynamic-versioning]
-enable = true
-style = "semver"
+pytest = "^5.2"
+pylint = "^2.8.3"
+flake8 = "^3.9.2"
+black = {version = "^21.5b2", allow-prereleases = true}
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning"]
+requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+clitest = "clitest.cli:cli_main"
+
 
 [tool.poe.tasks]
 test   = "pytest ."
@@ -123,44 +86,3 @@ exclude = '''
   | tests/.*/setup.py
 )/
 '''
-
-# [tool.isort]
-# profile = "black"
-# # The multi-line import statement style (integer code).
-# multi_line_output = 3
-# # explicitly defined source path
-# src_paths = ["metadamage", "test"]
-# # Format import statements as a visually-balanced grid?
-# balanced_wrapping = true
-# # Maximum length (columns) for a line of program code.
-# line_length = 88
-# # Add a trailing comma on the list of ‘from’ import names?
-# include_trailing_comma = true
-# # Number of blank lines to separate imports from following statements.
-# lines_after_imports = 2
-# # For continuation lines, wrap lines in parenthesis?
-# use_parentheses = true
-# # Combine an ‘import … as …’ onto the same line?
-# combine_as_imports = true
-# # Non-indented imports float to the top of the file
-# float_to_top = true
-# # have "import foo" next to "from foo import bar"
-# force_sort_within_sections = true
-# # alphabetical sort within section
-# force_alphabetical_sort_within_sections = true
-
-# # Names of sections that group import statements.
-# # The order in this sequence specifies the order the sections should appear.
-# import_heading_stdlib="Standard Library"
-# import_heading_firstparty="First Party"
-# import_heading_thirdparty="Third Party"
-# import_heading_localfolder="Local Folder"
-# import_heading_base="Scientific Library"
-
-# # known libraries
-# known_first_party="metadamage"
-# known_base = ['numpy', 'pandas', 'matplotlib', 'scipy'] # extra_standard_library
-# sections = "FUTURE,BASE,STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
-
-# # # Force ‘from’ imports to be grid wrapped regardless of line length?
-# # force_grid_wrap = 2

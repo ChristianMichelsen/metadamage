@@ -9,8 +9,6 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 
-import metadamage as meta
-
 
 def set_custom_theme():
 
@@ -37,6 +35,25 @@ def set_custom_theme():
 
 
 #%%
+
+
+def human_format(num, digits=3, mode="eng"):
+    num = float(f"{num:.{digits}g}")
+    magnitude = 0
+    while abs(num) >= 1000:
+        magnitude += 1
+        num /= 1000.0
+
+    if mode == "eng" or mode == "SI":
+        translate = ["", "k", "M", "G", "T"]
+    elif mode == "scientific" or mode == "latex":
+        translate = ["", r"\cdot 10^3", r"\cdot 10^6", r"\cdot 10^9", r"\cdot 10^12"]
+    else:
+        raise AssertionError(f"'mode' has to be 'eng' or 'scientific', not {mode}.")
+
+    return "{}{}".format(
+        "{:f}".format(num).rstrip("0").rstrip("."), translate[magnitude]
+    )
 
 
 def is_log_transform_column(column):
@@ -124,7 +141,7 @@ def _insert_mark_values(mark_values):
         # close enough to an int for my use case
         if abs(mark_val - round(mark_val)) < 1e-3:
             mark_val = int(mark_val)
-        mark_labels[mark_val] = meta.utils.human_format(mark_val)
+        mark_labels[mark_val] = human_format(mark_val)
     return mark_labels
 
 
@@ -137,7 +154,6 @@ def get_range_slider_keywords(results, column="N_reads", N_steps=100):
     df = results.df_results
 
     if is_log_transform_column(column):
-        # if column in dashboard.utils.log_transform_columns:
 
         x = df[column]
 
@@ -156,7 +172,7 @@ def get_range_slider_keywords(results, column="N_reads", N_steps=100):
                 [marks_steps[0]] + [x for x in marks_steps[1:-1:2]] + [marks_steps[-1]]
             )
 
-        f = lambda x: meta.utils.human_format(log_transform_slider(x))
+        f = lambda x: human_format(log_transform_slider(x))
         marks = {int(i): f"{f(i)}" for i in marks_steps}
 
         marks[marks_steps[0]] = {"label": no_min, "style": {"color": "#a3ada9"}}
@@ -234,12 +250,6 @@ def get_shortname_tax_id_from_click_data(results, click_data):
 #%%
 
 
-def include_subspecies(subspecies):
-    if len(subspecies) == 1:
-        return True
-    return False
-
-
 def append_to_list_if_exists(d, key, value):
     if key in d:
         d[key].append(value)
@@ -260,22 +270,6 @@ def apply_sidebar_left_tax_id(results, d_filter, sidebar_left_tax_id_input):
             append_to_list_if_exists(d_filter, "tax_ranks", tax)
         else:
             raise AssertionError(f"Tax {tax} could not be found. ")
-
-
-def apply_tax_id_descendants_filter(d_filter, tax_name, sidebar_left_tax_id_subspecies):
-    if tax_name is None:
-        return None
-
-    tax_ids = meta.taxonomy.extract_descendant_tax_ids(
-        tax_name,
-        include_subspecies=include_subspecies(sidebar_left_tax_id_subspecies),
-    )
-    N_tax_ids = len(tax_ids)
-    if N_tax_ids != 0:
-        if "tax_id" in d_filter:
-            d_filter["tax_ids"].extend(tax_ids)
-        else:
-            d_filter["tax_ids"] = tax_ids
 
 
 #%%
@@ -492,7 +486,7 @@ def toggle_filter(
 
 
 def get_button_id(ctx):
-    " Get button clicked"
+    "Get button clicked"
     if not ctx.triggered:
         button_id = None
     else:

@@ -1,19 +1,9 @@
-import gzip
 import logging
-import struct
-import warnings
 
-import dask
-import dask.dataframe as dd
-from dask.diagnostics import ProgressBar
-from dask.distributed import Client, LocalCluster
 import numpy as np
 import pandas as pd
-from psutil import cpu_count
-import pysam
-from tqdm.auto import tqdm
 
-import metadamage as meta
+from clitest import meta_fit
 
 
 logger = logging.getLogger(__name__)
@@ -27,7 +17,7 @@ columns = [
     "tax_id",
     "direction",
     "position",
-    *meta.utils.ref_obs_bases,
+    *meta_fit.utils.ref_obs_bases,
 ]
 
 
@@ -49,8 +39,8 @@ def get_base_columns(df):
     for column in df.columns:
         if (
             len(column) == 2
-            and column[0] in meta.utils.ACTG
-            and column[1] in meta.utils.ACTG
+            and column[0] in meta_fit.utils.ACTG
+            and column[1] in meta_fit.utils.ACTG
         ):
             base_columns.append(column)
     return base_columns
@@ -101,7 +91,7 @@ def make_position_1_indexed(df):
 
 
 def make_reverse_position_negative(df):
-    is_reverse = ~meta.utils.is_forward(df)
+    is_reverse = ~meta_fit.utils.is_forward(df)
     df["position"] = (is_reverse * (-1) + (~is_reverse)) * df["position"]
     # pos = df["position"]
     # pos_reverse = pos[is_reverse]
@@ -147,7 +137,7 @@ def compute_min_N_in_group(group, cfg):
 def add_min_N_in_group(df, cfg):
     ds = df.groupby("tax_id").apply(compute_min_N_in_group, cfg)
     ds = ds.reset_index().rename(columns={0: "min_N_in_group"})
-    df = dd.merge(df, ds, on=["tax_id"])
+    df = pd.merge(df, ds, on=["tax_id"])
     return df
 
 
@@ -160,7 +150,7 @@ def add_min_N_in_group(df, cfg):
 
 def add_k_N_z_names(df):
     # mask_forward = df["direction"] == "5'"
-    mask_forward = meta.utils.is_forward(df)
+    mask_forward = meta_fit.utils.is_forward(df)
     df["k"] = np.where(mask_forward, df["CT"], df["GA"])
     df["N"] = np.where(mask_forward, df["C"], df["G"])
     df["f"] = df["k"] / df["N"]
@@ -192,14 +182,14 @@ def compute_mismatches(cfg):
 
     df["shortname"] = cfg.shortname
     categories = ["tax_id", "direction", "shortname"]
-    df2 = meta.utils.downcast_dataframe(df, categories, fully_automatic=False)
+    df2 = meta_fit.utils.downcast_dataframe(df, categories, fully_automatic=False)
 
     return df2
 
 
 def load(cfg):
 
-    parquet = meta.io.Parquet(cfg.filename_mismatches_parquet)
+    parquet = meta_fit.io.Parquet(cfg.filename_mismatches_parquet)
 
     if parquet.exists(cfg.forced):
 
@@ -208,7 +198,7 @@ def load(cfg):
 
         include = ["shortname"]
 
-        if meta.utils.metadata_is_similar(
+        if meta_fit.utils.metadata_is_similar(
             metadata_file,
             metadata_cfg,
             include=include,

@@ -9,12 +9,10 @@ import dash_html_components as html
 import numpy as np
 import pandas as pd
 
+from clitest import meta_dashboard as dashboard
+
 
 def get_app(results_dir=Path("./data/out/results")):
-
-    # First Party
-    import metadamage as meta
-    from metadamage import dashboard
 
     results = dashboard.results.load(results_dir)
 
@@ -248,7 +246,7 @@ def get_app(results_dir=Path("./data/out/results")):
             sidebar_left_tax_id_input,
         )
 
-        dashboard.utils.apply_tax_id_descendants_filter(
+        dashboard.taxonomy.apply_tax_id_descendants_filter(
             d_filter,
             sidebar_left_tax_id_input_descendants,
             sidebar_left_tax_id_subspecies,
@@ -359,16 +357,14 @@ def get_app(results_dir=Path("./data/out/results")):
             return f"No specific Tax IDs selected, defaults to ALL."
             # raise PreventUpdate
 
-        tax_ids = meta.taxonomy.extract_descendant_tax_ids(
+        tax_ids = dashboard.taxonomy.extract_descendant_tax_ids(
             tax_name,
-            include_subspecies=dashboard.utils.include_subspecies(subspecies),
+            include_subspecies=dashboard.taxonomy.include_subspecies(subspecies),
         )
         N_tax_ids = len(tax_ids)
         if N_tax_ids == 0:
             return f"Couldn't find any Tax IDs for {tax_name} in NCBI"
-        return (
-            f"Found {meta.utils.human_format(N_tax_ids)} Tax IDs for {tax_name} in NCBI"
-        )
+        return f"Found {dashboard.utils.human_format(N_tax_ids)} Tax IDs for {tax_name} in NCBI"
 
     #%%
 
@@ -501,7 +497,7 @@ def get_app(results_dir=Path("./data/out/results")):
                 sidebar_left_tax_id_input,
             )
 
-            dashboard.utils.apply_tax_id_descendants_filter(
+            dashboard.taxonomy.apply_tax_id_descendants_filter(
                 d_filter,
                 sidebar_left_tax_id_input_descendants,
                 sidebar_left_tax_id_subspecies,
@@ -518,6 +514,13 @@ def get_app(results_dir=Path("./data/out/results")):
     #%%
 
     return app
+
+
+def test_app():
+
+    print("got here")
+
+    print("aaaand got here")
 
 
 #%%

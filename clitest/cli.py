@@ -3,7 +3,7 @@ from typing import List, Optional
 
 import typer
 
-from metadamage import cli_utils
+from clitest import cli_utils
 
 
 out_dir_default = Path("./data/out/")
@@ -68,9 +68,9 @@ def cli_fit(
     """
 
     # First Party
-    import metadamage as meta
+    from clitest import meta_fit
 
-    cfgs = meta.utils.Configs(
+    cfgs = meta_fit.utils.Configs(
         filenames=filenames,
         out_dir=out_dir,
         max_cores=max_cores,
@@ -78,7 +78,7 @@ def cli_fit(
         forced=forced,
     )
 
-    meta.main.main(cfgs)
+    meta_fit.main.main(cfgs)
 
 
 @cli_app.command("dashboard")
@@ -111,7 +111,7 @@ def cli_dashboard(
     """
 
     # First Party
-    from metadamage import dashboard
+    from clitest import meta_dashboard
 
     # counts_dir = dir / "counts/"
     # if not (counts_dir.exists() and counts_dir.is_dir()):
@@ -121,9 +121,9 @@ def cli_dashboard(
 
     # verbose = True if debug else False
     if not debug:
-        dashboard.utils.open_browser_in_background()
+        meta_dashboard.utils.open_browser_in_background()
 
-    dashboard_app = dashboard.app.get_app(results_dir)
+    dashboard_app = meta_dashboard.app.get_app(results_dir)
 
     dashboard_app.run_server(
         debug=debug,
@@ -132,50 +132,50 @@ def cli_dashboard(
     )
 
 
-@cli_app.command("convert")
-def cli_convert(
-    dir_parquet: Path = typer.Option(out_dir_default / "fit_predictions"),
-    dir_csv: Path = typer.Option(out_dir_default / "csv" / "fit_predictions"),
-    parallel: bool = typer.Option(False, "--parallel"),
-):
-    """Parquet to CSV conversion.
+# @cli_app.command("convert")
+# def cli_convert(
+#     dir_parquet: Path = typer.Option(out_dir_default / "fit_predictions"),
+#     dir_csv: Path = typer.Option(out_dir_default / "csv" / "fit_predictions"),
+#     parallel: bool = typer.Option(False, "--parallel"),
+# ):
+#     """Parquet to CSV conversion.
 
-    Convert all parquet files in an directory to csv files.
+#     Convert all parquet files in an directory to csv files.
 
-    run as e.g.:
+#     run as e.g.:
 
-    \b
-        $ metadamage convert
+#     \b
+#         $ metadamage convert
 
-    or for other directories than default:
+#     or for other directories than default:
 
-    \b
-        $ metadamage convert --dir-parquet ./data/out/results --dir-csv ./data/out/csv/results
+#     \b
+#         $ metadamage convert --dir-parquet ./data/out/results --dir-csv ./data/out/csv/results
 
-    For help, run:
+#     For help, run:
 
-    \b
-        $ metadamage convert --help
+#     \b
+#         $ metadamage convert --help
 
-    """
-    # First Party
-    from metadamage.parquet_convert import convert_fit_predictions
+#     """
+#     # First Party
+#     from metadamage.parquet_convert import convert_fit_predictions
 
-    print_message = (
-        f"Converting parquet files in {dir_parquet}. \n"
-        f"Output directory is {dir_csv}. \n"
-    )
-    if parallel:
-        print_message += "Running in parallel mode"
-    else:
-        print_message += "Running in seriel mode"
+#     print_message = (
+#         f"Converting parquet files in {dir_parquet}. \n"
+#         f"Output directory is {dir_csv}. \n"
+#     )
+#     if parallel:
+#         print_message += "Running in parallel mode"
+#     else:
+#         print_message += "Running in seriel mode"
 
-    typer.echo(print_message)
-    convert_fit_predictions(dir_parquet, dir_csv, parallel=parallel)
+#     typer.echo(print_message)
+#     convert_fit_predictions(dir_parquet, dir_csv, parallel=parallel)
 
 
 #%%
 
 
 def cli_main():
-    cli_app(prog_name="metadamage")
+    cli_app(prog_name="clitest")

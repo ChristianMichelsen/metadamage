@@ -50,27 +50,8 @@ def get_cli_app():
 
 
 def version_callback(value: bool):
-    # First Party
-    from metadamage.__version__ import __version__
+    from clitest.__version__ import __version__
 
     if value:
         typer.echo(f"Metadamage CLI, version: {__version__}")
         raise typer.Exit()
-
-
-class SubstitutionBases(str, Enum):
-    AC = "AC"
-    AG = "AG"
-    AT = "AT"
-
-    CA = "CA"
-    CG = "CG"
-    CT = "CT"
-
-    GA = "GA"
-    GC = "GC"
-    GT = "GT"
-
-    TA = "TA"
-    TC = "TC"
-    TG = "TG"

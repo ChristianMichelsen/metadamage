@@ -9,7 +9,7 @@ from numpyro.infer import log_likelihood, MCMC, NUTS, Predictive
 import pandas as pd
 from scipy.special import logsumexp
 
-from metadamage import fit_utils
+from clitest.meta_fit import fit_utils
 
 
 #%%

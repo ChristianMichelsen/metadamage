@@ -5,8 +5,7 @@ import dash_core_components as dcc
 from dash_extensions import Download
 import dash_html_components as html
 
-import metadamage as meta
-from metadamage import dashboard
+from clitest import meta_dashboard as dashboard
 
 
 #%%
@@ -565,7 +564,7 @@ def get_name_of_removed_slider(current_names, dropdown_names):
 
 
 def remove_name_from_children(column, children, id_type):
-    " Given a column, remove the corresponding child element from children"
+    "Given a column, remove the corresponding child element from children"
     index = find_index_in_children(children, id_type=id_type, search_index=column)
     children.pop(index)
 
@@ -582,8 +581,8 @@ def get_slider_name(column, low_high):
         low = dashboard.utils.log_transform_slider(low)
         high = dashboard.utils.log_transform_slider(high)
 
-    low = meta.utils.human_format(low)
-    high = meta.utils.human_format(high)
+    low = dashboard.utils.human_format(low)
+    high = dashboard.utils.human_format(high)
 
     return f"{column}: [{low}, {high}]"
 

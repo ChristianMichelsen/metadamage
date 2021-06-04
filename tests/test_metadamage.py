@@ -1,13 +1,13 @@
 # Standard Library
 from pathlib import Path
 
-# Third Party
-import pytest
-from typer.testing import CliRunner
-
 # First Party
 from metadamage.cli import cli_app
 from metadamage.utils import extract_name
+
+# Third Party
+import pytest
+from typer.testing import CliRunner
 
 
 # @pytest.mark.slow

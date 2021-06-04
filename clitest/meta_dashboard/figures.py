@@ -6,7 +6,8 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 
-from metadamage import dashboard
+# import dashboard
+from clitest import meta_dashboard as dashboard
 
 
 #%%

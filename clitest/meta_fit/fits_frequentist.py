@@ -8,12 +8,12 @@ from scipy.stats import (
     expon as sp_exponential,
 )
 
-from metadamage import fit_utils
+import clitest.meta_fit as meta
 
 
 #%%
 
-priors = fit_utils.get_priors()
+priors = meta.fit_utils.get_priors()
 q_prior = priors["q"]  # mean = 0.2, concentration = 5
 A_prior = priors["A"]  # mean = 0.2, concentration = 5
 c_prior = priors["c"]  # mean = 0.1, concentration = 10
@@ -31,16 +31,16 @@ def log_likelihood_PMD(q, A, c, phi, z, k, N):
     Dz = A * (1 - q) ** (np.abs(z) - 1) + c
     alpha = Dz * phi
     beta = (1 - Dz) * phi
-    return -fit_utils.log_betabinom_PMD(k=k, N=N, alpha=alpha, beta=beta).sum()
+    return -meta.fit_utils.log_betabinom_PMD(k=k, N=N, alpha=alpha, beta=beta).sum()
     # return -sp_betabinom.logpmf(k=k, n=n, a=alpha, b=beta).sum()
 
 
 @njit
 def log_prior_PMD(q, A, c, phi):
-    lp = fit_utils.log_beta(q, *q_prior)
-    lp += fit_utils.log_beta(A, *A_prior)
-    lp += fit_utils.log_beta(c, *c_prior)
-    lp += fit_utils.log_exponential(phi, *phi_prior)
+    lp = meta.fit_utils.log_beta(q, *q_prior)
+    lp += meta.fit_utils.log_beta(A, *A_prior)
+    lp += meta.fit_utils.log_beta(c, *c_prior)
+    lp += meta.fit_utils.log_exponential(phi, *phi_prior)
     return -lp
 
 
@@ -142,7 +142,7 @@ class FrequentistPMD:
         if not self.m.valid:
             self.i = 0
             while True:
-                p0 = fit_utils.sample_from_param_grid(self.param_grid)
+                p0 = meta.fit_utils.sample_from_param_grid(self.param_grid)
                 for key, val in p0.items():
                     self.m.values[key] = val
                 self.m.migrad()
@@ -240,7 +240,7 @@ class FrequentistPMD:
 def f_frequentist_null(c, phi, k, N):
     alpha = c * phi
     beta = (1 - c) * phi
-    return -fit_utils.log_betabinom_null(k=k, N=N, alpha=alpha, beta=beta).sum()
+    return -meta.fit_utils.log_betabinom_null(k=k, N=N, alpha=alpha, beta=beta).sum()
 
 
 class FrequentistNull:
@@ -295,7 +295,7 @@ class Frequentist:
     def __init__(self, data, method="posterior"):
         self.PMD = FrequentistPMD(data, method=method).fit()
         self.null = FrequentistNull(data).fit()
-        p = fit_utils.compute_likelihood_ratio(self.PMD, self.null)
+        p = meta.fit_utils.compute_likelihood_ratio(self.PMD, self.null)
         self.lambda_LR, self.lambda_LR_P, self.lambda_LR_n_sigma = p
 
         self.valid = self.PMD.valid

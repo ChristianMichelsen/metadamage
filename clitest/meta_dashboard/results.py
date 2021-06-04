@@ -4,9 +4,11 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import pyarrow.parquet as pq
 from scipy.stats import betabinom as sp_betabinom
 
-from metadamage import dashboard, io
+# import dashboard
+from clitest import meta_dashboard as dashboard
 
 
 def clip_df(df, column):
@@ -57,7 +59,7 @@ class Results:
         self._set_hover_info()
 
     def _load_parquet_file(self, results_dir):
-        df = io.Parquet(results_dir).load()
+        df = pq.read_table("data/out/results").to_pandas()
         return df
 
     def _load_df_results(self):

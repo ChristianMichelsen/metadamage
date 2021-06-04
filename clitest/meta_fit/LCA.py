@@ -6,8 +6,8 @@ import pandas as pd
 from scipy.stats import betabinom as sp_betabinom
 from tqdm.auto import tqdm
 
-import metadamage as meta
-from metadamage.progressbar import progress
+import clitest.meta_fit as meta
+from clitest.meta_fit.progressbar import progress
 
 
 #%%
@@ -238,10 +238,12 @@ def load(cfg, df_mismatches, df_fit_results):
 
         metadata_file_fit_results = parquet_results_LCA_reads.load_metadata()
 
+        include = ["shortname"]
+
         if meta.utils.metadata_is_similar(
             metadata_file_fit_results,
             metadata_cfg,
-            # include=include,
+            include=include,
         ):
 
             logger.info(f"Fit: Loading fits from parquet-file.")

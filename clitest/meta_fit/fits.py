@@ -11,8 +11,8 @@ import pandas as pd
 import timeout_decorator
 from timeout_decorator import TimeoutError
 
-import metadamage as meta
-from metadamage.progressbar import progress
+from clitest import meta_fit
+from clitest.meta_fit.progressbar import progress
 
 
 logger = logging.getLogger(__name__)
@@ -89,25 +89,25 @@ def fit_single_group_without_timeout(
 
     with warnings.catch_warnings():
         warnings.filterwarnings("ignore")
-        f, f_forward, f_reverse = meta.fits_frequentist.make_fits(fit_result, data)
+        f, f_forward, f_reverse = meta_fit.fits_frequentist.make_fits(fit_result, data)
 
     add_count_information(fit_result, group, data)
 
     if mcmc_PMD is not None and mcmc_null is not None:
-        meta.fits_Bayesian.make_fits(fit_result, data, mcmc_PMD, mcmc_null)
+        meta_fit.fits_Bayesian.make_fits(fit_result, data, mcmc_PMD, mcmc_null)
 
     return fit_result
 
 
 def get_fit_single_group_with_timeout(timeout=60):
-    """ timeout in seconds """
+    """timeout in seconds"""
     return timeout_decorator.timeout(timeout)(fit_single_group_without_timeout)
 
 
 def compute_fits_seriel(cfg, df_mismatches):
 
     # initializez not MCMC if cfg.bayesian is False
-    mcmc_PMD, mcmc_null = meta.fits_Bayesian.init_mcmcs(cfg)
+    mcmc_PMD, mcmc_null = meta_fit.fits_Bayesian.init_mcmcs(cfg)
 
     groupby = get_groupby(df_mismatches)
 
@@ -149,7 +149,7 @@ def compute_fits_seriel(cfg, df_mismatches):
 def worker(cfg, queue_in, queue_out):
 
     # initializez not MCMC if cfg.bayesian is False
-    mcmc_PMD, mcmc_null = meta.fits_Bayesian.init_mcmcs(cfg)
+    mcmc_PMD, mcmc_null = meta_fit.fits_Bayesian.init_mcmcs(cfg)
 
     fit_single_group_first_fit = get_fit_single_group_with_timeout(timeout_first_fit)
     fit_single_group_subsequent_fits = get_fit_single_group_with_timeout(
@@ -245,7 +245,7 @@ def make_df_fit_results_from_fit_results(cfg, d_fit_results, df_mismatches):
 
     # categories = ["tax_id", "shortname"]
     categories = []
-    df_fit_results = meta.utils.downcast_dataframe(
+    df_fit_results = meta_fit.utils.downcast_dataframe(
         df_fit_results, categories, fully_automatic=False
     )
 
@@ -287,7 +287,7 @@ def compute_duplicates(df_mismatches):
 
     duplicate_entries = defaultdict(list)
     for group in groupby:
-        key = joblib.hash(group[1][meta.utils.ref_obs_bases].values)
+        key = joblib.hash(group[1][meta_fit.utils.ref_obs_bases].values)
         duplicate_entries[key].append(group[0])
     duplicate_entries = dict(duplicate_entries)
 
@@ -411,7 +411,7 @@ def load(cfg, df_mismatches):
     Computes fits for df_mismatches. If fits are already computed, just load them.
     """
 
-    parquet_fit_results = meta.io.Parquet(cfg.filename_fit_results)
+    parquet_fit_results = meta_fit.io.Parquet(cfg.filename_fit_results)
 
     if parquet_fit_results.exists(cfg.forced):
 
@@ -419,10 +419,12 @@ def load(cfg, df_mismatches):
 
         metadata_file_fit_results = parquet_fit_results.load_metadata()
 
-        if meta.utils.metadata_is_similar(
+        include = ["shortname"]
+
+        if meta_fit.utils.metadata_is_similar(
             metadata_file_fit_results,
             metadata_cfg,
-            # include=include,
+            include=include,
         ):
 
             logger.info(f"Fit: Loading fits from parquet-file.")
