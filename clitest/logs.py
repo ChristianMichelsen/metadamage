@@ -5,7 +5,7 @@ from pathlib import Path
 
 from rich.logging import RichHandler
 
-from clitest.meta_fit.progressbar import console
+from clitest.rich import console
 
 
 class Log:
@@ -15,23 +15,10 @@ class Log:
         self.name = name
 
     def setup(self):
-
         if self.has_run_before or current_process().name != "MainProcess":
-            # print("Has been setup before", current_process())
             return None
-        # print("Setting up logs", current_process())
 
-        # if running from CLI:
-        if Path("pyproject.toml").is_file():
-            log_dir = "./logs"
-
-        # if running from iPython / VS Code
-        elif Path("cli.py").is_file():
-            log_dir = "../logs"
-
-        else:
-            log_dir = "./logs"
-            # raise AssertionError(f"Could not figure out logging dir")
+        log_dir = "./logs"
 
         Path(log_dir).mkdir(parents=True, exist_ok=True)
         filename = f"{log_dir}/log--{self.start_time}.txt"
@@ -43,7 +30,7 @@ class Log:
 
         # Configure level and formatter and add it to handlers
         stream_handler.setLevel(logging.WARNING)
-        file_handler.setLevel(logging.DEBUG)  # error and above is logged to a file
+        file_handler.setLevel(logging.DEBUG)  # DEBUG and above is logged to a file
 
         stream_handler.setFormatter(logging.Formatter("%(message)s"))
         file_handler.setFormatter(

@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 
 
+*.BAM
+*.bam
+/correct_lca_output/
+
 #
 ._.DS_Store
 main_test.py

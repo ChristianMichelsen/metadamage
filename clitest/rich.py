@@ -20,20 +20,16 @@ class MyProgress(Progress):
                 self.columns = progress_bar_overall
                 yield Panel(self.make_tasks_table([task]))
 
-            elif task.fields.get("progress_type") == "shortname":
-                self.columns = progress_bar_shortname
+            elif task.fields.get("progress_type") == "cfg":
+                self.columns = progress_bar_cfg
                 yield self.make_tasks_table([task])
 
-            elif task.fields.get("progress_type") == "bDamage":
-                self.columns = progress_bar_LCA
+            elif task.fields.get("progress_type") == "known_total":
+                self.columns = progress_bar_known_total
                 yield self.make_tasks_table([task])
 
-            elif task.fields.get("progress_type") == "status":
-                self.columns = progress_bar_status
-                yield self.make_tasks_table([task])
-
-            elif task.fields.get("progress_type") == "LCA":
-                self.columns = progress_bar_LCA
+            elif task.fields.get("progress_type") == "unknown_total":
+                self.columns = progress_bar_unknown_total
                 yield self.make_tasks_table([task])
 
 
@@ -50,13 +46,13 @@ progress_bar_overall = (
 )
 
 # fmt: off
-progress_bar_shortname = (
+progress_bar_cfg = (
     TextColumn(" " * 4 + "[blue]{task.fields[name]}"),
 )
 # fmt: on
 
 
-progress_bar_status = (
+progress_bar_known_total = (
     TextColumn(" " * 8 + "{task.fields[status]}:"),
     BarColumn(bar_width=20, complete_style="green"),
     "[progress.percentage]{task.percentage:>3.0f}%",
@@ -66,7 +62,7 @@ progress_bar_status = (
 )
 
 
-progress_bar_LCA = (
+progress_bar_unknown_total = (
     TextColumn(" " * 8 + "{task.fields[status]}:"),
     BarColumn(bar_width=20, complete_style="green"),
     "[progress.percentage]{task.percentage:>3.0f}%",

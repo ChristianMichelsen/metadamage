@@ -8,7 +8,8 @@ import pyarrow.dataset as ds
 import pyarrow.parquet as pq
 from tqdm.auto import tqdm
 
-import clitest.meta_fit as meta
+# import clitest.meta_fit as meta
+from clitest import utils
 
 
 class Parquet:
@@ -72,7 +73,7 @@ class Parquet:
         return table
 
     def save(self, df, metadata=None):
-        meta.utils.init_parent_folder(self.filename)
+        utils.init_parent_folder(self.filename)
         table = self._df_to_table_with_metadata(df, metadata)
         # pq.write_to_dataset(table, self.filename, partition_cols=partition_cols)
         pq.write_table(table, self.filename, version="2.0")
@@ -103,7 +104,7 @@ class HDF5:
         return all_dfs
 
     def save(self, df, filename, key, metadata=None):
-        meta.utils.init_parent_folder(filename)
+        utils.init_parent_folder(filename)
         if metadata is None:
             metadata = {}
         with warnings.catch_warnings():

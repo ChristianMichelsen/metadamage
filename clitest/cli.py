@@ -4,9 +4,8 @@ from typing import List, Optional
 import typer
 
 from clitest import cli_utils
+from clitest.paths import storage_path_default
 
-
-out_dir_default = Path("./data/out/")
 
 #%%
 
@@ -40,8 +39,7 @@ def callback(
 
 @cli_app.command("fit")
 def cli_fit(
-    filenames: List[Path] = typer.Argument(...),
-    out_dir: Path = typer.Option(out_dir_default),
+    bam_files: List[Path] = typer.Argument(...),
     max_cores: int = 1,
     bayesian: bool = typer.Option(False, "--bayesian"),
     forced: bool = typer.Option(False, "--forced"),
@@ -68,22 +66,31 @@ def cli_fit(
     """
 
     # First Party
-    from clitest import meta_fit
 
-    cfgs = meta_fit.utils.Configs(
-        filenames=filenames,
-        out_dir=out_dir,
+    from clitest import configs, utils
+    from clitest.main import main
+
+    bam_files = utils.extract_bam_files(bam_files)
+
+    cfgs = configs.Configs(
+        bam_files=bam_files,
+        ngsLCA_names=Path("./raw_data/names.dmp.gz"),
+        ngsLCA_nodes=Path("./raw_data/nodes.dmp.gz"),
+        ngsLCA_acc2tax=Path("./raw_data/combined_taxid_accssionNO_20200425.gz"),
+        ngsLCA_command="metadamage",
+        ngsLCA_kwargs=None,
+        storage_path=storage_path_default,
         max_cores=max_cores,
         bayesian=bayesian,
         forced=forced,
     )
 
-    meta_fit.main.main(cfgs)
+    main(cfgs)
 
 
 @cli_app.command("dashboard")
 def cli_dashboard(
-    results_dir: Path = typer.Argument(out_dir_default / "results"),
+    results_dir: Path = typer.Argument(storage_path_default / "results"),
     debug: bool = typer.Option(False, "--debug"),
     dashboard_port: int = 8050,
     dashboard_host: str = "0.0.0.0",
@@ -132,46 +139,78 @@ def cli_dashboard(
     )
 
 
-# @cli_app.command("convert")
-# def cli_convert(
-#     dir_parquet: Path = typer.Option(out_dir_default / "fit_predictions"),
-#     dir_csv: Path = typer.Option(out_dir_default / "csv" / "fit_predictions"),
-#     parallel: bool = typer.Option(False, "--parallel"),
-# ):
-#     """Parquet to CSV conversion.
+@cli_app.command("convert")
+def cli_convert(
+    dir_parquet: Path = typer.Option(storage_path_default / "fit_predictions"),
+    dir_csv: Path = typer.Option(storage_path_default / "csv" / "fit_predictions"),
+    parallel: bool = typer.Option(False, "--parallel"),
+):
+    """Parquet to CSV conversion.
 
-#     Convert all parquet files in an directory to csv files.
+    Convert all parquet files in an directory to csv files.
 
-#     run as e.g.:
+    run as e.g.:
 
-#     \b
-#         $ metadamage convert
+    \b
+        $ metadamage convert
 
-#     or for other directories than default:
+    or for other directories than default:
 
-#     \b
-#         $ metadamage convert --dir-parquet ./data/out/results --dir-csv ./data/out/csv/results
+    \b
+        $ metadamage convert --dir-parquet ./data/out/results --dir-csv ./data/out/csv/results
 
-#     For help, run:
+    For help, run:
 
-#     \b
-#         $ metadamage convert --help
+    \b
+        $ metadamage convert --help
 
-#     """
-#     # First Party
-#     from metadamage.parquet_convert import convert_fit_predictions
+    """
+    # First Party
+    from metadamage.parquet_convert import convert_fit_predictions
 
-#     print_message = (
-#         f"Converting parquet files in {dir_parquet}. \n"
-#         f"Output directory is {dir_csv}. \n"
-#     )
-#     if parallel:
-#         print_message += "Running in parallel mode"
-#     else:
-#         print_message += "Running in seriel mode"
+    print_message = (
+        f"Converting parquet files in {dir_parquet}. \n"
+        f"Output directory is {dir_csv}. \n"
+    )
+    if parallel:
+        print_message += "Running in parallel mode"
+    else:
+        print_message += "Running in seriel mode"
 
-#     typer.echo(print_message)
-#     convert_fit_predictions(dir_parquet, dir_csv, parallel=parallel)
+    typer.echo(print_message)
+    convert_fit_predictions(dir_parquet, dir_csv, parallel=parallel)
+
+
+@cli_app.command("test")
+def cli_test():
+    """
+
+    For help, run:
+
+    \b
+        $ metadamage fit --help
+
+    """
+
+    import logging
+
+    print("CLI name", __name__)
+    logger = logging.getLogger(__name__)
+
+    logger.warning("logger warning")
+
+    # # First Party
+    # from clitest import meta_fit
+
+    # cfgs = meta_fit.utils.Configs(
+    #     filenames=filenames,
+    #     out_dir=out_dir,
+    #     max_cores=max_cores,
+    #     bayesian=bayesian,
+    #     forced=forced,
+    # )
+
+    # meta_fit.main.main(cfgs)
 
 
 #%%

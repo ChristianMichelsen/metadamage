@@ -52,14 +52,14 @@ def wide_to_long_df(group_wide):
 
 
 class Results:
-    def __init__(self, results_dir="./data/out/"):
+    def __init__(self, results_dir):
         self.results_dir = Path(results_dir)
         self._load_df_results()
         self._set_cmap()
         self._set_hover_info()
 
     def _load_parquet_file(self, results_dir):
-        df = pq.read_table("data/out/results").to_pandas()
+        df = pq.read_table(results_dir).to_pandas()
         return df
 
     def _load_df_results(self):
@@ -361,5 +361,5 @@ class Results:
         return d_out
 
 
-def load(results_dir=Path("./data/out/results")):
+def load(results_dir=Path("./data/results")):
     return Results(results_dir)

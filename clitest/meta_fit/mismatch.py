@@ -162,10 +162,10 @@ def rename_columns(df):
     return df.rename(columns={"#taxid": "tax_id"})
 
 
-def compute_mismatches(cfg):
+def compute(cfg):
 
     df = (
-        pd.read_csv(cfg.filename_mismatch, sep="\t")
+        pd.read_csv(cfg.file_mismatch, sep="\t")
         .pipe(rename_columns)
         .pipe(add_reference_counts, ref=bases_forward[0])
         .pipe(add_reference_counts, ref=bases_reverse[0])
@@ -182,34 +182,10 @@ def compute_mismatches(cfg):
 
     df["shortname"] = cfg.shortname
     categories = ["tax_id", "direction", "shortname"]
-    df2 = meta_fit.utils.downcast_dataframe(df, categories, fully_automatic=False)
+    df_mismatch = meta_fit.utils.downcast_dataframe(
+        df, categories, fully_automatic=False
+    )
 
-    return df2
+    cfg.set_number_of_fits(df_mismatch)
 
-
-def load(cfg):
-
-    parquet = meta_fit.io.Parquet(cfg.filename_mismatches_parquet)
-
-    if parquet.exists(cfg.forced):
-
-        metadata_file = parquet.load_metadata()
-        metadata_cfg = cfg.to_dict()
-
-        include = ["shortname"]
-
-        if meta_fit.utils.metadata_is_similar(
-            metadata_file,
-            metadata_cfg,
-            include=include,
-        ):
-            logger.info(f"Loading DataFrame from parquet-file.")
-            df_mismatches = parquet.load()
-
-    else:
-        logger.info(f"Creating DataFrame, please wait.")
-        df_mismatches = compute_mismatches(cfg)
-        parquet.save(df_mismatches, metadata=cfg.to_dict())
-
-    cfg.set_number_of_fits(df_mismatches)
-    return df_mismatches
+    return df_mismatch
